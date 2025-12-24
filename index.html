@@ -15,14 +15,12 @@
         <div style="font-weight:bold">E-Absensi</div>
         <button class="hidden" id="btn-to-peserta" onclick="logout()" style="width:auto; padding:5px 10px; font-size:12px">Log Peserta</button>
     </div>
-
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <h3>Menu</h3>
         <button onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">Tambah Akun</button>
         <button style="background:#2980b9" onclick="loginAdmin()">Masuk Admin</button>
     </div>
-
     <div class="container">
         <div id="modal-tambah" class="card hidden">
             <h3>Registrasi</h3>
@@ -36,20 +34,18 @@
                 <optgroup label="TEMON"><option>TAWANGSARI</option><option>HARGOREJO</option><option>SIDATAN 1</option><option>SIDATAN 2</option><option>JOGOBOYO</option><option>JOGORESAN</option></optgroup>
             </select>
             <button onclick="saveProfile()">Simpan</button>
+            <button style="background:#ccc" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
         </div>
-
         <div id="pilih-akun-section" class="card hidden">
             <h2>Pilih Akun</h2>
             <div id="list-akun-pilihan"></div>
         </div>
-
         <div id="peserta-section" class="card hidden">
             <h2 id="display-nama"></h2>
             <div id="reader"></div>
             <button onclick="startScanner()" style="margin-top:20px">MULAI SCAN</button>
             <p onclick="logout()" style="color:#888; cursor:pointer; font-size:12px">Ganti Akun</p>
         </div>
-
         <div id="admin-section" class="card hidden">
             <h2>Admin Panel</h2>
             <input id="ev-nama" placeholder="Nama Pengajian">
@@ -65,19 +61,16 @@
             <ul id="report-list" style="text-align:left; font-size:12px"></ul>
         </div>
     </div>
-
     <div id="full-qr-modal" class="fullscreen-qr hidden">
         <h2 id="full-title"></h2>
         <canvas id="full-canvas"></canvas>
         <button style="background:#34495e; margin-top:10px" onclick="downloadQR()">💾 DOWNLOAD PNG</button>
         <button style="background:#333" onclick="document.getElementById('full-qr-modal').classList.add('hidden')">KEMBALI</button>
     </div>
-
     <div id="success-msg" class="success-overlay hidden">
         <div class="checkmark">✅</div>
         <h3>Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</h3>
     </div>
-
     <script>
         window.addEventListener('load', () => {
             const r = sessionStorage.getItem('role');
