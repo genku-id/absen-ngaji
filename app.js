@@ -13,7 +13,14 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// NAV LOGIC
+const MAPPING_DESA = {
+    "SAMIGALUH": ["PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO"],
+    "PENGASIH": ["MARGOSARI", "SENDANGSARI", "BANJARHARJO", "NANGGULAN", "GIRINYONO", "JATIMULYO", "SERUT"],
+    "WATES": ["KREMBANGAN", "BOJONG", "GIRIPENI 1", "GIRIPENI 2", "HARGOWILIS", "TRIHARJO"],
+    "LENDAH": ["BONOSORO", "BUMIREJO", "CARIKAN", "NGENTAKREJO", "TUKSONO", "SRIKAYANGAN"],
+    "TEMON": ["TAWANGSARI", "HARGOREJO", "SIDATAN 1", "SIDATAN 2", "JOGOBOYO", "JOGORESAN"]
+};
+
 window.toggleSidebar = () => {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('overlay').classList.toggle('active');
@@ -26,18 +33,22 @@ window.loginAdmin = () => {
 
 window.logout = () => {
     localStorage.removeItem('akun_aktif');
-    sessionStorage.removeItem('role');
+    sessionStorage.setItem('role', 'peserta'); // Reset role ke peserta
     location.reload();
 };
 
-// PROFILE LOGIC
 window.saveProfile = () => {
     const nama = document.getElementById('p-nama').value;
     const kelompok = document.getElementById('p-kelompok').value;
-    const desa = document.getElementById('p-desa').value;
-    if(!nama || !kelompok || !desa) return alert("Lengkapi data!");
+    if(!nama || !kelompok) return alert("Pilih Nama & Kelompok!");
+
+    let desaFound = "";
+    for (const [desa, list] of Object.entries(MAPPING_DESA)) {
+        if (list.includes(kelompok)) { desaFound = desa; break; }
+    }
+
     let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-    const baru = { nama, kelompok, desa, id: Date.now() };
+    const baru = { nama, kelompok, desa: desaFound, id: Date.now() };
     daftar.push(baru);
     localStorage.setItem('daftar_akun', JSON.stringify(daftar));
     window.pilihAkun(baru.id);
@@ -57,54 +68,49 @@ window.hapusAkun = (id) => {
     }
 };
 
-// ADMIN: EVENT & QR LOGIC
 window.createNewEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const tgl = document.getElementById('ev-tgl').value;
-    if(!nama || !tgl) return alert("Isi Nama & Tanggal!");
+    const jam = document.getElementById('ev-jam').value;
+    if(!nama || !tgl || !jam) return alert("Lengkapi Data Event!");
     
     const eventID = "EVT-" + Date.now();
-    await setDoc(doc(db, "settings", "event_aktif"), { id: eventID, status: "OPEN", nama, tgl });
+    await setDoc(doc(db, "settings", "event_aktif"), { id: eventID, status: "OPEN", nama, tgl, jam_mulai: jam });
     
     document.getElementById('qr-area').classList.remove('hidden');
+    // Simpan teks di atribut data agar Fullscreen & Download sinkron
+    const cAbsen = document.getElementById('canvas-absen');
+    const cIzin = document.getElementById('canvas-izin');
+    cAbsen.dataset.text = eventID + "|HADIR";
+    cIzin.dataset.text = eventID + "|IZIN";
     
-    // Generate QR Kotak Sempurna
-    QRCode.toCanvas(document.getElementById('canvas-absen'), eventID + "|HADIR", { width: 300, margin: 2 });
-    QRCode.toCanvas(document.getElementById('canvas-izin'), eventID + "|IZIN", { width: 300, margin: 2 });
+    QRCode.toCanvas(cAbsen, cAbsen.dataset.text, { width: 250, margin: 2 });
+    QRCode.toCanvas(cIzin, cIzin.dataset.text, { width: 250, margin: 2 });
 };
 
-window.closeEvent = async () => {
-    await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
-    alert("QR dinonaktifkan!");
-    location.reload();
-};
-
-// DOWNLOAD & FULLSCREEN
 window.showFullQR = (canvasID, title) => {
     const fullDiv = document.getElementById('full-qr-modal');
     const source = document.getElementById(canvasID);
     const target = document.getElementById('full-canvas');
-    
     document.getElementById('full-title').innerText = title;
     fullDiv.classList.remove('hidden');
-    
-    // Ambil teks dari canvas asli (id event + tipe)
-    const context = source.getContext('2d');
-    QRCode.toCanvas(target, source.toDataURL(), { width: 600 }); 
-    // Re-render untuk kualitas HD di fullscreen
-    const eventData = source.title; 
-    QRCode.toCanvas(target, eventData, { width: 800, margin: 2 });
+    QRCode.toCanvas(target, source.dataset.text, { width: 600, margin: 2 });
 };
 
 window.downloadQR = () => {
     const canvas = document.getElementById('full-canvas');
     const link = document.createElement('a');
-    link.download = 'QR_Absen_Ngaji.png';
-    link.href = canvas.toDataURL();
+    link.download = 'QR_ABSEN.png';
+    link.href = canvas.toDataURL("image/png");
     link.click();
 };
 
-// SCAN LOGIC
+window.closeEvent = async () => {
+    await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
+    alert("Absen Ditutup!");
+    location.reload();
+};
+
 let isProcessing = false;
 window.startScanner = () => {
     const scanner = new Html5Qrcode("reader");
@@ -114,37 +120,35 @@ window.startScanner = () => {
         
         const [evtID, tipe] = text.split("|");
         const akun = JSON.parse(localStorage.getItem('akun_aktif'));
-
         const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
+
         if(!evSnap.exists() || evSnap.data().status !== "OPEN" || evSnap.data().id !== evtID) {
-            alert("QR Code EXPIRED / Absen ditutup!");
-            isProcessing = false;
-            return;
+            alert("QR EXPIRED / ABSEN TUTUP!");
+            isProcessing = false; return;
         }
 
-        // Anti-Double Scan (Cek 1 jam terakhir)
+        // Anti-Double 1 Jam
         const satuJamLalu = new Date(Date.now() - 3600000);
-        const q = query(collection(db, "attendance"), 
-            where("nama", "==", akun.nama),
-            where("timestamp", ">", satuJamLalu)
-        );
-        const hit = await getDocs(q);
-        
-        if(!hit.empty) {
-            alert("Anda sudah absen/izin baru-baru ini!");
-            scanner.stop();
-            isProcessing = false;
-            return;
+        const qCheck = query(collection(db, "attendance"), where("nama", "==", akun.nama), where("timestamp", ">", satuJamLalu));
+        const hit = await getDocs(qCheck);
+        if(!hit.empty) { alert("Anda sudah absen!"); scanner.stop(); isProcessing = false; return; }
+
+        // Logika Terlambat (5 Menit)
+        let statusFinal = tipe;
+        if(tipe === "HADIR") {
+            const [h, m] = evSnap.data().jam_mulai.split(":");
+            const jamMulai = new Date(); jamMulai.setHours(h, m, 0);
+            const batas = new Date(jamMulai.getTime() + 5 * 60000); // +5 menit
+            if(new Date() > batas) statusFinal = "TERLAMBAT";
         }
 
         try {
-            await addDoc(collection(db, "attendance"), { 
-                ...akun, tipe, event_nama: evSnap.data().nama, timestamp: serverTimestamp() 
-            });
-            document.getElementById('scan-result').innerHTML = "✅ BERHASIL!";
+            await addDoc(collection(db, "attendance"), { ...akun, tipe: statusFinal, event: evSnap.data().nama, timestamp: serverTimestamp() });
             scanner.stop();
-        } catch (e) { alert("Gagal!"); }
-        isProcessing = false;
+            // FLASH SUCCESS
+            document.getElementById('success-msg').classList.remove('hidden');
+            setTimeout(() => { location.reload(); }, 2000);
+        } catch (e) { alert("Gagal Simpan!"); isProcessing = false; }
     });
 };
 
@@ -155,7 +159,7 @@ window.loadReports = () => {
         list.innerHTML = "";
         snap.forEach(d => {
             const data = d.data();
-            list.innerHTML += `<li>[${data.tipe}] ${data.nama}</li>`;
+            list.innerHTML += `<li>[${data.tipe}] ${data.nama} (${data.desa})</li>`;
         });
     });
 };
@@ -164,11 +168,10 @@ window.downloadExcel = async () => {
     const snap = await getDocs(collection(db, "attendance"));
     let rows = []; snap.forEach(d => rows.push(d.data()));
     rows.sort((a,b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok));
-    let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Tipe,Waktu\n";
+    let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
     rows.forEach(r => {
         const t = r.timestamp ? new Date(r.timestamp.seconds*1000).toLocaleString() : "";
         csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}","${t}"\n`;
     });
-    const link = document.createElement("a");
-    link.href = encodeURI(csv); link.download = "rekap.csv"; link.click();
+    const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "rekap.csv"; link.click();
 };
