@@ -227,8 +227,13 @@ window.addEventListener('load', async () => {
     } else if(d.length > 0) {
         document.getElementById('pilih-akun-section').classList.remove('hidden');
         const cont = document.getElementById('list-akun-pilihan');
-        d.forEach(x => cont.innerHTML += `<div class="report-item" onclick="localStorage.setItem('akun_aktif', JSON.stringify(${JSON.stringify(x)})); location.reload();" style="cursor:pointer"><b>${x.nama}</b><span>➔</span></div>`);
-    } else document.getElementById('modal-tambah').classList.remove('hidden');
+        // Ganti baris yang ada di dalam d.forEach(...) dengan ini:
+d.forEach(x => {
+    cont.innerHTML += `
+        <div class="report-item">
+            <b onclick="pilihAkun('${x.id}')" style="flex:1; cursor:pointer">${x.nama}</b>
+            <button onclick="hapusAkunLokal('${x.id}')" style="width:40px; background:#e74c3c; margin-left:10px">X</button>
+        </div>`;
 });
 
 window.hapusMaster = async (id) => {
