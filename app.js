@@ -232,17 +232,27 @@ window.loadReports = () => {
     });
 };
 
+// Memperbarui pilihan kelompok pada filter sesuai desa yang dipilih
+window.updateFilterKelompok = (desa) => {
+    const el = document.getElementById('f-kelompok');
+    el.innerHTML = '<option value="">-- Semua Kelompok --</option>';
+    if(WILAYAH[desa]) {
+        WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
+    }
+};
+
 window.filterLaporan = () => {
     const desa = document.getElementById('f-desa').value.toLowerCase();
-    const nama = document.getElementById('f-nama').value.toLowerCase();
+    const kel = document.getElementById('f-kelompok').value.toLowerCase();
     const items = document.querySelectorAll('#report-list-cont .report-item');
 
     items.forEach(it => {
-        // Ambil teks dari dalam elemen laporan
         const txt = it.innerText.toLowerCase();
-        
-        // Logika: Jika desa cocok (atau kosong) DAN nama cocok, maka tampilkan
-        if (txt.includes(desa) && txt.includes(nama)) {
+        // Cek apakah teks di item laporan mengandung nama desa DAN nama kelompok
+        const matchDesa = desa === "" || txt.includes(desa);
+        const matchKel = kel === "" || txt.includes(kel);
+
+        if (matchDesa && matchKel) {
             it.style.display = "flex";
         } else {
             it.style.display = "none";
