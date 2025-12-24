@@ -58,16 +58,20 @@
 
 
 <script>
-    const userProfile = JSON.parse(localStorage.getItem('ngaji_profile'));
-    if(userProfile) {
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('peserta-section').classList.remove('hidden');
-        document.getElementById('display-nama').innerText = userProfile.nama;
-    }
-    function showAdmin() {
+    const userProfile = localStorage.getItem('ngaji_profile');
+    const roleAdmin = sessionStorage.getItem('role');
+
+    if (roleAdmin === 'admin') {
+        // Jika masuk sebagai Admin
         document.getElementById('auth-section').classList.add('hidden');
         document.getElementById('admin-section').classList.remove('hidden');
         if(window.loadReports) window.loadReports();
+    } else if (userProfile) {
+        // Jika masuk sebagai Peserta
+        const data = JSON.parse(userProfile);
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('peserta-section').classList.remove('hidden');
+        document.getElementById('display-nama').innerText = data.nama;
     }
 </script>
 </body>
