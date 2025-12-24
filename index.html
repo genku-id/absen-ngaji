@@ -87,24 +87,32 @@
                 </div>
             </div>
 
-            <div id="tab-laporan" class="tab-content hidden">
-    <div style="background: white; padding: 10px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-        <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 14px;">Filter Laporan:</p>
-        <div style="display: flex; gap: 5px;">
-            <select id="f-desa" onchange="filterLaporan()" style="flex: 1; padding: 8px; font-size: 12px;">
-                <option value="">Semua Desa</option>
+           <div id="tab-laporan" class="tab-content hidden">
+    <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+        <button onclick="downloadExcel()" style="background:#27ae60; flex:1; font-size: 12px;">💾 DOWNLOAD EXCEL</button>
+        <button class="btn-danger" onclick="resetLaporan()" style="flex:1; font-size: 12px;">🗑️ RESET DATA</button>
+    </div>
+
+    <div style="background: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;">
+        <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 14px; color: #2c3e50;">Filter Wilayah:</p>
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+            <select id="f-desa" onchange="updateFilterKelompok(this.value); filterLaporan();" style="width: 100%; padding: 10px; border-radius: 5px;">
+                <option value="">-- Semua Desa --</option>
                 <option value="SAMIGALUH">SAMIGALUH</option>
                 <option value="PENGASIH">PENGASIH</option>
                 <option value="WATES">WATES</option>
                 <option value="LENDAH">LENDAH</option>
                 <option value="TEMON">TEMON</option>
             </select>
-            <input id="f-nama" onkeyup="filterLaporan()" placeholder="Cari Nama..." style="flex: 1; padding: 8px; font-size: 12px;">
+            <select id="f-kelompok" onchange="filterLaporan()" style="width: 100%; padding: 10px; border-radius: 5px;">
+                <option value="">-- Semua Kelompok --</option>
+            </select>
         </div>
     </div>
 
     <div id="report-list-cont">
         </div>
+</div>
     
     <button onclick="downloadExcel()" style="background:#27ae60; margin-top:20px">DOWNLOAD EXCEL (.CSV)</button>
     <button class="btn-danger" onclick="resetLaporan()">RESET DATA LAPORAN</button>
