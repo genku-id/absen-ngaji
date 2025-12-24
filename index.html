@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Absensi Ngaji</title>
+    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    <style>
+        body { font-family: sans-serif; margin: 0; background: #f4f7f6; color: #333; }
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h2 { color: #2c3e50; margin-top: 0; }
+        button { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+        button.admin { background: #2980b9; }
+        button.stop { background: #c0392b; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+        #reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
+        .hidden { display: none; }
+        canvas { width: 100% !important; height: auto !important; margin-bottom: 20px; border: 5px solid #fff; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div id="auth-section" class="card">
+        <h2>Daftar Peserta</h2>
+        <input type="text" id="p-nama" placeholder="Nama Lengkap">
+        <input type="text" id="p-kelompok" placeholder="Kelompok">
+        <input type="text" id="p-desa" placeholder="Desa">
+        <button onclick="saveProfile()">Simpan & Masuk</button>
+        <button class="admin" onclick="showAdmin()">Masuk Sebagai Admin</button>
+    </div>
+
+    <div id="peserta-section" class="card hidden">
+        <h2>Halo, <span id="display-nama"></span></h2>
+        <p>Silakan scan barcode yang disediakan panitia.</p>
+        <div id="reader"></div>
+        <div id="scan-result" style="margin-top:20px; font-size: 18px; text-align: center;"></div>
+    </div>
+
+    <div id="admin-section" class="card hidden">
+        <h2>Panel Admin</h2>
+        <button onclick="createNewEvent()">Buat Event Ngaji Baru</button>
+        <div id="qr-codes" class="hidden">
+            <p><strong>Barcode Absen (Pajang di Meja):</strong></p>
+            <canvas id="canvas-absen"></canvas>
+            <p><strong>Barcode Izin (Share di WA):</strong></p>
+            <canvas id="canvas-izin"></canvas>
+            <button class="stop" onclick="closeEvent()">Tutup Absensi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let userProfile = JSON.parse(localStorage.getItem('ngaji_profile'));
+    let eventActive = true;
+
+    if(userProfile) { showPeserta(); }
+
+    function saveProfile() {
+        const profile = {
+            nama: document.getElementById('p-nama').value,
+            kelompok: document.getElementById('p-kelompok').value,
+            desa: document.getElementById('p-desa').value
+        };
+        if(!profile.nama) return alert("Nama harus diisi");
+        localStorage.setItem('ngaji_profile', JSON.stringify(profile));
+        showPeserta();
+    }
+
+    function showPeserta() {
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('peserta-section').classList.remove('hidden');
+        document.getElementById('display-nama').innerText = JSON.parse(localStorage.getItem('ngaji_profile')).nama;
+        startScanner();
+    }
+
+    function showAdmin() {
+        document.getElementById('auth-section').classList.add('hidden');
+        document.getElementById('admin-section').classList.remove('hidden');
+    }
+
+    function createNewEvent() {
+        document.getElementById('qr-codes').classList.remove('hidden');
+        const eventID = "EVENT-" + Date.now();
+        QRCode.toCanvas(document.getElementById('canvas-absen'), eventID + "|HADIR");
+        QRCode.toCanvas(document.getElementById('canvas-izin'), eventID + "|IZIN");
+    }
+
+    function startScanner() {
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" }, 
+            { fps: 10, qrbox: 250 },
+            (decodedText) => {
+                if(eventActive) {
+                    const data = decodedText.split("|");
+                    document.getElementById('scan-result').innerHTML = "✅ <b>Berhasil!</b><br>Anda tercatat: " + data[1];
+                    html5QrCode.stop();
+                } else {
+                    alert("Maaf, absensi sudah ditutup.");
+                }
+            }
+        ).catch(err => console.error("Kamera gagal akses", err));
+    }
+
+    function closeEvent() {
+        eventActive = false;
+        alert("Absensi ditutup.");
+    }
+</script>
+
+</body>
+</html>
