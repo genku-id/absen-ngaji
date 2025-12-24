@@ -1,0 +1,12 @@
+body { font-family: sans-serif; margin: 0; background: #e8f5e9; color: #2e7d32; }
+.container { padding: 20px; max-width: 500px; margin: auto; }
+.card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+button { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+.admin-btn { background: #1976d2; }
+.excel-btn { background: #f57c00; }
+.stop-btn { background: #d32f2f; }
+input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+.hidden { display: none; }
+#reader { width: 100%; border-radius: 10px; background: #000; overflow: hidden; }
+canvas { width: 100% !important; border: 2px solid #4caf50; border-radius: 10px; margin-top: 10px; }
+li { padding: 8px; border-bottom: 1px solid #ddd; list-style: none; color: #333; font-size: 14px; }
