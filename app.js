@@ -164,7 +164,6 @@ window.closeEvent = async () => {
     location.reload();
 };
 
-// --- SCANNER ---
 window.startScanner = () => {
     const sc = new Html5Qrcode("reader");
     let isProcessing = false; 
@@ -180,16 +179,14 @@ window.startScanner = () => {
         if(!ev.exists() || ev.data().status !== "OPEN" || ev.data().id !== eid) {
             alert("QR EXPIRED!");
             location.reload();
-            return;
-        }
+            return;}
 
         const qAbsen = query(collection(db, "attendance"), where("event", "==", ev.data().nama), where("nama", "==", akun.nama));
         const absenCheck = await getDocs(qAbsen);
         if (!absenCheck.empty) {
             alert("Anda sudah melakukan absensi!");
             sc.stop().then(() => location.reload());
-            return;
-        }
+            return;}
 
         let st = tipe;
         if(tipe === "HADIR") {
@@ -200,21 +197,26 @@ window.startScanner = () => {
         }
 
         await addDoc(collection(db, "attendance"), { 
-    ...akun,
-    tipe: st, 
-    event: ev.data().nama, 
-    timestamp: serverTimestamp() 
-});
+            ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() 
+        });
+
+        document.body.classList.add('blink-me');
+
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+            colors: ['#27ae60', '#2ecc71', '#ffffff']
+        });
 
         sc.stop().then(() => {
             document.getElementById('success-msg').classList.remove('hidden');
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            setTimeout(() => location.reload(), 3000);
+            setTimeout(() => {
+                document.body.classList.remove('blink-me');
+                location.reload();
+            }, 3000);
         });
-    });
-};
 
-// --- REPORTS ---
 window.loadReports = () => {
     const repList = document.getElementById('report-list-cont');
     const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
@@ -238,7 +240,6 @@ window.loadReports = () => {
     });
 };
 
-// Memperbarui pilihan kelompok pada filter sesuai desa yang dipilih
 window.updateFilterKelompok = (desa) => {
     const el = document.getElementById('f-kelompok');
     el.innerHTML = '<option value="">-- Semua Kelompok --</option>';
@@ -295,7 +296,6 @@ window.downloadExcel = () => {
     document.body.removeChild(link);
 };
 
-// --- INITIAL LOAD ---
 window.addEventListener('load', async () => {
     const r = sessionStorage.getItem('role');
     const a = localStorage.getItem('akun_aktif');
@@ -321,9 +321,8 @@ window.addEventListener('load', async () => {
             mList.innerHTML += `<div class="report-item master-item"><span><b>${m.nama}</b><br><small>${m.kelompok}</small></span><button onclick="hapusMaster('${m.id}')" style="width:auto; background:red; padding:5px 10px; font-size:10px">HAPUS</button></div>`;
         });
         
-        // Cukup memanggil fungsi ini sekali
+        
         window.loadReports();
-
     } else if(a) {
         document.getElementById('peserta-section').classList.remove('hidden');
         document.getElementById('display-nama').innerText = JSON.parse(a).nama;
@@ -343,7 +342,6 @@ window.addEventListener('load', async () => {
     }
 });
 
-// --- GLOBAL UTILITIES ---
 window.hapusAkunLokal = (id) => {
     if(confirm("Hapus akun ini dari HP?")) {
         let d = JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id);
