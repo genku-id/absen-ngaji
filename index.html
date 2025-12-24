@@ -88,10 +88,27 @@
             </div>
 
             <div id="tab-laporan" class="tab-content hidden">
-                <button style="background:#f39c12" onclick="downloadExcel()">DOWNLOAD EXCEL</button>
-                <button class="btn-danger" onclick="resetLaporan()">RESET DATA LAPORAN</button>
-                <div id="report-list-cont"></div>
-            </div>
+    <div style="background: white; padding: 10px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <p style="margin: 0 0 10px 0; font-weight: bold; font-size: 14px;">Filter Laporan:</p>
+        <div style="display: flex; gap: 5px;">
+            <select id="f-desa" onchange="filterLaporan()" style="flex: 1; padding: 8px; font-size: 12px;">
+                <option value="">Semua Desa</option>
+                <option value="SAMIGALUH">SAMIGALUH</option>
+                <option value="PENGASIH">PENGASIH</option>
+                <option value="WATES">WATES</option>
+                <option value="LENDAH">LENDAH</option>
+                <option value="TEMON">TEMON</option>
+            </select>
+            <input id="f-nama" onkeyup="filterLaporan()" placeholder="Cari Nama..." style="flex: 1; padding: 8px; font-size: 12px;">
+        </div>
+    </div>
+
+    <div id="report-list-cont">
+        </div>
+    
+    <button onclick="downloadExcel()" style="background:#27ae60; margin-top:20px">DOWNLOAD EXCEL (.CSV)</button>
+    <button class="btn-danger" onclick="resetLaporan()">RESET DATA LAPORAN</button>
+</div>
 
             <div id="tab-master" class="tab-content hidden">
                 <input id="m-search" placeholder="Cari nama..." oninput="searchMaster()">
