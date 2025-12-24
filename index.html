@@ -10,7 +10,7 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, addDoc, collection, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, addDoc, collection, onSnapshot, query, orderBy, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
           apiKey: "AIzaSyDC6EeqCSBHbcDU6ZGWxNhMICeFsnq3YhE",
@@ -24,55 +24,48 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Fungsi Simpan Profil
         window.saveProfile = () => {
             const profile = {
                 nama: document.getElementById('p-nama').value,
                 kelompok: document.getElementById('p-kelompok').value,
                 desa: document.getElementById('p-desa').value
             };
-            if(!profile.nama) return alert("Nama wajib diisi!");
+            if(!profile.nama || !profile.kelompok || !profile.desa) return alert("Semua data wajib diisi!");
             localStorage.setItem('ngaji_profile', JSON.stringify(profile));
             location.reload();
         };
 
-        // Fungsi Admin: Buat Event
         window.createNewEvent = async () => {
             const eventID = "EVT-" + Date.now();
             await setDoc(doc(db, "settings", "event_aktif"), { id: eventID, status: "OPEN" });
             document.getElementById('qr-codes').classList.remove('hidden');
             QRCode.toCanvas(document.getElementById('canvas-absen'), eventID + "|HADIR");
             QRCode.toCanvas(document.getElementById('canvas-izin'), eventID + "|IZIN");
-            alert("Event Baru Dibuka!");
         };
 
-        // Fungsi Admin: Tutup Event
         window.closeEvent = async () => {
             await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
             alert("Absensi ditutup!");
             location.reload();
         };
 
-        // Fungsi Peserta: Scan
         window.startScanner = () => {
             const scanner = new Html5Qrcode("reader");
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
                 const profile = JSON.parse(localStorage.getItem('ngaji_profile'));
                 const [evtID, tipe] = text.split("|");
-                
                 try {
                     await addDoc(collection(db, "attendance"), {
                         ...profile,
                         tipe: tipe,
                         timestamp: serverTimestamp()
                     });
-                    document.getElementById('scan-result').innerHTML = "✅ <b>Berhasil!</b> Tercatat sebagai " + tipe;
+                    document.getElementById('scan-result').innerHTML = "<h3 style='color:green'>✅ Berhasil! Tercatat " + tipe + "</h3>";
                     scanner.stop();
-                } catch (e) { alert("Gagal kirim data: " + e); }
+                } catch (e) { alert("Error: " + e); }
             });
         };
 
-        // Fungsi Admin: Lihat Laporan
         window.loadReports = () => {
             const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
             onSnapshot(q, (snapshot) => {
@@ -81,9 +74,45 @@
                 snapshot.forEach(doc => {
                     const d = doc.data();
                     const waktu = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleTimeString() : "...";
-                    list.innerHTML += `<li>[${waktu}] <b>${d.nama}</b> - ${d.tipe}</li>`;
+                    list.innerHTML += `<li><b>${d.desa}</b> - ${d.kelompok} | <b>${d.nama}</b> (${d.tipe})</li>`;
                 });
             });
+        };
+
+        // --- FITUR DOWNLOAD EXCEL YANG SUDAH DIURUTKAN ---
+        window.downloadExcel = async () => {
+            const q = query(collection(db, "attendance")); // Ambil semua data
+            const querySnapshot = await getDocs(q);
+            
+            let dataArray = [];
+            querySnapshot.forEach((doc) => {
+                dataArray.push(doc.data());
+            });
+
+            // LOGIKA PENGURUTAN: Desa -> Kelompok -> Nama
+            dataArray.sort((a, b) => {
+                return a.desa.localeCompare(b.desa) || 
+                       a.kelompok.localeCompare(b.kelompok) || 
+                       a.nama.localeCompare(b.nama);
+            });
+
+            // Buat isi CSV
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF"; // Tambah BOM agar Excel baca karakter spesial dengan benar
+            csvContent += "Desa,Kelompok,Nama,Keterangan,Waktu\n";
+            
+            dataArray.forEach((d) => {
+                const waktu = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleString() : "";
+                const baris = `"${d.desa}","${d.kelompok}","${d.nama}","${d.tipe}","${waktu}"\n`;
+                csvContent += baris;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "rekap_absen_ngaji_rapi.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
     </script>
 
@@ -93,12 +122,13 @@
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         button { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
         .admin-btn { background: #1976d2; }
+        .excel-btn { background: #f57c00; }
         .stop-btn { background: #d32f2f; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
         .hidden { display: none; }
-        #reader { width: 100%; border-radius: 10px; background: #000; }
+        #reader { width: 100%; border-radius: 10px; background: #000; overflow: hidden; }
         canvas { width: 100% !important; border: 2px solid #4caf50; border-radius: 10px; margin-top: 10px; }
-        li { padding: 8px; border-bottom: 1px solid #ddd; list-style: none; }
+        li { padding: 8px; border-bottom: 1px solid #ddd; list-style: none; color: #333; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -122,18 +152,18 @@
     <div id="admin-section" class="card hidden">
         <h2>Panel Admin</h2>
         <button onclick="createNewEvent()">Buat Event Ngaji Baru</button>
+        <button class="excel-btn" onclick="downloadExcel()">Download Rekap Rapi (CSV)</button>
+        
         <div id="qr-codes" class="hidden">
-            <p>Barcode Absen (Meja):</p>
-            <canvas id="canvas-absen"></canvas>
-            <p>Barcode Izin (Undangan):</p>
-            <canvas id="canvas-izin"></canvas>
+            <p>Barcode Absen (Meja):</p><canvas id="canvas-absen"></canvas>
+            <p>Barcode Izin (Undangan):</p><canvas id="canvas-izin"></canvas>
             <button class="stop-btn" onclick="closeEvent()" style="margin-top:20px;">Tutup Absensi</button>
         </div>
-        <h3>Laporan Kehadiran:</h3>
+        
+        <h3>Laporan Real-time:</h3>
         <ul id="report-list"></ul>
     </div>
 </div>
-
 <script>
     const userProfile = JSON.parse(localStorage.getItem('ngaji_profile'));
     if(userProfile) {
