@@ -177,52 +177,56 @@ let scanLock = false; // Kunci global agar tidak double scan
 
 window.startScanner = () => {
     const sc = new Html5Qrcode("reader");
-    scanLock = false; // Reset kunci saat mulai
+    let isProcessing = false; 
     
     sc.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
-        if (scanLock) return; // Jika sedang proses, abaikan scan selanjutnya
-        scanLock = true; 
+        if (isProcessing) return; 
+        isProcessing = true; 
 
         const [eid, tipe] = text.split("|");
         const akun = JSON.parse(localStorage.getItem('akun_aktif'));
-        
-        // Ambil data event dari Firebase untuk cek waktu
         const ev = await getDoc(doc(db, "settings", "event_aktif"));
+
         if(!ev.exists() || ev.data().status !== "OPEN" || ev.data().id !== eid) {
-            alert("QR EXPIRED atau Tidak Valid!");
+            alert("QR EXPIRED!");
             location.reload();
+            return;
+        }
+
+        // --- CEK APAKAH SUDAH ABSEN (CEGAH DOUBLE) ---
+        const qAbsen = query(
+            collection(db, "attendance"), 
+            where("event", "==", ev.data().nama),
+            where("nama", "==", akun.nama)
+        );
+        const absenCheck = await getDocs(qAbsen);
+        
+        if (!absenCheck.empty) {
+            alert("Anda sudah melakukan absensi!");
+            sc.stop().then(() => location.reload());
             return;
         }
 
         let st = tipe;
         if(tipe === "HADIR") {
             const dataEv = ev.data();
-            // Logika Toleransi 5 Menit
             const waktuMulai = new Date(dataEv.tanggal + "T" + dataEv.jam);
             const waktuToleransi = new Date(waktuMulai.getTime() + 5 * 60000); 
-            const waktuSekarang = new Date();
-
-            if(waktuSekarang > waktuToleransi) {
-                st = "TERLAMBAT";
-            }
+            if(new Date() > waktuToleransi) st = "TERLAMBAT";
         }
-        
-        try {
-            await addDoc(collection(db, "attendance"), { 
-                ...akun, 
-                tipe: st, 
-                event: ev.data().nama, 
-                timestamp: serverTimestamp() 
-            });
 
-            await sc.stop();
+        await addDoc(collection(db, "attendance"), { 
+            ...akun, 
+            tipe: st, 
+            event: ev.data().nama, 
+            timestamp: serverTimestamp() 
+        });
+
+        sc.stop().then(() => {
             document.getElementById('success-msg').classList.remove('hidden');
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             setTimeout(() => location.reload(), 3000);
-        } catch (err) {
-            console.error("Gagal simpan:", err);
-            scanLock = false; 
-        }
+        });
     });
 };
 
