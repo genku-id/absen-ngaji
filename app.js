@@ -266,22 +266,33 @@ window.filterLaporan = () => {
     });
 };
 
-window.downloadExcel = async () => {
-    const sn = await getDocs(query(collection(db, "attendance"), orderBy("timestamp", "asc")));
-    let csv = "\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
-    const uniqueNames = new Set();
-    sn.forEach(d => {
-        const r = d.data();
-        if (!uniqueNames.has(r.nama)) {
-            uniqueNames.add(r.nama);
-            const t = r.timestamp ? new Date(r.timestamp.seconds*1000).toLocaleString() : "";
-            csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}","${t}"\n`;
+window.downloadExcel = () => {
+    const items = document.querySelectorAll('#report-list-cont .report-item');
+    let csv = "\uFEFFNama,Wilayah,Status\n";
+    let adaData = false;
+    items.forEach(it => {
+        if (it.style.display !== "none") {
+            adaData = true;
+            const nama = it.querySelector('b').innerText;
+            const wilayah = it.querySelector('small').innerText;
+            const status = it.querySelector('.status-tag').innerText;
+            csv += `"${nama}","${wilayah}","${status}"\n`;
         }
     });
+    if (!adaData) {
+        alert("Tidak ada data yang tampil untuk diunduh!");
+        return;
+    }
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
-    link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
-    link.download = `Laporan_Absensi.csv`;
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Laporan_Absensi_Filtered.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
     link.click();
+    document.body.removeChild(link);
 };
 
 // --- INITIAL LOAD ---
