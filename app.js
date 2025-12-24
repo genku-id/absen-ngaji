@@ -232,6 +232,24 @@ window.loadReports = () => {
     });
 };
 
+window.filterLaporan = () => {
+    const desa = document.getElementById('f-desa').value.toLowerCase();
+    const nama = document.getElementById('f-nama').value.toLowerCase();
+    const items = document.querySelectorAll('#report-list-cont .report-item');
+
+    items.forEach(it => {
+        // Ambil teks dari dalam elemen laporan
+        const txt = it.innerText.toLowerCase();
+        
+        // Logika: Jika desa cocok (atau kosong) DAN nama cocok, maka tampilkan
+        if (txt.includes(desa) && txt.includes(nama)) {
+            it.style.display = "flex";
+        } else {
+            it.style.display = "none";
+        }
+    });
+};
+
 window.downloadExcel = async () => {
     const sn = await getDocs(query(collection(db, "attendance"), orderBy("timestamp", "asc")));
     let csv = "\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
