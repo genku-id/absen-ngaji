@@ -200,8 +200,11 @@ window.startScanner = () => {
         }
 
         await addDoc(collection(db, "attendance"), { 
-            ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() 
-        });
+    ...akun,
+    tipe: st, 
+    event: ev.data().nama, 
+    timestamp: serverTimestamp() 
+});
 
         sc.stop().then(() => {
             document.getElementById('success-msg').classList.remove('hidden');
@@ -224,7 +227,10 @@ window.loadReports = () => {
                 uniqueNames.add(r.nama);
                 repList.innerHTML += `
                     <div class="report-item">
-                        <span><b>${r.nama}</b><br><small>${r.kelompok}</small></span>
+                        <span>
+                            <b>${r.nama}</b><br>
+                            <small>${r.desa} - ${r.kelompok}</small> 
+                        </span>
                         <span class="status-tag tag-${r.tipe.toLowerCase()}">${r.tipe}</span>
                     </div>`;
             }
