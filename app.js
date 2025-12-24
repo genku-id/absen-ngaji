@@ -89,3 +89,30 @@ window.downloadExcel = async () => {
     link.click();
     document.body.removeChild(link);
 };
+// Fungsi Pindah Role
+window.pilihRole = (role) => {
+    document.getElementById('login-pilihan').classList.add('hidden');
+    if(role === 'peserta') {
+        document.getElementById('form-peserta').classList.remove('hidden');
+    } else {
+        document.getElementById('form-admin').classList.remove('hidden');
+    }
+};
+
+// Login Admin (Contoh Kode: 1234)
+window.loginAdmin = () => {
+    const pass = document.getElementById('admin-pass').value;
+    if(pass === "1234") { // Ganti 1234 dengan kode rahasiamu
+        sessionStorage.setItem('role', 'admin');
+        location.reload();
+    } else {
+        alert("Kode Admin Salah!");
+    }
+};
+
+// Fungsi Logout
+window.logout = () => {
+    localStorage.removeItem('ngaji_profile');
+    sessionStorage.removeItem('role');
+    location.reload();
+};
