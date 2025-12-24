@@ -342,6 +342,7 @@ window.addEventListener('load', async () => {
     }
 });
 
+// --- GLOBAL UTILITIES ---
 window.hapusAkunLokal = (id) => {
     if(confirm("Hapus akun ini dari HP?")) {
         let d = JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id);
@@ -374,3 +375,5 @@ window.showFullQR = (id, title) => {
         QRCode.toCanvas(document.getElementById('full-canvas'), sourceCanvas.title, { width: 500 });
     }
 };
+
+window.loadReports(); 
