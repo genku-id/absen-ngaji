@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, doc, setDoc, getDoc, addDoc, collection, onSnapshot, query, orderBy, serverTimestamp, getDocs, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, addDoc, collection, onSnapshot, query, orderBy, serverTimestamp, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const firebaseConfig = {
     apiKey: "AIzaSyDC6EeqCSBHbcDU6ZGWxNhMICeFsnq3YhE",
@@ -13,7 +13,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const MAPPING_DESA = {
+const MAP_DESA = {
     "SAMIGALUH": ["PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO"],
     "PENGASIH": ["MARGOSARI", "SENDANGSARI", "BANJARHARJO", "NANGGULAN", "GIRINYONO", "JATIMULYO", "SERUT"],
     "WATES": ["KREMBANGAN", "BOJONG", "GIRIPENI 1", "GIRIPENI 2", "HARGOWILIS", "TRIHARJO"],
@@ -33,35 +33,33 @@ window.loginAdmin = () => {
 
 window.logout = () => {
     localStorage.removeItem('akun_aktif');
-    sessionStorage.setItem('role', 'peserta'); // Reset role ke peserta
+    sessionStorage.removeItem('role');
     location.reload();
 };
 
 window.saveProfile = () => {
     const nama = document.getElementById('p-nama').value;
     const kelompok = document.getElementById('p-kelompok').value;
-    if(!nama || !kelompok) return alert("Pilih Nama & Kelompok!");
+    if(!nama || !kelompok) return alert("Isi data!");
 
-    let desaFound = "";
-    for (const [desa, list] of Object.entries(MAPPING_DESA)) {
-        if (list.includes(kelompok)) { desaFound = desa; break; }
-    }
+    let ds = "";
+    for(let d in MAP_DESA) { if(MAP_DESA[d].includes(kelompok)) ds = d; }
 
-    let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-    const baru = { nama, kelompok, desa: desaFound, id: Date.now() };
-    daftar.push(baru);
-    localStorage.setItem('daftar_akun', JSON.stringify(daftar));
-    window.pilihAkun(baru.id);
+    let list = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+    list.push({ nama, kelompok, desa: ds, id: Date.now() });
+    localStorage.setItem('daftar_akun', JSON.stringify(list));
+    localStorage.setItem('akun_aktif', JSON.stringify(list[list.length-1]));
+    location.reload();
 };
 
 window.pilihAkun = (id) => {
-    let daftar = JSON.parse(localStorage.getItem('daftar_akun'));
-    localStorage.setItem('akun_aktif', JSON.stringify(daftar.find(a => a.id == id)));
+    let list = JSON.parse(localStorage.getItem('daftar_akun'));
+    localStorage.setItem('akun_aktif', JSON.stringify(list.find(a => a.id == id)));
     location.reload();
 };
 
 window.hapusAkun = (id) => {
-    if(confirm("Hapus akun?")) {
+    if(confirm("Hapus?")) {
         let d = JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id);
         localStorage.setItem('daftar_akun', JSON.stringify(d));
         location.reload();
@@ -69,109 +67,103 @@ window.hapusAkun = (id) => {
 };
 
 window.createNewEvent = async () => {
-    const nama = document.getElementById('ev-nama').value;
-    const tgl = document.getElementById('ev-tgl').value;
-    const jam = document.getElementById('ev-jam').value;
-    if(!nama || !tgl || !jam) return alert("Lengkapi Data Event!");
-    
-    const eventID = "EVT-" + Date.now();
-    await setDoc(doc(db, "settings", "event_aktif"), { id: eventID, status: "OPEN", nama, tgl, jam_mulai: jam });
+    const n = document.getElementById('ev-nama').value;
+    const t = document.getElementById('ev-tgl').value;
+    const j = document.getElementById('ev-jam').value;
+    if(!n || !t || !j) return alert("Lengkapi!");
+
+    const eid = "EVT-" + Date.now();
+    await setDoc(doc(db, "settings", "event_aktif"), { id: eid, status: "OPEN", nama: n, jam: j });
     
     document.getElementById('qr-area').classList.remove('hidden');
-    // Simpan teks di atribut data agar Fullscreen & Download sinkron
-    const cAbsen = document.getElementById('canvas-absen');
-    const cIzin = document.getElementById('canvas-izin');
-    cAbsen.dataset.text = eventID + "|HADIR";
-    cIzin.dataset.text = eventID + "|IZIN";
-    
-    QRCode.toCanvas(cAbsen, cAbsen.dataset.text, { width: 250, margin: 2 });
-    QRCode.toCanvas(cIzin, cIzin.dataset.text, { width: 250, margin: 2 });
+    // Simpan data teks di atribut untuk sinkronisasi
+    const cA = document.getElementById('canvas-absen');
+    const cI = document.getElementById('canvas-izin');
+    cA.title = eid + "|HADIR";
+    cI.title = eid + "|IZIN";
+
+    QRCode.toCanvas(cA, cA.title, { width: 200, margin: 2 });
+    QRCode.toCanvas(cI, cI.title, { width: 200, margin: 2 });
 };
 
-window.showFullQR = (canvasID, title) => {
-    const fullDiv = document.getElementById('full-qr-modal');
-    const source = document.getElementById(canvasID);
-    const target = document.getElementById('full-canvas');
+window.showFullQR = (cid, title) => {
+    const txt = document.getElementById(cid).title;
     document.getElementById('full-title').innerText = title;
-    fullDiv.classList.remove('hidden');
-    QRCode.toCanvas(target, source.dataset.text, { width: 600, margin: 2 });
+    document.getElementById('full-qr-modal').classList.remove('hidden');
+    QRCode.toCanvas(document.getElementById('full-canvas'), txt, { width: 500, margin: 2 });
 };
 
 window.downloadQR = () => {
     const canvas = document.getElementById('full-canvas');
     const link = document.createElement('a');
     link.download = 'QR_ABSEN.png';
-    link.href = canvas.toDataURL("image/png");
+    link.href = canvas.toDataURL();
     link.click();
 };
 
 window.closeEvent = async () => {
     await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
-    alert("Absen Ditutup!");
     location.reload();
 };
 
-let isProcessing = false;
+let scanLock = false;
 window.startScanner = () => {
-    const scanner = new Html5Qrcode("reader");
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
-        if(isProcessing) return;
-        isProcessing = true;
-        
-        const [evtID, tipe] = text.split("|");
+    const sc = new Html5Qrcode("reader");
+    sc.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
+        if(scanLock) return;
+        scanLock = true;
+
+        const [eid, tipe] = text.split("|");
         const akun = JSON.parse(localStorage.getItem('akun_aktif'));
-        const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
-
-        if(!evSnap.exists() || evSnap.data().status !== "OPEN" || evSnap.data().id !== evtID) {
-            alert("QR EXPIRED / ABSEN TUTUP!");
-            isProcessing = false; return;
+        
+        // Simpel anti-double: Cek local memory
+        const lastScan = localStorage.getItem('last_scan_time');
+        if(lastScan && Date.now() - lastScan < 3600000) {
+            alert("Anda sudah absen baru-baru ini!");
+            sc.stop().then(() => { location.reload(); });
+            return;
         }
 
-        // Anti-Double 1 Jam
-        const satuJamLalu = new Date(Date.now() - 3600000);
-        const qCheck = query(collection(db, "attendance"), where("nama", "==", akun.nama), where("timestamp", ">", satuJamLalu));
-        const hit = await getDocs(qCheck);
-        if(!hit.empty) { alert("Anda sudah absen!"); scanner.stop(); isProcessing = false; return; }
+        const ev = await getDoc(doc(db, "settings", "event_aktif"));
+        if(!ev.exists() || ev.data().status !== "OPEN" || ev.data().id !== eid) {
+            alert("QR TIDAK BERLAKU!");
+            sc.stop().then(() => { location.reload(); });
+            return;
+        }
 
-        // Logika Terlambat (5 Menit)
-        let statusFinal = tipe;
+        // Cek Terlambat
+        let st = tipe;
         if(tipe === "HADIR") {
-            const [h, m] = evSnap.data().jam_mulai.split(":");
-            const jamMulai = new Date(); jamMulai.setHours(h, m, 0);
-            const batas = new Date(jamMulai.getTime() + 5 * 60000); // +5 menit
-            if(new Date() > batas) statusFinal = "TERLAMBAT";
+            const [h, m] = ev.data().jam.split(":");
+            const limit = new Date(); limit.setHours(h, parseInt(m)+5, 0);
+            if(new Date() > limit) st = "TERLAMBAT";
         }
 
-        try {
-            await addDoc(collection(db, "attendance"), { ...akun, tipe: statusFinal, event: evSnap.data().nama, timestamp: serverTimestamp() });
-            scanner.stop();
-            // FLASH SUCCESS
+        await addDoc(collection(db, "attendance"), { ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() });
+        localStorage.setItem('last_scan_time', Date.now());
+        
+        sc.stop().then(() => {
             document.getElementById('success-msg').classList.remove('hidden');
             setTimeout(() => { location.reload(); }, 2000);
-        } catch (e) { alert("Gagal Simpan!"); isProcessing = false; }
-    });
-};
-
-window.loadReports = () => {
-    const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snap) => {
-        const list = document.getElementById('report-list');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            const data = d.data();
-            list.innerHTML += `<li>[${data.tipe}] ${data.nama} (${data.desa})</li>`;
         });
     });
 };
 
+window.loadReports = () => {
+    onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
+        const l = document.getElementById('report-list'); l.innerHTML = "";
+        sn.forEach(d => { l.innerHTML += `<li>[${d.data().tipe}] ${d.data().nama}</li>`; });
+    });
+};
+
 window.downloadExcel = async () => {
-    const snap = await getDocs(collection(db, "attendance"));
-    let rows = []; snap.forEach(d => rows.push(d.data()));
+    const sn = await getDocs(collection(db, "attendance"));
+    let rows = []; sn.forEach(d => rows.push(d.data()));
     rows.sort((a,b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok));
     let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
     rows.forEach(r => {
         const t = r.timestamp ? new Date(r.timestamp.seconds*1000).toLocaleString() : "";
         csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}","${t}"\n`;
     });
-    const link = document.createElement("a"); link.href = encodeURI(csv); link.download = "rekap.csv"; link.click();
+    window.open(encodeURI(csv));
 };
