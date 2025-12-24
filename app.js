@@ -27,9 +27,11 @@ let masterCache = [];
 window.toggleSidebar = () => {
     const sb = document.getElementById('sidebar');
     const ov = document.getElementById('overlay');
-    if(sb && ov) {
+    if (sb && ov) {
         sb.classList.toggle('active');
         ov.classList.toggle('active');
+    } else {
+        console.error("Elemen sidebar atau overlay tidak ditemukan!");
     }
 };
 
