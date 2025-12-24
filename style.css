@@ -1,26 +1,23 @@
-body { font-family: 'Segoe UI', sans-serif; margin: 0; background: #f0f4f8; color: #2d3748; }
+body { font-family: sans-serif; margin: 0; background: #f0f4f8; }
 .navbar { position: fixed; top: 0; width: 100%; height: 60px; background: #27ae60; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; color: white; z-index: 1000; box-sizing: border-box; }
-.container { padding: 20px; max-width: 600px; margin: auto; padding-top: 80px; }
-.card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
+.container { padding: 20px; max-width: 500px; margin: auto; padding-top: 80px; }
+.card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; position: relative; }
 
-/* Admin Tab System */
-.tab-menu { display: flex; background: #edf2f7; border-radius: 10px; padding: 5px; margin-bottom: 20px; gap: 5px; }
-.tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 12px; background: none; color: #718096; transition: 0.3s; }
+/* Tab System */
+.tab-menu { display: flex; background: #eee; border-radius: 10px; padding: 5px; margin-bottom: 15px; }
+.tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: none; font-weight: bold; color: #666; }
 .tab-btn.active { background: white; color: #27ae60; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-/* Autocomplete Suggestion */
-.suggestion-box { position: absolute; background: white; width: 100%; border: 1px solid #ddd; border-radius: 8px; z-index: 100; max-height: 150px; overflow-y: auto; text-align: left; margin-top: -10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-.suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; font-size: 14px; }
-.suggestion-item:hover { background: #f0fff4; }
+/* Suggestion */
+.suggestion-box { position: absolute; background: white; width: calc(100% - 40px); border: 1px solid #ddd; z-index: 100; max-height: 150px; overflow-y: auto; text-align: left; border-radius: 0 0 10px 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
 
-/* Success Overlay */
-.success-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:20px; }
-.doa-text { font-size: 32px; color: #27ae60; font-weight: bold; margin-top: 20px; }
+/* Overlay */
+.success-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+.full-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 
-/* UI Elements */
 button { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 8px; background: #27ae60; color: white; }
-input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
 .hidden { display: none; }
-.report-item { text-align: left; padding: 12px; border-bottom: 1px solid #edf2f7; display: flex; justify-content: space-between; align-items: center; }
+.report-item { text-align: left; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
 .btn-danger { background: #e74c3c !important; }
-.status-tag { padding: 3px 8px; border-radius: 5px; font-size: 10px; font-weight: bold; color: white; }
