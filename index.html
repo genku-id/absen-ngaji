@@ -13,15 +13,17 @@
 <body>
    <div class="navbar">
     <div onclick="toggleSidebar()" style="cursor:pointer; font-size:24px; padding: 5px;">☰</div>
-    <div style="font-weight:bold">E-ABSENSI</div>
-    <div onclick="logout()" style="font-size:10px; border:1px solid white; padding:5px; border-radius:5px; cursor:pointer">LOG PESERTA</div>
-</div>
+    <div style="font-weight:bold; flex:1; text-align:center;">E-PRESENSI GENKU</div>
+    <div style="width:40px"></div> 
+   </div>
 
 <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
 <div class="sidebar" id="sidebar">
-    <h3>MENU</h3>
-    <button onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">TAMBAH AKUN</button>
-    <button style="background:#2980b9" onclick="loginAdmin()">MASUK ADMIN</button>
+    <h3 style="margin-top:60px">MENU</h3>
+    <button onclick="logout()" style="background:#7f8c8d; margin-bottom: 20px;">👤 GANTI AKUN</button>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+    <p style="font-size: 12px; color: #7f8c8d; margin-left: 10px;">KHUSUS PENGURUS:</p>
+    <button style="background:#2980b9" onclick="loginAdmin()">🔐 MASUK ADMIN</button>
 </div>
 
     <div class="container">
