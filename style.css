@@ -1,13 +1,25 @@
-body { font-family: sans-serif; margin: 0; background: #e8f5e9; color: #2e7d32; }
-.container { padding: 20px; max-width: 500px; margin: auto; }
-.card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-button { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
-.admin-btn { background: #1976d2; }
-.excel-btn { background: #f57c00; }
-.stop-btn { background: #d32f2f; }
-input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
+body { font-family: sans-serif; margin: 0; background: #f0f4f8; color: #2d3748; }
+.container { padding: 20px; max-width: 500px; margin: auto; padding-top: 70px; }
+.card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); text-align: center; }
+
+/* NAVBAR & SIDEBAR */
+.navbar { position: fixed; top: 0; width: 100%; height: 60px; background: #27ae60; display: flex; align-items: center; padding: 0 15px; color: white; z-index: 100; box-sizing: border-box; }
+.menu-icon { font-size: 24px; cursor: pointer; margin-right: 15px; }
+.sidebar { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: 0.3s; z-index: 200; padding: 20px; box-sizing: border-box; }
+.sidebar.active { left: 0; }
+.sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 150; }
+.sidebar-overlay.active { display: block; }
+
+/* BUTTONS */
+button { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; margin-bottom: 12px; transition: 0.2s; }
+button:active { transform: scale(0.98); }
+.btn-outline { background: transparent; border: 2px solid #27ae60; color: #27ae60; }
+.btn-admin { background: #2980b9; margin-top: 20px; }
+.btn-danger { background: #e74c3c; }
+
+/* LISTS */
+.account-box { background: #edf2f7; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 .hidden { display: none; }
-#reader { width: 100%; border-radius: 10px; background: #000; overflow: hidden; }
-canvas { width: 100% !important; border: 2px solid #4caf50; border-radius: 10px; margin-top: 10px; }
-li { padding: 8px; border-bottom: 1px solid #ddd; list-style: none; color: #333; font-size: 14px; }
-.row-akun { display: flex; gap: 5px; margin-bottom: 10px; }
+#reader { width: 100%; border-radius: 15px; overflow: hidden; background: black; }
+canvas { width: 100% !important; border-radius: 10px; margin-top: 10px; }
+li { list-style: none; padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; text-align: left; }
