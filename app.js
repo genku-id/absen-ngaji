@@ -21,17 +21,15 @@ const WILAYAH = {
     "TEMON": ["TAWANGSARI", "HARGOREJO", "SIDATAN 1", "SIDATAN 2", "JOGOBOYO", "JOGORESAN"]
 };
 
-// Global Data Master untuk Suggestion
 let masterCache = [];
 
+// --- UI NAVIGATION ---
 window.toggleSidebar = () => {
     const sb = document.getElementById('sidebar');
     const ov = document.getElementById('overlay');
     if (sb && ov) {
         sb.classList.toggle('active');
         ov.classList.toggle('active');
-    } else {
-        console.error("Elemen sidebar atau overlay tidak ditemukan!");
     }
 };
 
@@ -58,7 +56,7 @@ window.updateKelompok = (targetId, desa) => {
     if(WILAYAH[desa]) WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
 };
 
-// --- AUTOCOMPLETE LOGIC ---
+// --- REGISTRASI & AUTOCOMPLETE ---
 window.handleNameInput = (val) => {
     const desa = document.getElementById('p-desa').value;
     const kel = document.getElementById('p-kelompok').value;
@@ -82,9 +80,9 @@ window.saveProfile = async () => {
     const d = document.getElementById('p-desa').value;
     const k = document.getElementById('p-kelompok').value;
     if(!n || !d || !k) return alert("Lengkapi data!");
+    
     const id = "USR-" + Date.now();
     const akun = { nama: n, desa: d, kelompok: k, id: id };
-    
     const exists = masterCache.some(m => m.nama === n && m.kelompok === k);
     if(!exists) await setDoc(doc(db, "master_jamaah", id), { ...akun, gender: "Baru" });
 
@@ -131,13 +129,8 @@ window.createNewEvent = async () => {
     const t = document.getElementById('ev-tgl').value;
     const j = document.getElementById('ev-jam').value;
     if(!n || !t || !j) return alert("Lengkapi Nama, Tanggal, dan Jam!");
-    
     await setDoc(doc(db, "settings", "event_aktif"), { 
-        id: "EVT-"+Date.now(), 
-        status: "OPEN", 
-        nama: n, 
-        tanggal: t, 
-        jam: j 
+        id: "EVT-"+Date.now(), status: "OPEN", nama: n, tanggal: t, jam: j 
     });
     location.reload();
 };
@@ -153,7 +146,6 @@ window.downloadQR = (canvasId, fileName) => {
 window.closeEvent = async () => {
     const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
     const currentEvent = evSnap.data();
-    
     const masterSn = await getDocs(collection(db, "master_jamaah"));
     const absenSn = await getDocs(query(collection(db, "attendance"), where("event", "==", currentEvent.nama)));
     const sudahAbsen = [];
@@ -166,15 +158,13 @@ window.closeEvent = async () => {
             batch.set(doc(collection(db, "attendance")), { ...m, tipe: "ALFA", event: currentEvent.nama, timestamp: serverTimestamp() });
         }
     });
-
     await batch.commit();
     await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
     alert("Absen ditutup & Alfa dihitung!");
     location.reload();
 };
 
-let scanLock = false; // Kunci global agar tidak double scan
-
+// --- SCANNER ---
 window.startScanner = () => {
     const sc = new Html5Qrcode("reader");
     let isProcessing = false; 
@@ -193,14 +183,8 @@ window.startScanner = () => {
             return;
         }
 
-        // --- CEK APAKAH SUDAH ABSEN (CEGAH DOUBLE) ---
-        const qAbsen = query(
-            collection(db, "attendance"), 
-            where("event", "==", ev.data().nama),
-            where("nama", "==", akun.nama)
-        );
+        const qAbsen = query(collection(db, "attendance"), where("event", "==", ev.data().nama), where("nama", "==", akun.nama));
         const absenCheck = await getDocs(qAbsen);
-        
         if (!absenCheck.empty) {
             alert("Anda sudah melakukan absensi!");
             sc.stop().then(() => location.reload());
@@ -216,10 +200,7 @@ window.startScanner = () => {
         }
 
         await addDoc(collection(db, "attendance"), { 
-            ...akun, 
-            tipe: st, 
-            event: ev.data().nama, 
-            timestamp: serverTimestamp() 
+            ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() 
         });
 
         sc.stop().then(() => {
@@ -230,17 +211,15 @@ window.startScanner = () => {
     });
 };
 
+// --- REPORTS ---
 window.loadReports = () => {
     const repList = document.getElementById('report-list-cont');
     const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
-    
     onSnapshot(q, (sn) => {
         repList.innerHTML = "";
-        const uniqueNames = new Set(); // Tempat menyimpan nama yang sudah muncul
-
+        const uniqueNames = new Set();
         sn.forEach(doc => {
             const r = doc.data();
-            // Jika nama belum pernah muncul, tampilkan. Jika sudah, abaikan (hapus otomatis dari tampilan)
             if (!uniqueNames.has(r.nama)) {
                 uniqueNames.add(r.nama);
                 repList.innerHTML += `
@@ -257,7 +236,6 @@ window.downloadExcel = async () => {
     const sn = await getDocs(query(collection(db, "attendance"), orderBy("timestamp", "asc")));
     let csv = "\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
     const uniqueNames = new Set();
-
     sn.forEach(d => {
         const r = d.data();
         if (!uniqueNames.has(r.nama)) {
@@ -266,7 +244,6 @@ window.downloadExcel = async () => {
             csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}","${t}"\n`;
         }
     });
-    
     const link = document.createElement("a");
     link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
     link.download = `Laporan_Absensi.csv`;
@@ -293,28 +270,22 @@ window.addEventListener('load', async () => {
             QRCode.toCanvas(cA, cA.title, { width: 200 });
             QRCode.toCanvas(document.getElementById('canvas-izin'), ev.data().id + "|IZIN", { width: 200 });
         }
-        // Load Master List
+        
         const mList = document.getElementById('master-list-cont');
         masterCache.forEach(m => {
             mList.innerHTML += `<div class="report-item master-item"><span><b>${m.nama}</b><br><small>${m.kelompok}</small></span><button onclick="hapusMaster('${m.id}')" style="width:auto; background:red; padding:5px 10px; font-size:10px">HAPUS</button></div>`;
         });
-        // Load Report
-        const repList = document.getElementById('report-list-cont');
-        onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
-            repList.innerHTML = "";
-            sn.forEach(doc => {
-                const r = doc.data();
-                repList.innerHTML += `<div class="report-item"><span><b>${r.nama}</b><br><small>${r.kelompok}</small></span><span>${r.tipe}</span></div>`;
-            });
-        });
+        
+        // Cukup memanggil fungsi ini sekali
+        window.loadReports();
+
     } else if(a) {
         document.getElementById('peserta-section').classList.remove('hidden');
         document.getElementById('display-nama').innerText = JSON.parse(a).nama;
-    // Bagian Penutup Inisialisasi (Load)
     } else if(d.length > 0) {
         document.getElementById('pilih-akun-section').classList.remove('hidden');
         const cont = document.getElementById('list-akun-pilihan');
-        cont.innerHTML = ""; // Bersihkan dulu
+        cont.innerHTML = ""; 
         d.forEach(x => {
             cont.innerHTML += `
                 <div class="report-item">
@@ -327,7 +298,7 @@ window.addEventListener('load', async () => {
     }
 });
 
-// --- FUNGSI GLOBAL ---
+// --- GLOBAL UTILITIES ---
 window.hapusAkunLokal = (id) => {
     if(confirm("Hapus akun ini dari HP?")) {
         let d = JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id);
