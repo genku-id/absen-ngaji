@@ -10,3 +10,4 @@ input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 
 #reader { width: 100%; border-radius: 10px; background: #000; overflow: hidden; }
 canvas { width: 100% !important; border: 2px solid #4caf50; border-radius: 10px; margin-top: 10px; }
 li { padding: 8px; border-bottom: 1px solid #ddd; list-style: none; color: #333; font-size: 14px; }
+.row-akun { display: flex; gap: 5px; margin-bottom: 10px; }
