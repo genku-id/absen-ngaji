@@ -25,5 +25,14 @@ input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; borde
 .sidebar-overlay.active { display: block;}
 .sidebar h3 {margin-top: 60px; border-bottom: 2px solid #27ae60; padding-bottom: 10px;}
 
-@keyframes blink-success { 0% { background-color: transparent; } 50% { background-color: #2ecc71; }100% { background-color: transparent; }}
-.blink-me {animation: blink-success 0.5s ease-in-out 2; }
+/* EFEK BLINK SUKSES - DIPERKUAT */
+@keyframes blink-success { 
+    0% { background-color: #f0f4f8; } 
+    50% { background-color: #2ecc71; } 
+    100% { background-color: #f0f4f8; }
+}
+
+.blink-me { 
+    animation: blink-success 0.4s ease-in-out 2 !important; 
+    transition: none !important;
+}
