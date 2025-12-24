@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-Absen Pro v7</title>
+    <title>E-Absen v7.1</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
@@ -12,16 +12,9 @@
 </head>
 <body>
     <div class="navbar">
-        <div onclick="toggleSidebar()">☰</div>
+        <div onclick="location.reload()" style="cursor:pointer">☰</div>
         <div style="font-weight:bold">E-ABSENSI</div>
-        <div id="btn-to-peserta" class="hidden" onclick="logout()" style="font-size:10px; border:1px solid white; padding:3px 8px; border-radius:5px">LOG PESERTA</div>
-    </div>
-
-    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
-    <div class="sidebar" id="sidebar">
-        <h3>MENU</h3>
-        <button onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">TAMBAH AKUN</button>
-        <button style="background:#2980b9" onclick="loginAdmin()">MASUK ADMIN</button>
+        <div onclick="logout()" style="font-size:10px; border:1px solid white; padding:5px; border-radius:5px; cursor:pointer">LOG PESERTA</div>
     </div>
 
     <div class="container">
@@ -42,6 +35,7 @@
         <div id="pilih-akun-section" class="card hidden">
             <h3>PILIH NAMA</h3>
             <div id="list-akun-pilihan"></div>
+            <button onclick="document.getElementById('modal-tambah').classList.remove('hidden'); document.getElementById('pilih-akun-section').classList.add('hidden');" style="margin-top:20px; background:#666">TAMBAH NAMA BARU</button>
         </div>
 
         <div id="peserta-section" class="card hidden">
@@ -61,48 +55,46 @@
                 <div id="setup-box">
                     <input id="ev-nama" placeholder="Nama Acara">
                     <input id="ev-jam" type="time">
-                    <button onclick="createNewEvent()">BUAT QR SEKARANG</button>
+                    <button onclick="createNewEvent()">AKTIFKAN QR</button>
                 </div>
                 <div id="qr-box" class="hidden">
                     <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')"></canvas>
-                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')"></canvas>
-                    <button class="btn-danger" onclick="closeEvent()">TUTUP ABSEN & HITUNG ALFA</button>
+                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')" style="margin-top:10px"></canvas>
+                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:20px">TUTUP & HITUNG ALFA</button>
                 </div>
             </div>
 
             <div id="tab-laporan" class="tab-content hidden">
                 <button style="background:#f39c12" onclick="downloadExcel()">DOWNLOAD EXCEL</button>
                 <button class="btn-danger" onclick="resetLaporan()">RESET DATA LAPORAN</button>
-                <div id="report-list"></div>
+                <div id="report-list-cont"></div>
             </div>
 
             <div id="tab-master" class="tab-content hidden">
-                <input id="m-search" placeholder="Cari nama jamaah..." oninput="searchMaster()">
-                <div id="master-list-cont" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;"></div>
-                
+                <input id="m-search" placeholder="Cari nama..." oninput="searchMaster()">
+                <div id="master-list-cont" style="max-height: 250px; overflow-y: auto;"></div>
                 <hr>
-                <h4>IMPOR DATA BARU</h4>
-                <select id="m-desa" onchange="updateKelompok('m-kelompok-imp', this.value)">
+                <h4>IMPOR DATA</h4>
+                <select id="m-desa" onchange="updateKelompok('m-kel-imp', this.value)">
                     <option value="">-- Desa --</option>
                     <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
                 </select>
-                <select id="m-kelompok-imp"><option value="">-- Kelompok --</option></select>
-                <select id="m-gender"><option>Putra</option><option>Putri</option></select>
-                <textarea id="m-names" placeholder="Paste Nama-nama dari Excel..." rows="4"></textarea>
-                <button onclick="importMaster()">IMPOR KE DATABASE</button>
+                <select id="m-kel-imp"><option value="">-- Kelompok --</option></select>
+                <textarea id="m-names" placeholder="Paste nama dari Excel..." rows="3"></textarea>
+                <button onclick="importMaster()">IMPOR</button>
             </div>
         </div>
     </div>
 
-    <div id="success-msg" class="success-overlay hidden">
-        <div style="font-size:60px">🎺 ✅ 🎺</div>
-        <div class="doa-text">Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</div>
-    </div>
-
-    <div id="full-qr-modal" class="fullscreen-qr hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center;">
+    <div id="full-qr-modal" class="full-modal hidden">
         <h2 id="full-title"></h2>
         <canvas id="full-canvas"></canvas>
-        <button onclick="document.getElementById('full-qr-modal').classList.add('hidden')">TUTUP</button>
+        <button onclick="document.getElementById('full-qr-modal').classList.add('hidden')" style="width:200px; margin-top:20px; background:#333">TUTUP</button>
+    </div>
+
+    <div id="success-msg" class="success-overlay hidden">
+        <div style="font-size:60px">✅</div>
+        <div class="doa-text">Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</div>
     </div>
 </body>
 </html>
