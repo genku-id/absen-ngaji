@@ -230,6 +230,29 @@ window.startScanner = () => {
     });
 };
 
+window.loadReports = () => {
+    const repList = document.getElementById('report-list-cont');
+    const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
+    
+    onSnapshot(q, (sn) => {
+        repList.innerHTML = "";
+        const uniqueNames = new Set(); // Tempat menyimpan nama yang sudah muncul
+
+        sn.forEach(doc => {
+            const r = doc.data();
+            // Jika nama belum pernah muncul, tampilkan. Jika sudah, abaikan (hapus otomatis dari tampilan)
+            if (!uniqueNames.has(r.nama)) {
+                uniqueNames.add(r.nama);
+                repList.innerHTML += `
+                    <div class="report-item">
+                        <span><b>${r.nama}</b><br><small>${r.kelompok}</small></span>
+                        <span class="status-tag tag-${r.tipe.toLowerCase()}">${r.tipe}</span>
+                    </div>`;
+            }
+        });
+    });
+};
+
 window.downloadExcel = async () => {
     const sn = await getDocs(collection(db, "attendance"));
     let csv = "\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
