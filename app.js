@@ -228,7 +228,14 @@ window.addEventListener('load', async () => {
         document.getElementById('pilih-akun-section').classList.remove('hidden');
         const cont = document.getElementById('list-akun-pilihan');
         // Ganti baris yang ada di dalam d.forEach(...) dengan ini:
-d.forEach(x => {
+window.hapusAkunLokal = (id) => {
+    if(confirm("Hapus akun ini dari HP?")) {
+        let d = JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id);
+        localStorage.setItem('daftar_akun', JSON.stringify(d));
+        location.reload();
+    }
+};
+        d.forEach(x => {
     cont.innerHTML += `
         <div class="report-item">
             <b onclick="pilihAkun('${x.id}')" style="flex:1; cursor:pointer">${x.nama}</b>
