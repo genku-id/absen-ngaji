@@ -40,15 +40,14 @@ window.logout = () => {
 window.saveProfile = () => {
     const nama = document.getElementById('p-nama').value;
     const kelompok = document.getElementById('p-kelompok').value;
-    if(!nama || !kelompok) return alert("Isi data!");
-
+    if(!nama || !kelompok) return alert("Lengkapi data!");
     let ds = "";
     for(let d in MAP_DESA) { if(MAP_DESA[d].includes(kelompok)) ds = d; }
-
     let list = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-    list.push({ nama, kelompok, desa: ds, id: Date.now() });
+    const id = Date.now();
+    list.push({ nama, kelompok, desa: ds, id: id });
     localStorage.setItem('daftar_akun', JSON.stringify(list));
-    localStorage.setItem('akun_aktif', JSON.stringify(list[list.length-1]));
+    localStorage.setItem('akun_aktif', JSON.stringify(list.find(x => x.id === id)));
     location.reload();
 };
 
@@ -71,17 +70,12 @@ window.createNewEvent = async () => {
     const t = document.getElementById('ev-tgl').value;
     const j = document.getElementById('ev-jam').value;
     if(!n || !t || !j) return alert("Lengkapi!");
-
     const eid = "EVT-" + Date.now();
     await setDoc(doc(db, "settings", "event_aktif"), { id: eid, status: "OPEN", nama: n, jam: j });
-    
     document.getElementById('qr-area').classList.remove('hidden');
-    // Simpan data teks di atribut untuk sinkronisasi
     const cA = document.getElementById('canvas-absen');
     const cI = document.getElementById('canvas-izin');
-    cA.title = eid + "|HADIR";
-    cI.title = eid + "|IZIN";
-
+    cA.title = eid + "|HADIR"; cI.title = eid + "|IZIN";
     QRCode.toCanvas(cA, cA.title, { width: 200, margin: 2 });
     QRCode.toCanvas(cI, cI.title, { width: 200, margin: 2 });
 };
@@ -116,10 +110,12 @@ window.startScanner = () => {
         const [eid, tipe] = text.split("|");
         const akun = JSON.parse(localStorage.getItem('akun_aktif'));
         
-        // Simpel anti-double: Cek local memory
-        const lastScan = localStorage.getItem('last_scan_time');
-        if(lastScan && Date.now() - lastScan < 3600000) {
-            alert("Anda sudah absen baru-baru ini!");
+        // --- LOGIKA ANTI-DOUBLE PER AKUN ---
+        const historyAbsen = JSON.parse(localStorage.getItem('history_absen')) || {};
+        const lastTime = historyAbsen[akun.id]; // Cek berdasarkan ID unik akun
+        
+        if(lastTime && Date.now() - lastTime < 3600000) {
+            alert("Akun " + akun.nama + " sudah absen baru-baru ini!");
             sc.stop().then(() => { location.reload(); });
             return;
         }
@@ -131,7 +127,6 @@ window.startScanner = () => {
             return;
         }
 
-        // Cek Terlambat
         let st = tipe;
         if(tipe === "HADIR") {
             const [h, m] = ev.data().jam.split(":");
@@ -139,13 +134,18 @@ window.startScanner = () => {
             if(new Date() > limit) st = "TERLAMBAT";
         }
 
-        await addDoc(collection(db, "attendance"), { ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() });
-        localStorage.setItem('last_scan_time', Date.now());
-        
-        sc.stop().then(() => {
-            document.getElementById('success-msg').classList.remove('hidden');
-            setTimeout(() => { location.reload(); }, 2000);
-        });
+        try {
+            await addDoc(collection(db, "attendance"), { ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() });
+            
+            // Simpan waktu sukses ke history akun masing-masing
+            historyAbsen[akun.id] = Date.now();
+            localStorage.setItem('history_absen', JSON.stringify(historyAbsen));
+            
+            sc.stop().then(() => {
+                document.getElementById('success-msg').classList.remove('hidden');
+                setTimeout(() => { location.reload(); }, 2000);
+            });
+        } catch(e) { alert("Gagal!"); scanLock = false; }
     });
 };
 
@@ -159,7 +159,7 @@ window.loadReports = () => {
 window.downloadExcel = async () => {
     const sn = await getDocs(collection(db, "attendance"));
     let rows = []; sn.forEach(d => rows.push(d.data()));
-    rows.sort((a,b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok));
+    rows.sort((a,b) => (a.desa || "").localeCompare(b.desa || "") || (a.kelompok || "").localeCompare(b.kelompok || ""));
     let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
     rows.forEach(r => {
         const t = r.timestamp ? new Date(r.timestamp.seconds*1000).toLocaleString() : "";
