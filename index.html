@@ -14,34 +14,48 @@
 <body>
 <div class="container">
     <div id="auth-section" class="card">
-        <h2>Daftar Peserta</h2>
-        <input type="text" id="p-nama" placeholder="Nama Lengkap">
-        <input type="text" id="p-kelompok" placeholder="Kelompok">
-        <input type="text" id="p-desa" placeholder="Desa">
-        <button onclick="saveProfile()">Simpan & Masuk</button>
-        <button class="admin-btn" onclick="showAdmin()">Mode Admin</button>
+        <h2>Masuk Sistem</h2>
+        <div id="login-pilihan">
+            <button onclick="pilihRole('peserta')">Saya Peserta</button>
+            <button class="admin-btn" onclick="pilihRole('admin')">Saya Admin</button>
+        </div>
+
+        <div id="form-peserta" class="hidden">
+            <input type="text" id="p-nama" placeholder="Nama Lengkap">
+            <input type="text" id="p-kelompok" placeholder="Kelompok">
+            <input type="text" id="p-desa" placeholder="Desa">
+            <button onclick="saveProfile()">Simpan & Masuk</button>
+            <button onclick="location.reload()">Kembali</button>
+        </div>
+
+        <div id="form-admin" class="hidden">
+            <input type="password" id="admin-pass" placeholder="Masukkan Kode Admin">
+            <button class="admin-btn" onclick="loginAdmin()">Masuk Admin</button>
+            <button onclick="location.reload()">Kembali</button>
+        </div>
     </div>
 
     <div id="peserta-section" class="card hidden">
         <h2>Halo, <span id="display-nama"></span></h2>
         <div id="reader"></div>
-        <button onclick="startScanner()" style="margin-top:10px;">Mulai Scan Barcode</button>
-        <div id="scan-result" style="text-align:center; padding:10px;"></div>
+        <button onclick="startScanner()">Mulai Scan Barcode</button>
+        <button class="stop-btn" onclick="logout()">Keluar Akun</button>
+        <div id="scan-result"></div>
     </div>
 
     <div id="admin-section" class="card hidden">
         <h2>Panel Admin</h2>
-        <button onclick="createNewEvent()">Buat Event Ngaji Baru</button>
-        <button class="excel-btn" onclick="downloadExcel()">Download Rekap Rapi (CSV)</button>
+        <button onclick="createNewEvent()">Buat Event Baru</button>
+        <button class="excel-btn" onclick="downloadExcel()">Download Rekap</button>
+        <button class="stop-btn" onclick="logout()">Keluar Admin</button>
         <div id="qr-codes" class="hidden">
             <canvas id="canvas-absen"></canvas>
             <canvas id="canvas-izin"></canvas>
-            <button class="stop-btn" onclick="closeEvent()" style="margin-top:20px;">Tutup Absensi</button>
         </div>
-        <h3>Laporan Real-time:</h3>
         <ul id="report-list"></ul>
     </div>
 </div>
+
 
 <script>
     const userProfile = JSON.parse(localStorage.getItem('ngaji_profile'));
