@@ -1,0 +1,15 @@
+{
+  "name": "Absensi Ngaji",
+  "short_name": "AbsenNgaji",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f6",
+  "theme_color": "#27ae60",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
