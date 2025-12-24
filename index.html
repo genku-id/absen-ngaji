@@ -7,22 +7,101 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, addDoc, collection, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+          apiKey: "AIzaSyDC6EeqCSBHbcDU6ZGWxNhMICeFsnq3YhE",
+          authDomain: "absen-ngaji-ku.firebaseapp.com",
+          projectId: "absen-ngaji-ku",
+          storageBucket: "absen-ngaji-ku.firebasestorage.app",
+          messagingSenderId: "347716479254",
+          appId: "1:347716479254:web:5875fa7c314c92c08fc837"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Fungsi Simpan Profil
+        window.saveProfile = () => {
+            const profile = {
+                nama: document.getElementById('p-nama').value,
+                kelompok: document.getElementById('p-kelompok').value,
+                desa: document.getElementById('p-desa').value
+            };
+            if(!profile.nama) return alert("Nama wajib diisi!");
+            localStorage.setItem('ngaji_profile', JSON.stringify(profile));
+            location.reload();
+        };
+
+        // Fungsi Admin: Buat Event
+        window.createNewEvent = async () => {
+            const eventID = "EVT-" + Date.now();
+            await setDoc(doc(db, "settings", "event_aktif"), { id: eventID, status: "OPEN" });
+            document.getElementById('qr-codes').classList.remove('hidden');
+            QRCode.toCanvas(document.getElementById('canvas-absen'), eventID + "|HADIR");
+            QRCode.toCanvas(document.getElementById('canvas-izin'), eventID + "|IZIN");
+            alert("Event Baru Dibuka!");
+        };
+
+        // Fungsi Admin: Tutup Event
+        window.closeEvent = async () => {
+            await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
+            alert("Absensi ditutup!");
+            location.reload();
+        };
+
+        // Fungsi Peserta: Scan
+        window.startScanner = () => {
+            const scanner = new Html5Qrcode("reader");
+            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
+                const profile = JSON.parse(localStorage.getItem('ngaji_profile'));
+                const [evtID, tipe] = text.split("|");
+                
+                try {
+                    await addDoc(collection(db, "attendance"), {
+                        ...profile,
+                        tipe: tipe,
+                        timestamp: serverTimestamp()
+                    });
+                    document.getElementById('scan-result').innerHTML = "✅ <b>Berhasil!</b> Tercatat sebagai " + tipe;
+                    scanner.stop();
+                } catch (e) { alert("Gagal kirim data: " + e); }
+            });
+        };
+
+        // Fungsi Admin: Lihat Laporan
+        window.loadReports = () => {
+            const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('report-list');
+                list.innerHTML = "";
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    const waktu = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleTimeString() : "...";
+                    list.innerHTML += `<li>[${waktu}] <b>${d.nama}</b> - ${d.tipe}</li>`;
+                });
+            });
+        };
+    </script>
+
     <style>
-        body { font-family: sans-serif; margin: 0; background: #f4f7f6; color: #333; }
+        body { font-family: sans-serif; margin: 0; background: #e8f5e9; color: #2e7d32; }
         .container { padding: 20px; max-width: 500px; margin: auto; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { color: #2c3e50; margin-top: 0; }
-        button { width: 100%; padding: 15px; background: #27ae60; color: white; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-        button.admin { background: #2980b9; }
-        button.stop { background: #c0392b; }
+        button { width: 100%; padding: 15px; background: #4caf50; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .admin-btn { background: #1976d2; }
+        .stop-btn { background: #d32f2f; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        #reader { width: 100%; border-radius: 10px; overflow: hidden; background: #000; }
         .hidden { display: none; }
-        canvas { width: 100% !important; height: auto !important; margin-bottom: 20px; border: 5px solid #fff; }
+        #reader { width: 100%; border-radius: 10px; background: #000; }
+        canvas { width: 100% !important; border: 2px solid #4caf50; border-radius: 10px; margin-top: 10px; }
+        li { padding: 8px; border-bottom: 1px solid #ddd; list-style: none; }
     </style>
 </head>
 <body>
-
 <div class="container">
     <div id="auth-section" class="card">
         <h2>Daftar Peserta</h2>
@@ -30,87 +109,43 @@
         <input type="text" id="p-kelompok" placeholder="Kelompok">
         <input type="text" id="p-desa" placeholder="Desa">
         <button onclick="saveProfile()">Simpan & Masuk</button>
-        <button class="admin" onclick="showAdmin()">Masuk Sebagai Admin</button>
+        <button class="admin-btn" onclick="showAdmin()">Mode Admin</button>
     </div>
 
     <div id="peserta-section" class="card hidden">
         <h2>Halo, <span id="display-nama"></span></h2>
-        <p>Silakan scan barcode yang disediakan panitia.</p>
         <div id="reader"></div>
-        <div id="scan-result" style="margin-top:20px; font-size: 18px; text-align: center;"></div>
+        <button onclick="startScanner()" style="margin-top:10px;">Mulai Scan Barcode</button>
+        <div id="scan-result" style="text-align:center; padding:10px;"></div>
     </div>
 
     <div id="admin-section" class="card hidden">
         <h2>Panel Admin</h2>
         <button onclick="createNewEvent()">Buat Event Ngaji Baru</button>
         <div id="qr-codes" class="hidden">
-            <p><strong>Barcode Absen (Pajang di Meja):</strong></p>
+            <p>Barcode Absen (Meja):</p>
             <canvas id="canvas-absen"></canvas>
-            <p><strong>Barcode Izin (Share di WA):</strong></p>
+            <p>Barcode Izin (Undangan):</p>
             <canvas id="canvas-izin"></canvas>
-            <button class="stop" onclick="closeEvent()">Tutup Absensi</button>
+            <button class="stop-btn" onclick="closeEvent()" style="margin-top:20px;">Tutup Absensi</button>
         </div>
+        <h3>Laporan Kehadiran:</h3>
+        <ul id="report-list"></ul>
     </div>
 </div>
 
 <script>
-    let userProfile = JSON.parse(localStorage.getItem('ngaji_profile'));
-    let eventActive = true;
-
-    if(userProfile) { showPeserta(); }
-
-    function saveProfile() {
-        const profile = {
-            nama: document.getElementById('p-nama').value,
-            kelompok: document.getElementById('p-kelompok').value,
-            desa: document.getElementById('p-desa').value
-        };
-        if(!profile.nama) return alert("Nama harus diisi");
-        localStorage.setItem('ngaji_profile', JSON.stringify(profile));
-        showPeserta();
-    }
-
-    function showPeserta() {
+    const userProfile = JSON.parse(localStorage.getItem('ngaji_profile'));
+    if(userProfile) {
         document.getElementById('auth-section').classList.add('hidden');
         document.getElementById('peserta-section').classList.remove('hidden');
-        document.getElementById('display-nama').innerText = JSON.parse(localStorage.getItem('ngaji_profile')).nama;
-        startScanner();
+        document.getElementById('display-nama').innerText = userProfile.nama;
     }
-
     function showAdmin() {
         document.getElementById('auth-section').classList.add('hidden');
         document.getElementById('admin-section').classList.remove('hidden');
-    }
-
-    function createNewEvent() {
-        document.getElementById('qr-codes').classList.remove('hidden');
-        const eventID = "EVENT-" + Date.now();
-        QRCode.toCanvas(document.getElementById('canvas-absen'), eventID + "|HADIR");
-        QRCode.toCanvas(document.getElementById('canvas-izin'), eventID + "|IZIN");
-    }
-
-    function startScanner() {
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" }, 
-            { fps: 10, qrbox: 250 },
-            (decodedText) => {
-                if(eventActive) {
-                    const data = decodedText.split("|");
-                    document.getElementById('scan-result').innerHTML = "✅ <b>Berhasil!</b><br>Anda tercatat: " + data[1];
-                    html5QrCode.stop();
-                } else {
-                    alert("Maaf, absensi sudah ditutup.");
-                }
-            }
-        ).catch(err => console.error("Kamera gagal akses", err));
-    }
-
-    function closeEvent() {
-        eventActive = false;
-        alert("Absensi ditutup.");
+        window.loadReports();
     }
 </script>
-
 </body>
 </html>
