@@ -13,24 +13,19 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// AUTH & ROLE LOGIC
-window.pilihRole = (role) => {
-    document.getElementById('login-pilihan').classList.add('hidden');
-    if(role === 'peserta') {
-        document.getElementById('form-peserta').classList.remove('hidden');
-    } else {
-        document.getElementById('form-admin').classList.remove('hidden');
-    }
+// SIDEBAR NAV
+window.toggleSidebar = () => {
+    document.getElementById('sidebar').classList.toggle('active');
+    document.getElementById('overlay').classList.toggle('active');
 };
 
+// ROLE & LOGIN
 window.loginAdmin = () => {
-    const pass = document.getElementById('admin-pass').value;
-    if(pass === "1234") { // GANTI KODE DISINI
+    const pass = prompt("Masukkan Kode Akses Admin:");
+    if(pass === "1234") {
         sessionStorage.setItem('role', 'admin');
         location.reload();
-    } else {
-        alert("Kode Admin Salah!");
-    }
+    } else if(pass !== null) { alert("Kode Salah!"); }
 };
 
 window.logout = () => {
@@ -39,49 +34,43 @@ window.logout = () => {
     location.reload();
 };
 
-// ACCOUNTS LOGIC
+// ACCOUNTS
 window.saveProfile = () => {
     const nama = document.getElementById('p-nama').value;
     const kelompok = document.getElementById('p-kelompok').value;
     const desa = document.getElementById('p-desa').value;
-    if(!nama || !kelompok || !desa) return alert("Wajib diisi semua!");
+    if(!nama || !kelompok || !desa) return alert("Isi semua data!");
 
-    let daftarAkun = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-    const profilBaru = { nama, kelompok, desa, id: Date.now() };
-    daftarAkun.push(profilBaru);
-    localStorage.setItem('daftar_akun', JSON.stringify(daftarAkun));
-    window.pilihAkun(profilBaru.id);
+    let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+    const baru = { nama, kelompok, desa, id: Date.now() };
+    daftar.push(baru);
+    localStorage.setItem('daftar_akun', JSON.stringify(daftar));
+    window.pilihAkun(baru.id);
 };
 
 window.pilihAkun = (id) => {
-    let daftarAkun = JSON.parse(localStorage.getItem('daftar_akun'));
-    const akun = daftarAkun.find(a => a.id == id);
+    let daftar = JSON.parse(localStorage.getItem('daftar_akun'));
+    const akun = daftar.find(a => a.id == id);
     localStorage.setItem('akun_aktif', JSON.stringify(akun));
     location.reload();
 };
 
 window.hapusAkun = (id) => {
-    if(confirm("Hapus akun dari HP ini?")) {
-        let daftarAkun = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-        daftarAkun = daftarAkun.filter(a => a.id != id);
-        localStorage.setItem('daftar_akun', JSON.stringify(daftarAkun));
+    if(confirm("Hapus akun ini?")) {
+        let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+        daftar = daftar.filter(a => a.id != id);
+        localStorage.setItem('daftar_akun', JSON.stringify(daftar));
         location.reload();
     }
 };
 
-// ADMIN & SCAN LOGIC
+// FIREBASE ACTIONS
 window.createNewEvent = async () => {
     const id = "EVT-" + Date.now();
     await setDoc(doc(db, "settings", "event_aktif"), { id, status: "OPEN" });
-    document.getElementById('qr-codes').classList.remove('hidden');
+    document.getElementById('qr-area').classList.remove('hidden');
     QRCode.toCanvas(document.getElementById('canvas-absen'), id + "|HADIR");
     QRCode.toCanvas(document.getElementById('canvas-izin'), id + "|IZIN");
-};
-
-window.closeEvent = async () => {
-    await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
-    alert("Absen ditutup!");
-    location.reload();
 };
 
 window.startScanner = () => {
@@ -89,11 +78,9 @@ window.startScanner = () => {
     scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
         const akun = JSON.parse(localStorage.getItem('akun_aktif'));
         const [evtID, tipe] = text.split("|");
-        try {
-            await addDoc(collection(db, "attendance"), { ...akun, tipe, timestamp: serverTimestamp() });
-            document.getElementById('scan-result').innerHTML = "✅ Berhasil: " + tipe;
-            scanner.stop();
-        } catch (e) { alert("Error: " + e); }
+        await addDoc(collection(db, "attendance"), { ...akun, tipe, timestamp: serverTimestamp() });
+        document.getElementById('scan-result').innerHTML = "✅ Berhasil Absen!";
+        scanner.stop();
     });
 };
 
@@ -104,21 +91,17 @@ window.loadReports = () => {
         list.innerHTML = "";
         snap.forEach(d => {
             const data = d.data();
-            list.innerHTML += `<li><b>${data.desa}</b> - ${data.nama} (${data.tipe})</li>`;
+            list.innerHTML += `<li><b>${data.desa}</b> - ${data.nama}</li>`;
         });
     });
 };
 
 window.downloadExcel = async () => {
-    const qSnapshot = await getDocs(collection(db, "attendance"));
-    let data = [];
-    qSnapshot.forEach(d => data.push(d.data()));
-    data.sort((a,b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok));
-    let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Tipe,Waktu\n";
-    data.forEach(d => {
-        const t = d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleString() : "";
-        csv += `"${d.desa}","${d.kelompok}","${d.nama}","${d.tipe}","${t}"\n`;
-    });
+    const snap = await getDocs(collection(db, "attendance"));
+    let rows = []; snap.forEach(d => rows.push(d.data()));
+    rows.sort((a,b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok));
+    let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Tipe\n";
+    rows.forEach(r => csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}"\n`);
     const link = document.createElement("a");
     link.href = encodeURI(csv);
     link.download = "rekap_ngaji.csv";
