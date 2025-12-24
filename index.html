@@ -3,10 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Absensi Ngaji</title>
+    <title>Absensi Ngaji</title>
     <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
-    
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script type="module" src="app.js"></script>
@@ -19,17 +18,19 @@
             <button onclick="pilihRole('peserta')">Saya Peserta</button>
             <button class="admin-btn" onclick="pilihRole('admin')">Saya Admin</button>
         </div>
-
         <div id="form-peserta" class="hidden">
-            <input type="text" id="p-nama" placeholder="Nama Lengkap">
+            <h3>Pilih Akun:</h3>
+            <div id="daftar-akun-tersimpan"></div>
+            <hr>
+            <h4>Tambah Akun Baru:</h4>
+            <input type="text" id="p-nama" placeholder="Nama">
             <input type="text" id="p-kelompok" placeholder="Kelompok">
             <input type="text" id="p-desa" placeholder="Desa">
             <button onclick="saveProfile()">Simpan & Masuk</button>
             <button onclick="location.reload()">Kembali</button>
         </div>
-
         <div id="form-admin" class="hidden">
-            <input type="password" id="admin-pass" placeholder="Masukkan Kode Admin">
+            <input type="password" id="admin-pass" placeholder="Kode Admin">
             <button class="admin-btn" onclick="loginAdmin()">Masuk Admin</button>
             <button onclick="location.reload()">Kembali</button>
         </div>
@@ -38,9 +39,9 @@
     <div id="peserta-section" class="card hidden">
         <h2>Halo, <span id="display-nama"></span></h2>
         <div id="reader"></div>
-        <button onclick="startScanner()">Mulai Scan Barcode</button>
+        <button onclick="startScanner()" style="margin-top:10px;">Mulai Scan</button>
         <button class="stop-btn" onclick="logout()">Keluar Akun</button>
-        <div id="scan-result"></div>
+        <div id="scan-result" style="text-align:center;"></div>
     </div>
 
     <div id="admin-section" class="card hidden">
@@ -51,28 +52,40 @@
         <div id="qr-codes" class="hidden">
             <canvas id="canvas-absen"></canvas>
             <canvas id="canvas-izin"></canvas>
+            <button class="stop-btn" onclick="closeEvent()" style="margin-top:10px;">Tutup Absen</button>
         </div>
+        <h3>Laporan:</h3>
         <ul id="report-list"></ul>
     </div>
 </div>
 
-
 <script>
-    const userProfile = localStorage.getItem('ngaji_profile');
-    const roleAdmin = sessionStorage.getItem('role');
+    window.addEventListener('load', () => {
+        const akunAktif = localStorage.getItem('akun_aktif');
+        const roleAdmin = sessionStorage.getItem('role');
+        const daftarAkun = JSON.parse(localStorage.getItem('daftar_akun')) || [];
 
-    if (roleAdmin === 'admin') {
-        // Jika masuk sebagai Admin
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('admin-section').classList.remove('hidden');
-        if(window.loadReports) window.loadReports();
-    } else if (userProfile) {
-        // Jika masuk sebagai Peserta
-        const data = JSON.parse(userProfile);
-        document.getElementById('auth-section').classList.add('hidden');
-        document.getElementById('peserta-section').classList.remove('hidden');
-        document.getElementById('display-nama').innerText = data.nama;
-    }
+        if (roleAdmin === 'admin') {
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('admin-section').classList.remove('hidden');
+            if(window.loadReports) window.loadReports();
+        } else if (akunAktif) {
+            const data = JSON.parse(akunAktif);
+            document.getElementById('auth-section').classList.add('hidden');
+            document.getElementById('peserta-section').classList.remove('hidden');
+            document.getElementById('display-nama').innerText = data.nama;
+        } else {
+            const container = document.getElementById('daftar-akun-tersimpan');
+            if(daftarAkun.length > 0) {
+                daftarAkun.forEach(a => {
+                    container.innerHTML += `<div class="row-akun">
+                        <button onclick="pilihAkun(${a.id})" style="flex:1; background:#81c784;">${a.nama}</button>
+                        <button onclick="hapusAkun(${a.id})" style="width:50px; background:#e57373;">X</button>
+                    </div>`;
+                });
+            } else { container.innerHTML = "<p>Belum ada akun.</p>"; }
+        }
+    });
 </script>
 </body>
 </html>
