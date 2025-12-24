@@ -3,14 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absen Ngaji v3.1</title>
+    <title>Absen Ngaji v4</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script type="module" src="app.js"></script>
 </head>
 <body>
-
     <div class="navbar">
         <div class="menu-icon" onclick="toggleSidebar()">☰</div>
         <div style="font-weight:bold">E-Absensi</div>
@@ -26,48 +25,61 @@
 
     <div class="container">
         <div id="modal-tambah" class="card hidden">
-            <h3>Registrasi Nama</h3>
+            <h3>Registrasi</h3>
             <input id="p-nama" placeholder="Nama Lengkap">
-            <input id="p-kelompok" placeholder="Kelompok">
-            <input id="p-desa" placeholder="Desa">
+            <select id="p-kelompok">
+                <option value="">-- Pilih Kelompok --</option>
+                <optgroup label="SAMIGALUH">
+                    <option>PENGOS</option><option>SUREN</option><option>KALIREJO</option>
+                    <option>PAGERHARJO</option><option>SEPARANG</option><option>KEBONHARJO</option>
+                </optgroup>
+                <optgroup label="PENGASIH">
+                    <option>MARGOSARI</option><option>SENDANGSARI</option><option>BANJARHARJO</option>
+                    <option>NANGGULAN</option><option>GIRINYONO</option><option>JATIMULYO</option><option>SERUT</option>
+                </optgroup>
+                <optgroup label="WATES">
+                    <option>KREMBANGAN</option><option>BOJONG</option><option>GIRIPENI 1</option>
+                    <option>GIRIPENI 2</option><option>HARGOWILIS</option><option>TRIHARJO</option>
+                </optgroup>
+                <optgroup label="LENDAH">
+                    <option>BONOSORO</option><option>BUMIREJO</option><option>CARIKAN</option>
+                    <option>NGENTAKREJO</option><option>TUKSONO</option><option>SRIKAYANGAN</option>
+                </optgroup>
+                <optgroup label="TEMON">
+                    <option>TAWANGSARI</option><option>HARGOREJO</option><option>SIDATAN 1</option>
+                    <option>SIDATAN 2</option><option>JOGOBOYO</option><option>JOGORESAN</option>
+                </optgroup>
+            </select>
             <button onclick="saveProfile()">Simpan</button>
             <button style="background:#ccc" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
         </div>
 
         <div id="pilih-akun-section" class="card hidden">
-            <h2>Pilih Nama</h2>
+            <h2>Pilih Akun</h2>
             <div id="list-akun-pilihan"></div>
         </div>
 
         <div id="peserta-section" class="card hidden">
             <h2 id="display-nama"></h2>
             <div id="reader"></div>
-            <button onclick="startScanner()" style="margin-top:20px">SCAN SEKARANG</button>
-            <div id="scan-result"></div>
+            <button onclick="startScanner()" style="margin-top:20px">MULAI SCAN</button>
             <p onclick="logout()" style="color:#888; cursor:pointer; font-size:12px">Ganti Akun</p>
         </div>
 
         <div id="admin-section" class="card hidden">
-            <h2>Panel Admin</h2>
-            <div class="card" style="box-shadow:none; border:1px solid #eee; padding:15px">
-                <input id="ev-nama" placeholder="Contoh: Pengajian Selasa Wage">
-                <input id="ev-tgl" type="date">
-                <button onclick="createNewEvent()">SET EVENT & QR</button>
-            </div>
+            <h2>Admin Panel</h2>
+            <input id="ev-nama" placeholder="Nama Pengajian">
+            <input id="ev-tgl" type="date">
+            <input id="ev-jam" type="time">
+            <button onclick="createNewEvent()">BUAT EVENT</button>
 
             <div id="qr-area" class="hidden">
-                <div style="margin-bottom:20px">
-                    <p><b>QR HADIR</b> (Klik Perbesar)</p>
-                    <canvas id="canvas-absen" onclick="showFullQR('canvas-absen', 'QR HADIR')"></canvas>
-                </div>
-                <div>
-                    <p><b>QR IZIN</b> (Klik Perbesar)</p>
-                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin', 'QR IZIN')"></canvas>
-                </div>
-                <button style="background:#e74c3c; margin-top:30px" onclick="closeEvent()">NONAKTIFKAN QR</button>
+                <p>Klik QR untuk Fullscreen/Download</p>
+                <canvas id="canvas-absen" onclick="showFullQR('canvas-absen', 'QR HADIR')"></canvas>
+                <canvas id="canvas-izin" onclick="showFullQR('canvas-izin', 'QR IZIN')" style="margin-top:20px"></canvas>
+                <button style="background:#e74c3c; margin-top:20px" onclick="closeEvent()">TUTUP ABSEN</button>
             </div>
-
-            <button style="background:#f39c12" onclick="downloadExcel()">REKAP EXCEL</button>
+            <button style="background:#f39c12" onclick="downloadExcel()">DOWNLOAD REKAP</button>
             <ul id="report-list" style="text-align:left; padding:0"></ul>
         </div>
     </div>
@@ -75,8 +87,13 @@
     <div id="full-qr-modal" class="fullscreen-qr hidden">
         <h2 id="full-title">QR Code</h2>
         <canvas id="full-canvas"></canvas>
-        <button class="btn-download" onclick="downloadQR()">💾 SIMPAN KE HP (PNG)</button>
+        <button style="background:#34495e; margin-top:15px" onclick="downloadQR()">💾 DOWNLOAD GAMBAR (PNG)</button>
         <button style="background:#333" onclick="document.getElementById('full-qr-modal').classList.add('hidden')">KEMBALI</button>
+    </div>
+
+    <div id="success-msg" class="success-overlay hidden">
+        <div class="checkmark">✅</div>
+        <h2>Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</h2>
     </div>
 
     <script>
@@ -84,7 +101,6 @@
             const role = sessionStorage.getItem('role');
             const akun = localStorage.getItem('akun_aktif');
             const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-
             if(role === 'admin') {
                 document.getElementById('admin-section').classList.remove('hidden');
                 document.getElementById('btn-to-peserta').classList.remove('hidden');
@@ -96,14 +112,9 @@
                 document.getElementById('pilih-akun-section').classList.remove('hidden');
                 const cont = document.getElementById('list-akun-pilihan');
                 daftar.forEach(a => {
-                    cont.innerHTML += `<div class="account-box">
-                        <span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer; font-weight:bold">${a.nama}</span>
-                        <button onclick="hapusAkun(${a.id})" style="width:35px; background:#e74c3c">X</button>
-                    </div>`;
+                    cont.innerHTML += `<div class="account-box"><span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer">${a.nama}</span><button onclick="hapusAkun(${a.id})" style="width:40px; background:#e74c3c">X</button></div>`;
                 });
-            } else {
-                document.getElementById('modal-tambah').classList.remove('hidden');
-            }
+            } else { document.getElementById('modal-tambah').classList.remove('hidden'); }
         });
     </script>
 </body>
