@@ -13,83 +13,7 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window.saveProfile = () => {
-    const profile = {
-        nama: document.getElementById('p-nama').value,
-        kelompok: document.getElementById('p-kelompok').value,
-        desa: document.getElementById('p-desa').value
-    };
-    if(!profile.nama || !profile.kelompok || !profile.desa) return alert("Semua data wajib diisi!");
-    localStorage.setItem('ngaji_profile', JSON.stringify(profile));
-    location.reload();
-};
-
-window.createNewEvent = async () => {
-    const eventID = "EVT-" + Date.now();
-    await setDoc(doc(db, "settings", "event_aktif"), { id: eventID, status: "OPEN" });
-    document.getElementById('qr-codes').classList.remove('hidden');
-    QRCode.toCanvas(document.getElementById('canvas-absen'), eventID + "|HADIR");
-    QRCode.toCanvas(document.getElementById('canvas-izin'), eventID + "|IZIN");
-};
-
-window.closeEvent = async () => {
-    await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
-    alert("Absensi ditutup!");
-    location.reload();
-};
-
-window.startScanner = () => {
-    const scanner = new Html5Qrcode("reader");
-    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
-        const profile = JSON.parse(localStorage.getItem('ngaji_profile'));
-        const [evtID, tipe] = text.split("|");
-        try {
-            await addDoc(collection(db, "attendance"), {
-                ...profile,
-                tipe: tipe,
-                timestamp: serverTimestamp()
-            });
-            document.getElementById('scan-result').innerHTML = "<h3 style='color:green'>✅ Berhasil! Tercatat " + tipe + "</h3>";
-            scanner.stop();
-        } catch (e) { alert("Error: " + e); }
-    });
-};
-
-window.loadReports = () => {
-    const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
-    onSnapshot(q, (snapshot) => {
-        const list = document.getElementById('report-list');
-        list.innerHTML = "";
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            const waktu = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleTimeString() : "...";
-            list.innerHTML += `<li><b>${d.desa}</b> - ${d.kelompok} | <b>${d.nama}</b> (${d.tipe})</li>`;
-        });
-    });
-};
-
-window.downloadExcel = async () => {
-    const q = query(collection(db, "attendance"));
-    const querySnapshot = await getDocs(q);
-    let dataArray = [];
-    querySnapshot.forEach((doc) => dataArray.push(doc.data()));
-
-    dataArray.sort((a, b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok) || a.nama.localeCompare(b.nama));
-
-    let csvContent = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Keterangan,Waktu\n";
-    dataArray.forEach((d) => {
-        const waktu = d.timestamp ? new Date(d.timestamp.seconds * 1000).toLocaleString() : "";
-        csvContent += `"${d.desa}","${d.kelompok}","${d.nama}","${d.tipe}","${waktu}"\n`;
-    });
-
-    const link = document.createElement("a");
-    link.setAttribute("href", encodeURI(csvContent));
-    link.setAttribute("download", "rekap_ngaji.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-};
-// Fungsi Pindah Role
+// AUTH & ROLE LOGIC
 window.pilihRole = (role) => {
     document.getElementById('login-pilihan').classList.add('hidden');
     if(role === 'peserta') {
@@ -99,10 +23,9 @@ window.pilihRole = (role) => {
     }
 };
 
-// Login Admin (Contoh Kode: 1234)
 window.loginAdmin = () => {
     const pass = document.getElementById('admin-pass').value;
-    if(pass === "1234") { // Ganti 1234 dengan kode rahasiamu
+    if(pass === "1234") { // GANTI KODE DISINI
         sessionStorage.setItem('role', 'admin');
         location.reload();
     } else {
@@ -110,9 +33,94 @@ window.loginAdmin = () => {
     }
 };
 
-// Fungsi Logout
 window.logout = () => {
-    localStorage.removeItem('ngaji_profile');
+    localStorage.removeItem('akun_aktif');
     sessionStorage.removeItem('role');
     location.reload();
+};
+
+// ACCOUNTS LOGIC
+window.saveProfile = () => {
+    const nama = document.getElementById('p-nama').value;
+    const kelompok = document.getElementById('p-kelompok').value;
+    const desa = document.getElementById('p-desa').value;
+    if(!nama || !kelompok || !desa) return alert("Wajib diisi semua!");
+
+    let daftarAkun = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+    const profilBaru = { nama, kelompok, desa, id: Date.now() };
+    daftarAkun.push(profilBaru);
+    localStorage.setItem('daftar_akun', JSON.stringify(daftarAkun));
+    window.pilihAkun(profilBaru.id);
+};
+
+window.pilihAkun = (id) => {
+    let daftarAkun = JSON.parse(localStorage.getItem('daftar_akun'));
+    const akun = daftarAkun.find(a => a.id == id);
+    localStorage.setItem('akun_aktif', JSON.stringify(akun));
+    location.reload();
+};
+
+window.hapusAkun = (id) => {
+    if(confirm("Hapus akun dari HP ini?")) {
+        let daftarAkun = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+        daftarAkun = daftarAkun.filter(a => a.id != id);
+        localStorage.setItem('daftar_akun', JSON.stringify(daftarAkun));
+        location.reload();
+    }
+};
+
+// ADMIN & SCAN LOGIC
+window.createNewEvent = async () => {
+    const id = "EVT-" + Date.now();
+    await setDoc(doc(db, "settings", "event_aktif"), { id, status: "OPEN" });
+    document.getElementById('qr-codes').classList.remove('hidden');
+    QRCode.toCanvas(document.getElementById('canvas-absen'), id + "|HADIR");
+    QRCode.toCanvas(document.getElementById('canvas-izin'), id + "|IZIN");
+};
+
+window.closeEvent = async () => {
+    await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
+    alert("Absen ditutup!");
+    location.reload();
+};
+
+window.startScanner = () => {
+    const scanner = new Html5Qrcode("reader");
+    scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (text) => {
+        const akun = JSON.parse(localStorage.getItem('akun_aktif'));
+        const [evtID, tipe] = text.split("|");
+        try {
+            await addDoc(collection(db, "attendance"), { ...akun, tipe, timestamp: serverTimestamp() });
+            document.getElementById('scan-result').innerHTML = "✅ Berhasil: " + tipe;
+            scanner.stop();
+        } catch (e) { alert("Error: " + e); }
+    });
+};
+
+window.loadReports = () => {
+    const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
+    onSnapshot(q, (snap) => {
+        const list = document.getElementById('report-list');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            const data = d.data();
+            list.innerHTML += `<li><b>${data.desa}</b> - ${data.nama} (${data.tipe})</li>`;
+        });
+    });
+};
+
+window.downloadExcel = async () => {
+    const qSnapshot = await getDocs(collection(db, "attendance"));
+    let data = [];
+    qSnapshot.forEach(d => data.push(d.data()));
+    data.sort((a,b) => a.desa.localeCompare(b.desa) || a.kelompok.localeCompare(b.kelompok));
+    let csv = "data:text/csv;charset=utf-8,\uFEFFDesa,Kelompok,Nama,Tipe,Waktu\n";
+    data.forEach(d => {
+        const t = d.timestamp ? new Date(d.timestamp.seconds*1000).toLocaleString() : "";
+        csv += `"${d.desa}","${d.kelompok}","${d.nama}","${d.tipe}","${t}"\n`;
+    });
+    const link = document.createElement("a");
+    link.href = encodeURI(csv);
+    link.download = "rekap_ngaji.csv";
+    link.click();
 };
