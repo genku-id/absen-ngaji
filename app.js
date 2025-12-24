@@ -254,20 +254,23 @@ window.loadReports = () => {
 };
 
 window.downloadExcel = async () => {
-    const sn = await getDocs(collection(db, "attendance"));
+    const sn = await getDocs(query(collection(db, "attendance"), orderBy("timestamp", "asc")));
     let csv = "\uFEFFDesa,Kelompok,Nama,Status,Waktu\n";
+    const uniqueNames = new Set();
+
     sn.forEach(d => {
         const r = d.data();
-        const t = r.timestamp ? new Date(r.timestamp.seconds*1000).toLocaleString() : "";
-        csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}","${t}"\n`;
+        if (!uniqueNames.has(r.nama)) {
+            uniqueNames.add(r.nama);
+            const t = r.timestamp ? new Date(r.timestamp.seconds*1000).toLocaleString() : "";
+            csv += `"${r.desa}","${r.kelompok}","${r.nama}","${r.tipe}","${t}"\n`;
+        }
     });
-    window.open(encodeURI("data:text/csv;charset=utf-8," + csv));
-};
-
-window.showFullQR = (id, title) => {
-    document.getElementById('full-qr-modal').classList.remove('hidden');
-    document.getElementById('full-title').innerText = title;
-    QRCode.toCanvas(document.getElementById('full-canvas'), document.getElementById(id).title, { width: 500 });
+    
+    const link = document.createElement("a");
+    link.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+    link.download = `Laporan_Absensi.csv`;
+    link.click();
 };
 
 // --- INITIAL LOAD ---
