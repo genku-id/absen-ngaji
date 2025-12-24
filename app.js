@@ -164,6 +164,7 @@ window.closeEvent = async () => {
     location.reload();
 };
 
+// --- SCANNER ---
 window.startScanner = () => {
     const sc = new Html5Qrcode("reader");
     let isProcessing = false; 
@@ -179,14 +180,16 @@ window.startScanner = () => {
         if(!ev.exists() || ev.data().status !== "OPEN" || ev.data().id !== eid) {
             alert("QR EXPIRED!");
             location.reload();
-            return;}
+            return;
+        }
 
         const qAbsen = query(collection(db, "attendance"), where("event", "==", ev.data().nama), where("nama", "==", akun.nama));
         const absenCheck = await getDocs(qAbsen);
         if (!absenCheck.empty) {
             alert("Anda sudah melakukan absensi!");
             sc.stop().then(() => location.reload());
-            return;}
+            return;
+        }
 
         let st = tipe;
         if(tipe === "HADIR") {
@@ -201,7 +204,6 @@ window.startScanner = () => {
         });
 
         document.body.classList.add('blink-me');
-
         confetti({
             particleCount: 150,
             spread: 70,
@@ -216,9 +218,13 @@ window.startScanner = () => {
                 location.reload();
             }, 3000);
         });
+    });
+};
 
+// --- REPORTS ---
 window.loadReports = () => {
     const repList = document.getElementById('report-list-cont');
+    if (!repList) return;
     const q = query(collection(db, "attendance"), orderBy("timestamp", "desc"));
     onSnapshot(q, (sn) => {
         repList.innerHTML = "";
@@ -255,7 +261,6 @@ window.filterLaporan = () => {
 
     items.forEach(it => {
         const txt = it.innerText.toLowerCase();
-        // Cek apakah teks di item laporan mengandung nama desa DAN nama kelompok
         const matchDesa = desa === "" || txt.includes(desa);
         const matchKel = kel === "" || txt.includes(kel);
 
@@ -287,7 +292,6 @@ window.downloadExcel = () => {
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
-    
     link.setAttribute("href", url);
     link.setAttribute("download", `Laporan_Absensi_Filtered.csv`);
     link.style.visibility = 'hidden';
@@ -296,6 +300,7 @@ window.downloadExcel = () => {
     document.body.removeChild(link);
 };
 
+// --- INITIAL LOAD ---
 window.addEventListener('load', async () => {
     const r = sessionStorage.getItem('role');
     const a = localStorage.getItem('akun_aktif');
@@ -320,7 +325,6 @@ window.addEventListener('load', async () => {
         masterCache.forEach(m => {
             mList.innerHTML += `<div class="report-item master-item"><span><b>${m.nama}</b><br><small>${m.kelompok}</small></span><button onclick="hapusMaster('${m.id}')" style="width:auto; background:red; padding:5px 10px; font-size:10px">HAPUS</button></div>`;
         });
-        
         
         window.loadReports();
     } else if(a) {
@@ -375,5 +379,3 @@ window.showFullQR = (id, title) => {
         QRCode.toCanvas(document.getElementById('full-canvas'), sourceCanvas.title, { width: 500 });
     }
 };
-
-window.loadReports(); 
