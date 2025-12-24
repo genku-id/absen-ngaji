@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Absensi Ngaji</title>
+    <title>Absen Ngaji v3.1</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
@@ -13,96 +13,96 @@
 
     <div class="navbar">
         <div class="menu-icon" onclick="toggleSidebar()">☰</div>
-        <div style="font-weight:bold; font-size: 18px;">Absensi Ngaji</div>
+        <div style="font-weight:bold">E-Absensi</div>
+        <button class="btn-small hidden" id="btn-to-peserta" onclick="logout()">Log Peserta</button>
     </div>
 
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar" id="sidebar">
-        <h3 style="margin-top: 0; color: #27ae60;">Menu</h3>
-        <button class="btn-outline" onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">➕ Tambah Akun</button>
-        
-        <div id="logout-sidebar-btn" class="hidden">
-            <button class="btn-danger-outline" onclick="logout()">🚪 Ganti / Keluar Akun</button>
-        </div>
-
-        <button class="btn-admin" onclick="loginAdmin()">🔑 Panel Admin</button>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size:11px; color: #a0aec0; text-align: center;">Aplikasi Absensi v2.1</p>
+        <h3>Menu</h3>
+        <button onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">Tambah Akun</button>
+        <button style="background:#2980b9" onclick="loginAdmin()">Masuk Admin</button>
     </div>
 
     <div class="container">
+        <div id="modal-tambah" class="card hidden">
+            <h3>Registrasi Nama</h3>
+            <input id="p-nama" placeholder="Nama Lengkap">
+            <input id="p-kelompok" placeholder="Kelompok">
+            <input id="p-desa" placeholder="Desa">
+            <button onclick="saveProfile()">Simpan</button>
+            <button style="background:#ccc" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
+        </div>
+
         <div id="pilih-akun-section" class="card hidden">
-            <h2 style="margin-top:0">Pilih Akun</h2>
+            <h2>Pilih Nama</h2>
             <div id="list-akun-pilihan"></div>
         </div>
 
-        <div id="modal-tambah" class="card hidden">
-            <h2 style="margin-top:0">Tambah Akun</h2>
-            <input type="text" id="p-nama" placeholder="Nama Lengkap">
-            <input type="text" id="p-kelompok" placeholder="Kelompok">
-            <input type="text" id="p-desa" placeholder="Desa">
-            <button onclick="saveProfile()">Simpan Profil</button>
-            <button style="background:#94a3b8" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
-        </div>
-
         <div id="peserta-section" class="card hidden">
-            <p style="color: #718096; margin-bottom: 5px;">Selamat Datang,</p>
-            <h2 style="margin-top:0; color: #2d3748;" id="display-nama"></h2>
-            
+            <h2 id="display-nama"></h2>
             <div id="reader"></div>
-            
-            <button id="btn-scan-trigger" onclick="startScanner()" style="margin-top:20px">📷 Mulai Scan Barcode</button>
-            
-            <div id="scan-result" style="margin-top:15px; font-weight:bold; color:#27ae60"></div>
+            <button onclick="startScanner()" style="margin-top:20px">SCAN SEKARANG</button>
+            <div id="scan-result"></div>
+            <p onclick="logout()" style="color:#888; cursor:pointer; font-size:12px">Ganti Akun</p>
         </div>
 
         <div id="admin-section" class="card hidden">
-            <h2 style="margin-top:0">Panel Admin</h2>
-            <button onclick="createNewEvent()">Buat Event Baru</button>
-            <button style="background:#f39c12" onclick="downloadExcel()">📊 Download Rekap</button>
-            <button style="background:#e74c3c" onclick="logout()">Keluar Admin</button>
-            
-            <div id="qr-area" class="hidden">
-                <p>QR Code Kehadiran:</p>
-                <canvas id="canvas-absen"></canvas>
-                <button style="background:#c0392b; margin-top:10px" onclick="closeEvent()">Tutup Absen</button>
+            <h2>Panel Admin</h2>
+            <div class="card" style="box-shadow:none; border:1px solid #eee; padding:15px">
+                <input id="ev-nama" placeholder="Contoh: Pengajian Selasa Wage">
+                <input id="ev-tgl" type="date">
+                <button onclick="createNewEvent()">SET EVENT & QR</button>
             </div>
-            
-            <h3 style="text-align:left; border-top:1px solid #eee; padding-top:15px">Laporan Terkini:</h3>
-            <ul id="report-list" style="padding:0"></ul>
+
+            <div id="qr-area" class="hidden">
+                <div style="margin-bottom:20px">
+                    <p><b>QR HADIR</b> (Klik Perbesar)</p>
+                    <canvas id="canvas-absen" onclick="showFullQR('canvas-absen', 'QR HADIR')"></canvas>
+                </div>
+                <div>
+                    <p><b>QR IZIN</b> (Klik Perbesar)</p>
+                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin', 'QR IZIN')"></canvas>
+                </div>
+                <button style="background:#e74c3c; margin-top:30px" onclick="closeEvent()">NONAKTIFKAN QR</button>
+            </div>
+
+            <button style="background:#f39c12" onclick="downloadExcel()">REKAP EXCEL</button>
+            <ul id="report-list" style="text-align:left; padding:0"></ul>
         </div>
+    </div>
+
+    <div id="full-qr-modal" class="fullscreen-qr hidden">
+        <h2 id="full-title">QR Code</h2>
+        <canvas id="full-canvas"></canvas>
+        <button class="btn-download" onclick="downloadQR()">💾 SIMPAN KE HP (PNG)</button>
+        <button style="background:#333" onclick="document.getElementById('full-qr-modal').classList.add('hidden')">KEMBALI</button>
     </div>
 
     <script>
         window.addEventListener('load', () => {
-            const akunAktif = localStorage.getItem('akun_aktif');
-            const roleAdmin = sessionStorage.getItem('role');
+            const role = sessionStorage.getItem('role');
+            const akun = localStorage.getItem('akun_aktif');
             const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
 
-            if (roleAdmin === 'admin') {
+            if(role === 'admin') {
                 document.getElementById('admin-section').classList.remove('hidden');
+                document.getElementById('btn-to-peserta').classList.remove('hidden');
                 if(window.loadReports) window.loadReports();
-            } else if (akunAktif) {
+            } else if(akun) {
                 document.getElementById('peserta-section').classList.remove('hidden');
-                document.getElementById('logout-sidebar-btn').classList.remove('hidden'); // Munculkan logout di sidebar
-                document.getElementById('display-nama').innerText = JSON.parse(akunAktif).nama;
+                document.getElementById('display-nama').innerText = JSON.parse(akun).nama;
+            } else if(daftar.length > 0) {
+                document.getElementById('pilih-akun-section').classList.remove('hidden');
+                const cont = document.getElementById('list-akun-pilihan');
+                daftar.forEach(a => {
+                    cont.innerHTML += `<div class="account-box">
+                        <span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer; font-weight:bold">${a.nama}</span>
+                        <button onclick="hapusAkun(${a.id})" style="width:35px; background:#e74c3c">X</button>
+                    </div>`;
+                });
             } else {
-                if (daftar.length === 0) {
-                    document.getElementById('modal-tambah').classList.remove('hidden');
-                } else if (daftar.length === 1) {
-                    localStorage.setItem('akun_aktif', JSON.stringify(daftar[0]));
-                    location.reload();
-                } else {
-                    document.getElementById('pilih-akun-section').classList.remove('hidden');
-                    const cont = document.getElementById('list-akun-pilihan');
-                    daftar.forEach(a => {
-                        cont.innerHTML += `
-                        <div class="account-box">
-                            <span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer; font-weight:bold; text-align:left">${a.nama}</span>
-                            <button onclick="hapusAkun(${a.id})" style="width:35px; height:35px; margin:0; padding:0; background:#fc8181; border-radius:8px">✕</button>
-                        </div>`;
-                    });
-                }
+                document.getElementById('modal-tambah').classList.remove('hidden');
             }
         });
     </script>
