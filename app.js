@@ -233,10 +233,24 @@ window.addEventListener('load', async () => {
     } else if(a) {
         document.getElementById('peserta-section').classList.remove('hidden');
         document.getElementById('display-nama').innerText = JSON.parse(a).nama;
+    // Bagian Penutup Inisialisasi (Load)
     } else if(d.length > 0) {
         document.getElementById('pilih-akun-section').classList.remove('hidden');
         const cont = document.getElementById('list-akun-pilihan');
-        // Ganti baris yang ada di dalam d.forEach(...) dengan ini:
+        cont.innerHTML = ""; // Bersihkan dulu
+        d.forEach(x => {
+            cont.innerHTML += `
+                <div class="report-item">
+                    <b onclick="pilihAkun('${x.id}')" style="flex:1; cursor:pointer">${x.nama}</b>
+                    <button onclick="hapusAkunLokal('${x.id}')" style="width:40px; background:#e74c3c; margin-left:10px; color:white; border-radius:5px; border:none;">X</button>
+                </div>`;
+        });
+    } else {
+        document.getElementById('modal-tambah').classList.remove('hidden');
+    }
+});
+
+// --- FUNGSI GLOBAL ---
 window.hapusAkunLokal = (id) => {
     if(confirm("Hapus akun ini dari HP?")) {
         let d = JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id);
@@ -244,14 +258,28 @@ window.hapusAkunLokal = (id) => {
         location.reload();
     }
 };
-        d.forEach(x => {
-    cont.innerHTML += `
-        <div class="report-item">
-            <b onclick="pilihAkun('${x.id}')" style="flex:1; cursor:pointer">${x.nama}</b>
-            <button onclick="hapusAkunLokal('${x.id}')" style="width:40px; background:#e74c3c; margin-left:10px">X</button>
-        </div>`;
-});
+
+window.pilihAkun = (id) => {
+    let list = JSON.parse(localStorage.getItem('daftar_akun'));
+    const akun = list.find(a => a.id == id);
+    if(akun) {
+        localStorage.setItem('akun_aktif', JSON.stringify(akun));
+        location.reload();
+    }
+};
 
 window.hapusMaster = async (id) => {
-    if(confirm("Hapus?")) { await deleteDoc(doc(db, "master_jamaah", id)); location.reload(); }
+    if(confirm("Hapus dari database permanen?")) { 
+        await deleteDoc(doc(db, "master_jamaah", id)); 
+        location.reload(); 
+    }
+};
+
+window.showFullQR = (id, title) => {
+    document.getElementById('full-qr-modal').classList.remove('hidden');
+    document.getElementById('full-title').innerText = title;
+    const sourceCanvas = document.getElementById(id);
+    if(sourceCanvas) {
+        QRCode.toCanvas(document.getElementById('full-canvas'), sourceCanvas.title, { width: 500 });
+    }
 };
