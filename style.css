@@ -3,16 +3,13 @@ body { font-family: sans-serif; margin: 0; background: #f0f4f8; }
 .container { padding: 20px; max-width: 500px; margin: auto; padding-top: 80px; }
 .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; position: relative; }
 
-/* Tab System */
 .tab-menu { display: flex; background: #eee; border-radius: 10px; padding: 5px; margin-bottom: 15px; }
 .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 8px; cursor: pointer; background: none; font-weight: bold; color: #666; }
 .tab-btn.active { background: white; color: #27ae60; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
-/* Suggestion */
 .suggestion-box { position: absolute; background: white; width: calc(100% - 40px); border: 1px solid #ddd; z-index: 100; max-height: 150px; overflow-y: auto; text-align: left; border-radius: 0 0 10px 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 .suggestion-item { padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; }
 
-/* Overlay */
 .success-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:5000; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
 .full-modal { position: fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; display:flex; flex-direction:column; align-items:center; justify-content:center; }
 
@@ -22,43 +19,11 @@ input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; borde
 .report-item { text-align: left; padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
 .btn-danger { background: #e74c3c !important; }
 
-/* --- Tambahan untuk Sidebar agar berfungsi --- */
-.sidebar { 
-    position: fixed; 
-    left: -280px; 
-    top: 0; 
-    width: 280px; 
-    height: 100%; 
-    background: white; 
-    box-shadow: 2px 0 10px rgba(0,0,0,0.2); 
-    transition: 0.3s; 
-    z-index: 2000; 
-    padding: 20px; 
-    box-sizing: border-box; 
-}
+.sidebar { position: fixed; left: -280px; top: 0; width: 280px; height: 100%; background: white; box-shadow: 2px 0 10px rgba(0,0,0,0.2); transition: 0.3s; z-index: 2000; padding: 20px; box-sizing: border-box; }
+.sidebar.active { left: 0; }
+.sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
+.sidebar-overlay.active { display: block;}
+.sidebar h3 {margin-top: 60px; border-bottom: 2px solid #27ae60; padding-bottom: 10px;}
 
-.sidebar.active { 
-    left: 0; 
-}
-
-.sidebar-overlay { 
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0,0,0,0.5); 
-    display: none; 
-    z-index: 1500; 
-}
-
-.sidebar-overlay.active { 
-    display: block; 
-}
-
-/* Memastikan teks di Sidebar rapi */
-.sidebar h3 {
-    margin-top: 60px;
-    border-bottom: 2px solid #27ae60;
-    padding-bottom: 10px;
-}
+@keyframes blink-success { 0% { background-color: transparent; } 50% { background-color: #2ecc71; }100% { background-color: transparent; }}
+.blink-me {animation: blink-success 0.5s ease-in-out 2; }
