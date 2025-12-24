@@ -60,14 +60,28 @@
 
             <div id="tab-event" class="tab-content">
                 <div id="setup-box">
-                    <input id="ev-nama" placeholder="Nama Acara">
-                    <input id="ev-jam" type="time">
-                    <button onclick="createNewEvent()">AKTIFKAN QR</button>
+                    <input id="ev-nama" placeholder="Nama Acara (Contoh: Pengajian Ahad)">
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <input id="ev-tgl" type="date">
+                        <input id="ev-jam" type="time">
+                    </div>
+                    <button onclick="createNewEvent()">AKTIFKAN QR SEKARANG</button>
                 </div>
+                
                 <div id="qr-box" class="hidden">
-                    <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')"></canvas>
-                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')" style="margin-top:10px"></canvas>
-                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:20px">TUTUP & HITUNG ALFA</button>
+                    <div style="border: 2px solid #27ae60; padding: 15px; border-radius: 15px; margin-bottom: 15px; background: #f9fdfa;">
+                        <h4 style="margin: 0 0 10px 0; color: #27ae60;">BARCODE HADIR</h4>
+                        <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')" style="max-width: 100%; height: auto;"></canvas>
+                        <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e; font-size:12px; padding:8px; margin-top:10px;">💾 Simpan Gambar Hadir</button>
+                    </div>
+
+                    <div style="border: 2px solid #2980b9; padding: 15px; border-radius: 15px; background: #f9fbfe;">
+                        <h4 style="margin: 0 0 10px 0; color: #2980b9;">BARCODE IZIN</h4>
+                        <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')" style="max-width: 100%; height: auto;"></canvas>
+                        <button onclick="downloadQR('canvas-izin', 'QR_IZIN')" style="background:#34495e; font-size:12px; padding:8px; margin-top:10px;">💾 Simpan Gambar Izin</button>
+                    </div>
+                    
+                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:25px; height: 50px;">TUTUP & HITUNG ALFA</button>
                 </div>
             </div>
 
