@@ -13,53 +13,63 @@
 
     <div class="navbar">
         <div class="menu-icon" onclick="toggleSidebar()">☰</div>
-        <div style="font-weight:bold">Absensi Ngaji</div>
+        <div style="font-weight:bold; font-size: 18px;">Absensi Ngaji</div>
     </div>
 
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
-    
     <div class="sidebar" id="sidebar">
-        <h3>Menu Aplikasi</h3>
-        <button class="btn-outline" onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">➕ Tambah Akun Baru</button>
-        <button class="btn-admin" onclick="loginAdmin()">🔑 Masuk Panel Admin</button>
-        <hr>
-        <p style="font-size:12px; color:gray">Aplikasi PWA v2.0</p>
+        <h3 style="margin-top: 0; color: #27ae60;">Menu</h3>
+        <button class="btn-outline" onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">➕ Tambah Akun</button>
+        
+        <div id="logout-sidebar-btn" class="hidden">
+            <button class="btn-danger-outline" onclick="logout()">🚪 Ganti / Keluar Akun</button>
+        </div>
+
+        <button class="btn-admin" onclick="loginAdmin()">🔑 Panel Admin</button>
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        <p style="font-size:11px; color: #a0aec0; text-align: center;">Aplikasi Absensi v2.1</p>
     </div>
 
     <div class="container">
         <div id="pilih-akun-section" class="card hidden">
-            <h2>Pilih Nama Anda:</h2>
+            <h2 style="margin-top:0">Pilih Akun</h2>
             <div id="list-akun-pilihan"></div>
         </div>
 
         <div id="modal-tambah" class="card hidden">
-            <h2>Tambah Akun</h2>
+            <h2 style="margin-top:0">Tambah Akun</h2>
             <input type="text" id="p-nama" placeholder="Nama Lengkap">
             <input type="text" id="p-kelompok" placeholder="Kelompok">
             <input type="text" id="p-desa" placeholder="Desa">
             <button onclick="saveProfile()">Simpan Profil</button>
-            <button class="btn-danger" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
+            <button style="background:#94a3b8" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
         </div>
 
         <div id="peserta-section" class="card hidden">
-            <h2>Halo, <span id="display-nama"></span></h2>
+            <p style="color: #718096; margin-bottom: 5px;">Selamat Datang,</p>
+            <h2 style="margin-top:0; color: #2d3748;" id="display-nama"></h2>
+            
             <div id="reader"></div>
-            <button onclick="startScanner()" style="margin-top:15px">Mulai Scan Barcode</button>
-            <button class="btn-outline" onclick="logout()">Ganti Akun / Keluar</button>
-            <div id="scan-result" style="margin-top:10px; font-weight:bold; color:green"></div>
+            
+            <button id="btn-scan-trigger" onclick="startScanner()" style="margin-top:20px">📷 Mulai Scan Barcode</button>
+            
+            <div id="scan-result" style="margin-top:15px; font-weight:bold; color:#27ae60"></div>
         </div>
 
         <div id="admin-section" class="card hidden">
-            <h2>Panel Admin</h2>
-            <button onclick="createNewEvent()">Buat Event Ngaji</button>
-            <button class="excel-btn" onclick="downloadExcel()">Download Excel</button>
-            <button class="btn-danger" onclick="logout()">Keluar Admin</button>
+            <h2 style="margin-top:0">Panel Admin</h2>
+            <button onclick="createNewEvent()">Buat Event Baru</button>
+            <button style="background:#f39c12" onclick="downloadExcel()">📊 Download Rekap</button>
+            <button style="background:#e74c3c" onclick="logout()">Keluar Admin</button>
+            
             <div id="qr-area" class="hidden">
+                <p>QR Code Kehadiran:</p>
                 <canvas id="canvas-absen"></canvas>
-                <canvas id="canvas-izin"></canvas>
+                <button style="background:#c0392b; margin-top:10px" onclick="closeEvent()">Tutup Absen</button>
             </div>
-            <h3>Laporan:</h3>
-            <ul id="report-list"></ul>
+            
+            <h3 style="text-align:left; border-top:1px solid #eee; padding-top:15px">Laporan Terkini:</h3>
+            <ul id="report-list" style="padding:0"></ul>
         </div>
     </div>
 
@@ -74,23 +84,22 @@
                 if(window.loadReports) window.loadReports();
             } else if (akunAktif) {
                 document.getElementById('peserta-section').classList.remove('hidden');
+                document.getElementById('logout-sidebar-btn').classList.remove('hidden'); // Munculkan logout di sidebar
                 document.getElementById('display-nama').innerText = JSON.parse(akunAktif).nama;
             } else {
                 if (daftar.length === 0) {
                     document.getElementById('modal-tambah').classList.remove('hidden');
                 } else if (daftar.length === 1) {
-                    // OTOMATIS LOGIN JIKA CUMA 1 AKUN
                     localStorage.setItem('akun_aktif', JSON.stringify(daftar[0]));
                     location.reload();
                 } else {
-                    // PILIH AKUN JIKA BANYAK
                     document.getElementById('pilih-akun-section').classList.remove('hidden');
                     const cont = document.getElementById('list-akun-pilihan');
                     daftar.forEach(a => {
                         cont.innerHTML += `
                         <div class="account-box">
-                            <span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer; font-weight:bold">${a.nama}</span>
-                            <button onclick="hapusAkun(${a.id})" style="width:40px; margin:0; padding:5px; background:#e74c3c">X</button>
+                            <span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer; font-weight:bold; text-align:left">${a.nama}</span>
+                            <button onclick="hapusAkun(${a.id})" style="width:35px; height:35px; margin:0; padding:0; background:#fc8181; border-radius:8px">✕</button>
                         </div>`;
                     });
                 }
