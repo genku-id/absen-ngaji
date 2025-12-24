@@ -4,88 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Absensi Ngaji</title>
-    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
     <script type="module" src="app.js"></script>
 </head>
 <body>
-<div class="container">
-    <div id="auth-section" class="card">
-        <h2>Masuk Sistem</h2>
-        <div id="login-pilihan">
-            <button onclick="pilihRole('peserta')">Saya Peserta</button>
-            <button class="admin-btn" onclick="pilihRole('admin')">Saya Admin</button>
+
+    <div class="navbar">
+        <div class="menu-icon" onclick="toggleSidebar()">☰</div>
+        <div style="font-weight:bold">Absensi Ngaji</div>
+    </div>
+
+    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+    
+    <div class="sidebar" id="sidebar">
+        <h3>Menu Aplikasi</h3>
+        <button class="btn-outline" onclick="document.getElementById('modal-tambah').classList.remove('hidden'); toggleSidebar();">➕ Tambah Akun Baru</button>
+        <button class="btn-admin" onclick="loginAdmin()">🔑 Masuk Panel Admin</button>
+        <hr>
+        <p style="font-size:12px; color:gray">Aplikasi PWA v2.0</p>
+    </div>
+
+    <div class="container">
+        <div id="pilih-akun-section" class="card hidden">
+            <h2>Pilih Nama Anda:</h2>
+            <div id="list-akun-pilihan"></div>
         </div>
-        <div id="form-peserta" class="hidden">
-            <h3>Pilih Akun:</h3>
-            <div id="daftar-akun-tersimpan"></div>
-            <hr>
-            <h4>Tambah Akun Baru:</h4>
-            <input type="text" id="p-nama" placeholder="Nama">
+
+        <div id="modal-tambah" class="card hidden">
+            <h2>Tambah Akun</h2>
+            <input type="text" id="p-nama" placeholder="Nama Lengkap">
             <input type="text" id="p-kelompok" placeholder="Kelompok">
             <input type="text" id="p-desa" placeholder="Desa">
-            <button onclick="saveProfile()">Simpan & Masuk</button>
-            <button onclick="location.reload()">Kembali</button>
+            <button onclick="saveProfile()">Simpan Profil</button>
+            <button class="btn-danger" onclick="document.getElementById('modal-tambah').classList.add('hidden')">Batal</button>
         </div>
-        <div id="form-admin" class="hidden">
-            <input type="password" id="admin-pass" placeholder="Kode Admin">
-            <button class="admin-btn" onclick="loginAdmin()">Masuk Admin</button>
-            <button onclick="location.reload()">Kembali</button>
+
+        <div id="peserta-section" class="card hidden">
+            <h2>Halo, <span id="display-nama"></span></h2>
+            <div id="reader"></div>
+            <button onclick="startScanner()" style="margin-top:15px">Mulai Scan Barcode</button>
+            <button class="btn-outline" onclick="logout()">Ganti Akun / Keluar</button>
+            <div id="scan-result" style="margin-top:10px; font-weight:bold; color:green"></div>
+        </div>
+
+        <div id="admin-section" class="card hidden">
+            <h2>Panel Admin</h2>
+            <button onclick="createNewEvent()">Buat Event Ngaji</button>
+            <button class="excel-btn" onclick="downloadExcel()">Download Excel</button>
+            <button class="btn-danger" onclick="logout()">Keluar Admin</button>
+            <div id="qr-area" class="hidden">
+                <canvas id="canvas-absen"></canvas>
+                <canvas id="canvas-izin"></canvas>
+            </div>
+            <h3>Laporan:</h3>
+            <ul id="report-list"></ul>
         </div>
     </div>
 
-    <div id="peserta-section" class="card hidden">
-        <h2>Halo, <span id="display-nama"></span></h2>
-        <div id="reader"></div>
-        <button onclick="startScanner()" style="margin-top:10px;">Mulai Scan</button>
-        <button class="stop-btn" onclick="logout()">Keluar Akun</button>
-        <div id="scan-result" style="text-align:center;"></div>
-    </div>
+    <script>
+        window.addEventListener('load', () => {
+            const akunAktif = localStorage.getItem('akun_aktif');
+            const roleAdmin = sessionStorage.getItem('role');
+            const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
 
-    <div id="admin-section" class="card hidden">
-        <h2>Panel Admin</h2>
-        <button onclick="createNewEvent()">Buat Event Baru</button>
-        <button class="excel-btn" onclick="downloadExcel()">Download Rekap</button>
-        <button class="stop-btn" onclick="logout()">Keluar Admin</button>
-        <div id="qr-codes" class="hidden">
-            <canvas id="canvas-absen"></canvas>
-            <canvas id="canvas-izin"></canvas>
-            <button class="stop-btn" onclick="closeEvent()" style="margin-top:10px;">Tutup Absen</button>
-        </div>
-        <h3>Laporan:</h3>
-        <ul id="report-list"></ul>
-    </div>
-</div>
-
-<script>
-    window.addEventListener('load', () => {
-        const akunAktif = localStorage.getItem('akun_aktif');
-        const roleAdmin = sessionStorage.getItem('role');
-        const daftarAkun = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-
-        if (roleAdmin === 'admin') {
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('admin-section').classList.remove('hidden');
-            if(window.loadReports) window.loadReports();
-        } else if (akunAktif) {
-            const data = JSON.parse(akunAktif);
-            document.getElementById('auth-section').classList.add('hidden');
-            document.getElementById('peserta-section').classList.remove('hidden');
-            document.getElementById('display-nama').innerText = data.nama;
-        } else {
-            const container = document.getElementById('daftar-akun-tersimpan');
-            if(daftarAkun.length > 0) {
-                daftarAkun.forEach(a => {
-                    container.innerHTML += `<div class="row-akun">
-                        <button onclick="pilihAkun(${a.id})" style="flex:1; background:#81c784;">${a.nama}</button>
-                        <button onclick="hapusAkun(${a.id})" style="width:50px; background:#e57373;">X</button>
-                    </div>`;
-                });
-            } else { container.innerHTML = "<p>Belum ada akun.</p>"; }
-        }
-    });
-</script>
+            if (roleAdmin === 'admin') {
+                document.getElementById('admin-section').classList.remove('hidden');
+                if(window.loadReports) window.loadReports();
+            } else if (akunAktif) {
+                document.getElementById('peserta-section').classList.remove('hidden');
+                document.getElementById('display-nama').innerText = JSON.parse(akunAktif).nama;
+            } else {
+                if (daftar.length === 0) {
+                    document.getElementById('modal-tambah').classList.remove('hidden');
+                } else if (daftar.length === 1) {
+                    // OTOMATIS LOGIN JIKA CUMA 1 AKUN
+                    localStorage.setItem('akun_aktif', JSON.stringify(daftar[0]));
+                    location.reload();
+                } else {
+                    // PILIH AKUN JIKA BANYAK
+                    document.getElementById('pilih-akun-section').classList.remove('hidden');
+                    const cont = document.getElementById('list-akun-pilihan');
+                    daftar.forEach(a => {
+                        cont.innerHTML += `
+                        <div class="account-box">
+                            <span onclick="pilihAkun(${a.id})" style="flex:1; cursor:pointer; font-weight:bold">${a.nama}</span>
+                            <button onclick="hapusAkun(${a.id})" style="width:40px; margin:0; padding:5px; background:#e74c3c">X</button>
+                        </div>`;
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 </html>
