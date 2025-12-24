@@ -24,6 +24,15 @@ const WILAYAH = {
 // Global Data Master untuk Suggestion
 let masterCache = [];
 
+window.toggleSidebar = () => {
+    const sb = document.getElementById('sidebar');
+    const ov = document.getElementById('overlay');
+    if(sb && ov) {
+        sb.classList.toggle('active');
+        ov.classList.toggle('active');
+    }
+};
+
 window.switchTab = (id) => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
