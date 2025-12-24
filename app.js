@@ -128,17 +128,32 @@ window.resetLaporan = async () => {
 
 window.createNewEvent = async () => {
     const n = document.getElementById('ev-nama').value;
+    const t = document.getElementById('ev-tgl').value;
     const j = document.getElementById('ev-jam').value;
-    if(!n || !j) return alert("Isi data!");
-    await setDoc(doc(db, "settings", "event_aktif"), { id: "EVT-"+Date.now(), status: "OPEN", nama: n, jam: j });
+    if(!n || !t || !j) return alert("Lengkapi Nama, Tanggal, dan Jam!");
+    
+    await setDoc(doc(db, "settings", "event_aktif"), { 
+        id: "EVT-"+Date.now(), 
+        status: "OPEN", 
+        nama: n, 
+        tanggal: t, 
+        jam: j 
+    });
     location.reload();
+};
+
+window.downloadQR = (canvasId, fileName) => {
+    const canvas = document.getElementById(canvasId);
+    const link = document.createElement('a');
+    link.download = fileName + '.png';
+    link.href = canvas.toDataURL("image/png");
+    link.click();
 };
 
 window.closeEvent = async () => {
     const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
     const currentEvent = evSnap.data();
     
-    // Auto Alfa Logic
     const masterSn = await getDocs(collection(db, "master_jamaah"));
     const absenSn = await getDocs(query(collection(db, "attendance"), where("event", "==", currentEvent.nama)));
     const sudahAbsen = [];
