@@ -68,18 +68,25 @@ input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; borde
     transform: scale(0.98);
 }
 
+/* CSS untuk tombol daftar akun */
 .btn-pilih-akun {
     flex: 1;
     text-align: left;
     padding: 15px;
-    background: #ffffff;
+    background-color: #ffffff !important; /* Latar tombol putih */
+    color: #333333 !important;            /* TEKS HARUS GELAP */
     border: 2px solid #eeeeee;
     border-radius: 10px;
     font-weight: bold;
+    font-size: 16px;
     cursor: pointer;
-    color: #2c3e50 !important; /* Warna teks biru gelap agar kontras */
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-.btn-pilih-akun:hover {
-    background: #f1f2f6;
+/* Biar pas dipencet ada efeknya */
+.btn-pilih-akun:active {
+    background-color: #f1f1f1 !important;
+    transform: scale(0.98);
 }
