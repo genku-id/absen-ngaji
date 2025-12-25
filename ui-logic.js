@@ -6,6 +6,9 @@ export const WILAYAH = {
     "TEMON": ["TAWANGSARI", "HARGOREJO", "SIDATAN 1", "SIDATAN 2", "JOGOBOYO", "JOGORESAN"]
 };
 
+// Variabel global untuk menampung data master
+window.masterCache = [];
+
 window.toggleSidebar = () => {
     document.getElementById('sidebar').classList.toggle('active');
     document.getElementById('overlay').classList.toggle('active');
@@ -24,9 +27,35 @@ window.updateKelompok = (targetId, desa) => {
     if(WILAYAH[desa]) WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
 };
 
-// Autocomplete Nama
+// FITUR SARAN NAMA (AUTOCOMPLETE)
 window.handleNameInput = (val) => {
+    const desa = document.getElementById('p-desa').value;
+    const kel = document.getElementById('p-kelompok').value;
     const box = document.getElementById('suggestion-box');
-    if(val.length < 2) { box.classList.add('hidden'); return; }
-    // Logika autocomplete bisa ditambah di sini nanti
+    
+    if(!desa || !kel || val.length < 2) { 
+        box.classList.add('hidden'); 
+        return; 
+    }
+    
+    // Cari nama yang cocok di desa & kelompok yang sama
+    const matches = window.masterCache.filter(m => 
+        m.desa === desa && 
+        m.kelompok === kel && 
+        m.nama.toLowerCase().includes(val.toLowerCase())
+    );
+
+    if(matches.length > 0) {
+        box.classList.remove('hidden');
+        box.innerHTML = matches.map(m => `
+            <div class="suggestion-item" onclick="selectSug('${m.nama}')">${m.nama}</div>
+        `).join('');
+    } else {
+        box.classList.add('hidden');
+    }
+};
+
+window.selectSug = (n) => {
+    document.getElementById('p-nama').value = n;
+    document.getElementById('suggestion-box').classList.add('hidden');
 };
