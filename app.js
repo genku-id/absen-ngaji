@@ -37,7 +37,7 @@ window.switchTab = (id) => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + id).classList.remove('hidden');
-    event.currentTarget.classList.add('active');
+    if (event) event.currentTarget.classList.add('active');
 };
 
 window.loginAdmin = () => {
@@ -96,7 +96,7 @@ window.saveProfile = async () => {
 // --- ADMIN FUNCTIONS ---
 window.importMaster = async () => {
     const d = document.getElementById('m-desa').value;
-    const k = document.getElementById('m-kelompok').value;
+    const k = document.getElementById('m-kel-imp').value;
     const names = document.getElementById('m-names').value.split('\n').filter(n => n.trim() !== "");
     if(!d || !k || names.length === 0) return alert("Data tidak lengkap!");
     const batch = writeBatch(db);
@@ -203,7 +203,7 @@ window.startScanner = () => {
             ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() 
         });
 
-        document.body.classList.add('blink-me');
+        // PICU EFEK PERCIKAN (CONFETTI)
         confetti({
             particleCount: 150,
             spread: 70,
@@ -214,11 +214,10 @@ window.startScanner = () => {
         sc.stop().then(() => {
             document.getElementById('success-msg').classList.remove('hidden');
             setTimeout(() => {
-                document.body.classList.remove('blink-me');
                 location.reload();
             }, 3000);
         });
-   });
+    });
 };
 
 // --- REPORTS ---
@@ -359,23 +358,3 @@ window.pilihAkun = (id) => {
     let list = JSON.parse(localStorage.getItem('daftar_akun'));
     const akun = list.find(a => a.id == id);
     if(akun) {
-        localStorage.setItem('akun_aktif', JSON.stringify(akun));
-        location.reload();
-    }
-};
-
-window.hapusMaster = async (id) => {
-    if(confirm("Hapus dari database permanen?")) { 
-        await deleteDoc(doc(db, "master_jamaah", id)); 
-        location.reload(); 
-    }
-};
-
-window.showFullQR = (id, title) => {
-    document.getElementById('full-qr-modal').classList.remove('hidden');
-    document.getElementById('full-title').innerText = title;
-    const sourceCanvas = document.getElementById(id);
-    if(sourceCanvas) {
-        QRCode.toCanvas(document.getElementById('full-canvas'), sourceCanvas.title, { width: 500 });
-    }
-};
