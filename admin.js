@@ -14,6 +14,40 @@ window.logout = () => {
 };
 
 // PENGELOLAAN AKUN LOKAL
+// admin.js
+
+window.saveProfile = async () => {
+    const n = document.getElementById('p-nama').value.trim();
+    const d = document.getElementById('p-desa').value;
+    const k = document.getElementById('p-kelompok').value;
+    
+    if(!n || !d || !k) return alert("Mohon lengkapi Desa, Kelompok, dan Nama!");
+    
+    try {
+        const id = "USR-" + Date.now();
+        const akun = { nama: n, desa: d, kelompok: k, id: id };
+        
+        // 1. Simpan ke Database Master jika belum ada
+        const exists = window.masterCache.some(m => m.nama === n && m.kelompok === k);
+        if(!exists) {
+            await setDoc(doc(db, "master_jamaah", id), { ...akun, status: "Baru" });
+        }
+
+        // 2. Simpan ke Daftar Akun Lokal (agar tidak hilang saat ganti akun)
+        let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+        daftar.push(akun);
+        localStorage.setItem('daftar_akun', JSON.stringify(daftar));
+
+        // 3. Set sebagai Akun Aktif
+        localStorage.setItem('akun_aktif', JSON.stringify(akun));
+
+        alert("Profil Berhasil Disimpan!");
+        location.reload();
+    } catch (e) {
+        console.error("Gagal simpan profil: ", e);
+        alert("Gagal menyimpan: " + e.message);
+    }
+};
 window.pilihAkun = (id) => {
     const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
     const akun = daftar.find(a => a.id === id);
