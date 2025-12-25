@@ -218,7 +218,7 @@ window.startScanner = () => {
                 location.reload();
             }, 3000);
         });
-    });
+   });
 };
 
 // --- REPORTS ---
