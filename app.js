@@ -32,7 +32,7 @@ window.switchTab = (id) => {
     document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + id).classList.remove('hidden');
-    event.currentTarget.classList.add('active');
+    if(event) event.currentTarget.classList.add('active');
 };
 
 window.loginAdmin = () => {
@@ -91,11 +91,9 @@ window.startScanner = () => {
         const [eid, tipe] = text.split("|");
         const akun = JSON.parse(localStorage.getItem('akun_aktif'));
         const ev = await getDoc(doc(db, "settings", "event_aktif"));
-        
         if(!ev.exists() || ev.data().status !== "OPEN" || ev.data().id !== eid) {
             alert("QR EXPIRED!"); location.reload(); return;
         }
-
         const qCheck = query(collection(db, "attendance"), where("event", "==", ev.data().nama), where("nama", "==", akun.nama));
         const check = await getDocs(qCheck);
         if(!check.empty) { alert("Sudah Absen!"); location.reload(); return; }
@@ -111,9 +109,7 @@ window.startScanner = () => {
         document.getElementById('success-msg').classList.remove('hidden');
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, zIndex: 6000 });
 
-        sc.stop().then(() => {
-            setTimeout(() => location.reload(), 3000);
-        });
+        sc.stop().then(() => { setTimeout(() => location.reload(), 3000); });
     });
 };
 
@@ -133,6 +129,12 @@ window.loadReports = () => {
     });
 };
 
+window.updateFilterKelompok = (desa) => {
+    const el = document.getElementById('f-kelompok');
+    el.innerHTML = '<option value="">-- Semua Kelompok --</option>';
+    if(WILAYAH[desa]) WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
+};
+
 window.filterLaporan = () => {
     const d = document.getElementById('f-desa').value.toLowerCase();
     const k = document.getElementById('f-kelompok').value.toLowerCase();
@@ -140,12 +142,6 @@ window.filterLaporan = () => {
         const txt = it.innerText.toLowerCase();
         it.style.display = (txt.includes(d) && txt.includes(k)) ? "flex" : "none";
     });
-};
-
-window.updateFilterKelompok = (desa) => {
-    const el = document.getElementById('f-kelompok');
-    el.innerHTML = '<option value="">-- Semua Kelompok --</option>';
-    if(WILAYAH[desa]) WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
 };
 
 window.resetLaporan = async () => {
@@ -174,7 +170,6 @@ window.addEventListener('load', async () => {
     const r = sessionStorage.getItem('role');
     const a = localStorage.getItem('akun_aktif');
     const d = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-    
     const mSn = await getDocs(collection(db, "master_jamaah"));
     const mCont = document.getElementById('master-list-cont');
     mSn.forEach(doc => {
@@ -212,8 +207,10 @@ window.pilihAkun = (id) => {
 };
 
 window.hapusAkunLokal = (id) => {
-    localStorage.setItem('daftar_akun', JSON.stringify(JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id)));
-    location.reload();
+    if(confirm("Hapus?")) {
+        localStorage.setItem('daftar_akun', JSON.stringify(JSON.parse(localStorage.getItem('daftar_akun')).filter(a => a.id != id)));
+        location.reload();
+    }
 };
 
 window.hapusMaster = async (id) => {
@@ -229,9 +226,43 @@ window.createNewEvent = async () => {
     location.reload();
 };
 
+window.closeEvent = async () => {
+    const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
+    if(!evSnap.exists()) return;
+    const currentEvent = evSnap.data();
+    const masterSn = await getDocs(collection(db, "master_jamaah"));
+    const absenSn = await getDocs(query(collection(db, "attendance"), where("event", "==", currentEvent.nama)));
+    const sudahAbsen = [];
+    absenSn.forEach(d => sudahAbsen.push(d.data().nama));
+
+    const batch = writeBatch(db);
+    masterSn.forEach(docM => {
+        const m = docM.data();
+        if(!sudahAbsen.includes(m.nama)) {
+            batch.set(doc(collection(db, "attendance")), { ...m, tipe: "ALFA", event: currentEvent.nama, timestamp: serverTimestamp() });
+        }
+    });
+    await batch.commit();
+    await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
+    alert("Absen ditutup & Alfa dihitung!");
+    location.reload();
+};
+
 window.downloadQR = (id, file) => {
     const link = document.createElement('a');
     link.download = file + '.png';
     link.href = document.getElementById(id).toDataURL();
     link.click();
+};
+
+window.importMaster = async () => {
+    const names = document.getElementById('m-names').value.split('\n').filter(n => n.trim() !== "");
+    if(names.length === 0) return alert("Masukkan nama!");
+    const batch = writeBatch(db);
+    names.forEach(n => {
+        const id = "MSTR-" + Math.random().toString(36).substr(2, 9);
+        batch.set(doc(db, "master_jamaah", id), { nama: n.trim(), desa: "IMPORT", kelompok: "IMPORT", id: id });
+    });
+    await batch.commit();
+    alert("Impor Berhasil!"); location.reload();
 };
