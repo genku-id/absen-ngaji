@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-Absen v7.1</title>
+    <title>E-Absensi Genku v7.1</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
@@ -70,10 +70,10 @@
                 </div>
                 <div id="qr-box" class="hidden">
                     <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')"></canvas>
-                    <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e; font-size:12px;">💾 Simpan QR Hadir</button>
-                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')" style="margin-top:10px;"></canvas>
+                    <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e; font-size:12px; margin-bottom:15px;">💾 Simpan QR Hadir</button>
+                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')"></canvas>
                     <button onclick="downloadQR('canvas-izin', 'QR_IZIN')" style="background:#34495e; font-size:12px;">💾 Simpan QR Izin</button>
-                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:20px">TUTUP & HITUNG ALFA</button>
+                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:25px; height:50px;">TUTUP & HITUNG ALFA</button>
                 </div>
             </div>
 
@@ -89,16 +89,16 @@
                 <select id="f-kelompok" onchange="filterLaporan()">
                     <option value="">-- Semua Kelompok --</option>
                 </select>
-                <div id="report-list-cont"></div>
+                <div id="report-list-cont" style="margin-top:10px;"></div>
             </div>
 
             <div id="tab-master" class="tab-content hidden">
-                <input id="m-search" placeholder="Cari nama di database..." oninput="searchMaster()">
-                <div id="master-list-cont" style="max-height:300px; overflow-y:auto; margin-top:10px; border:1px solid #eee;"></div>
+                <input id="m-search" placeholder="Cari nama..." oninput="searchMaster()">
+                <div id="master-list-cont" style="max-height: 250px; overflow-y: auto;"></div>
                 <hr>
-                <h4>IMPOR DATA</h4>
-                <textarea id="m-names" placeholder="Paste nama..." rows="3"></textarea>
-                <button onclick="importMaster()">IMPOR</button>
+                <h4>IMPOR DATA MASTER</h4>
+                <textarea id="m-names" placeholder="Paste nama dari excel (1 baris 1 nama)..." rows="3"></textarea>
+                <button onclick="importMaster()">MULAI IMPOR</button>
             </div>
         </div>
     </div>
@@ -111,7 +111,7 @@
 
     <div id="success-msg" class="success-overlay hidden">
         <div style="font-size:60px">✅</div>
-        <div style="font-weight:bold; font-size: 20px;">Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</div>
+        <div style="font-weight:bold;">Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</div>
     </div>
 </body>
 </html>
