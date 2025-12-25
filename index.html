@@ -20,7 +20,7 @@
     <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
     <div class="sidebar" id="sidebar">
         <h3 style="margin-top:60px">MENU</h3>
-        <button onclick="logout()" style="background:#7f8c8d; margin-bottom: 20px;">👤 GANTI AKUN / LOGOUT</button>
+        <button onclick="logout()" style="background:#7f8c8d; margin-bottom: 20px;">👤 GANTI AKUN</button>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
         <p style="font-size: 12px; color: #7f8c8d; margin-left: 10px;">KHUSUS PENGURUS:</p>
         <button style="background:#2980b9" onclick="loginAdmin()">🔐 MASUK ADMIN</button>
@@ -69,61 +69,35 @@
                     </div>
                     <button onclick="createNewEvent()">AKTIFKAN QR SEKARANG</button>
                 </div>
-                
                 <div id="qr-box" class="hidden">
-                    <div style="border: 2px solid #27ae60; padding: 15px; border-radius: 15px; margin-bottom: 15px; background: #f9fdfa;">
-                        <h4 style="margin: 0 0 10px 0; color: #27ae60;">BARCODE HADIR</h4>
-                        <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')" style="max-width: 100%; height: auto;"></canvas>
-                        <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e; font-size:12px; padding:8px; margin-top:10px;">💾 Simpan Gambar Hadir</button>
-                    </div>
-
-                    <div style="border: 2px solid #2980b9; padding: 15px; border-radius: 15px; background: #f9fbfe;">
-                        <h4 style="margin: 0 0 10px 0; color: #2980b9;">BARCODE IZIN</h4>
-                        <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')" style="max-width: 100%; height: auto;"></canvas>
-                        <button onclick="downloadQR('canvas-izin', 'QR_IZIN')" style="background:#34495e; font-size:12px; padding:8px; margin-top:10px;">💾 Simpan Gambar Izin</button>
-                    </div>
-                    
-                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:25px; height: 50px;">TUTUP & HITUNG ALFA</button>
+                    <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')"></canvas>
+                    <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e; font-size:12px;">💾 Simpan QR Hadir</button>
+                    <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')" style="margin-top:10px;"></canvas>
+                    <button onclick="downloadQR('canvas-izin', 'QR_IZIN')" style="background:#34495e; font-size:12px;">💾 Simpan QR Izin</button>
+                    <button class="btn-danger" onclick="closeEvent()" style="margin-top:20px">TUTUP & HITUNG ALFA</button>
                 </div>
             </div>
 
             <div id="tab-laporan" class="tab-content hidden">
                 <div style="display: flex; gap: 5px; margin-bottom: 15px;">
-                    <button onclick="downloadExcel()" style="background:#27ae60; flex:1; font-size: 12px;">💾 DOWNLOAD</button>
-                    <button class="btn-danger" onclick="resetLaporan()" style="flex:1; font-size: 12px;">🗑️ RESET</button>
+                    <button onclick="downloadExcel()" style="background:#27ae60; flex:1;">💾 DOWNLOAD</button>
+                    <button class="btn-danger" onclick="resetLaporan()" style="flex:1;">🗑️ RESET</button>
                 </div>
-
-                <div style="background: white; padding: 12px; border-radius: 10px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;">
-                    <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 14px; color: #2c3e50;">Filter Wilayah:</p>
-                    <div style="display: flex; flex-direction: column; gap: 8px;">
-                        <select id="f-desa" onchange="updateFilterKelompok(this.value); filterLaporan();" style="width: 100%; padding: 10px; border-radius: 5px;">
-                            <option value="">-- Semua Desa --</option>
-                            <option value="SAMIGALUH">SAMIGALUH</option>
-                            <option value="PENGASIH">PENGASIH</option>
-                            <option value="WATES">WATES</option>
-                            <option value="LENDAH">LENDAH</option>
-                            <option value="TEMON">TEMON</option>
-                        </select>
-                        <select id="f-kelompok" onchange="filterLaporan()" style="width: 100%; padding: 10px; border-radius: 5px;">
-                            <option value="">-- Semua Kelompok --</option>
-                        </select>
-                    </div>
-                </div> 
-                <div id="report-list-cont" style="margin-top: 10px;"></div>
+                <select id="f-desa" onchange="updateFilterKelompok(this.value); filterLaporan();">
+                    <option value="">-- Semua Desa --</option>
+                    <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
+                </select>
+                <select id="f-kelompok" onchange="filterLaporan()">
+                    <option value="">-- Semua Kelompok --</option>
+                </select>
+                <div id="report-list-cont"></div>
             </div>
 
             <div id="tab-master" class="tab-content hidden">
-                <input id="m-search" placeholder="Cari nama jamaah..." oninput="searchMaster()">
-                <div id="master-list-cont" style="max-height: 250px; overflow-y: auto;"></div>
-                <hr>
-                <h4>IMPOR DATA MASTER</h4>
-                <select id="m-desa" onchange="updateKelompok('m-kel-imp', this.value)">
-                    <option value="">-- Pilih Desa --</option>
-                    <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
-                </select>
-                <select id="m-kel-imp"><option value="">-- Pilih Kelompok --</option></select>
-                <textarea id="m-names" placeholder="Paste daftar nama (1 baris 1 nama)..." rows="3"></textarea>
-                <button onclick="importMaster()">MULAI IMPOR</button>
+                <input id="m-search" placeholder="Cari..." oninput="searchMaster()">
+                <div id="master-list-cont"></div>
+                <textarea id="m-names" placeholder="Paste nama..." rows="3"></textarea>
+                <button onclick="importMaster()">IMPOR</button>
             </div>
         </div>
     </div>
@@ -131,12 +105,12 @@
     <div id="full-qr-modal" class="full-modal hidden">
         <h2 id="full-title"></h2>
         <canvas id="full-canvas"></canvas>
-        <button onclick="document.getElementById('full-qr-modal').classList.add('hidden')" style="width:200px; margin-top:20px; background:#333">TUTUP</button>
+        <button onclick="document.getElementById('full-qr-modal').classList.add('hidden')" style="background:#333">TUTUP</button>
     </div>
 
     <div id="success-msg" class="success-overlay hidden">
         <div style="font-size:60px">✅</div>
-        <div class="doa-text" style="font-weight: bold; font-size: 20px;">Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</div>
+        <div style="font-weight:bold;">Alhamdulillah jazakumullahu khoiro,<br>lancar barokah</div>
     </div>
 </body>
 </html>
