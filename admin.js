@@ -103,6 +103,36 @@ window.addEventListener('DOMContentLoaded', async () => {
         window.masterCache = [];
         mSn.forEach(doc => window.masterCache.push(doc.data()));
 
+    const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+    const contPilih = document.getElementById('list-akun-pilihan');
+
+    if(role === 'admin') {
+        document.getElementById('admin-section').classList.remove('hidden');
+    } else if(aktif) {
+        document.getElementById('peserta-section').classList.remove('hidden');
+        window.tampilkanSalam();
+    } else if(daftar.length > 0) {
+        // Tampilkan halaman pilih akun jika ada daftar nama tersimpan
+        document.getElementById('pilih-akun-section').classList.remove('hidden');
+        contPilih.innerHTML = "";
+        
+        daftar.forEach(x => {
+            contPilih.innerHTML += `
+                <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                    <button onclick="pilihAkun('${x.id}')" style="flex: 1; text-align: left; padding: 12px; background: #f8f9fa; color: #333; border: 1px solid #ddd; border-radius: 8px; font-weight: bold;">
+                        👤 ${x.nama}
+                    </button>
+                    <button onclick="hapusAkunLokal('${x.id}')" style="width: 45px; background: #e74c3c; color: white; border-radius: 8px; border: none; font-weight: bold;">
+                        X
+                    </button>
+                </div>
+            `;
+        });
+    } else {
+        // Jika benar-benar kosong, baru tampilkan form registrasi
+        document.getElementById('modal-tambah').classList.remove('hidden');
+    }
+
         // Logika tampilan halaman
         const role = sessionStorage.getItem('role');
         const aktif = localStorage.getItem('akun_aktif');
