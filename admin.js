@@ -76,14 +76,25 @@ window.addEventListener('DOMContentLoaded', async () => {
 // --- BAGIAN PENARIK DATA MASTER UNTUK SARAN NAMA ---
 window.addEventListener('DOMContentLoaded', async () => {
     try {
+        // ... kode penarik data master yang sudah ada ...
         const mSn = await getDocs(collection(db, "master_jamaah"));
-        window.masterCache = []; // Kosongkan cache lama
-        mSn.forEach(doc => {
-            window.masterCache.push(doc.data());
-        });
-        console.log("Database Master dimuat: " + window.masterCache.length + " nama.");
+        window.masterCache = [];
+        mSn.forEach(doc => window.masterCache.push(doc.data()));
+
+        // Logika tampilan halaman
+        const role = sessionStorage.getItem('role');
+        const aktif = localStorage.getItem('akun_aktif');
+        
+        if(role === 'admin') {
+            document.getElementById('admin-section').classList.remove('hidden');
+        } else if(aktif) {
+            document.getElementById('peserta-section').classList.remove('hidden');
+            window.tampilkanSalam(); // <--- TAMBAHKAN INI
+        } else {
+            document.getElementById('pilih-akun-section').classList.remove('hidden');
+        }
     } catch (e) {
-        console.error("Gagal memuat Database Master: ", e);
+        console.error("Error load data: ", e);
     }
 });
 
