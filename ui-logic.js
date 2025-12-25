@@ -23,3 +23,10 @@ window.updateKelompok = (targetId, desa) => {
     el.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
     if(WILAYAH[desa]) WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
 };
+
+// Autocomplete Nama
+window.handleNameInput = (val) => {
+    const box = document.getElementById('suggestion-box');
+    if(val.length < 2) { box.classList.add('hidden'); return; }
+    // Logika autocomplete bisa ditambah di sini nanti
+};
