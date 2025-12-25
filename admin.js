@@ -94,16 +94,17 @@ window.addEventListener('DOMContentLoaded', async () => {
         } else if(daftar.length > 0) {
             document.getElementById('pilih-akun-section').classList.remove('hidden');
             contPilih.innerHTML = "";
+            // Cari bagian loop daftar akun di admin.js kamu
             daftar.forEach(x => {
-                contPilih.innerHTML += `
-                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-                        <button onclick="pilihAkun('${x.id}')" style="flex: 1; text-align: left; padding: 15px; background: #fff; border: 2px solid #eee; border-radius: 10px; font-weight: bold; cursor: pointer;">
-                            👤 ${x.nama}
-                        </button>
-                        <button onclick="hapusAkunLokal('${x.id}')" style="width: 50px; background: #ff4757; color: white; border-radius: 10px; border: none; font-weight: bold; cursor: pointer;">
-                            X
-                        </button>
-                    </div>`;
+            contPilih.innerHTML += `
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
+                    <button onclick="pilihAkun('${x.id}')" class="btn-pilih-akun">
+                        <span style="font-size: 18px;">👤</span> ${x.nama}
+                    </button>
+                    <button onclick="hapusAkunLokal('${x.id}')" style="width: 50px; height: 50px; background: #ff4757; color: white; border-radius: 10px; border: none; font-weight: bold; cursor: pointer;">
+                        X
+                    </button>
+                </div>`;
             });
         } else {
             document.getElementById('modal-tambah').classList.remove('hidden');
