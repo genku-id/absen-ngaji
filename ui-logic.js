@@ -59,3 +59,14 @@ window.selectSug = (n) => {
     document.getElementById('p-nama').value = n;
     document.getElementById('suggestion-box').classList.add('hidden');
 };
+// Fungsi untuk menampilkan salam ramah di atas scanner
+window.tampilkanSalam = () => {
+    const infoPeserta = document.getElementById('display-nama');
+    const akunAktif = JSON.parse(localStorage.getItem('akun_aktif'));
+
+    if (infoPeserta && akunAktif) {
+        infoPeserta.innerHTML = `Assalaamualaikum,<br><span style="color: #27ae60;">${akunAktif.nama}</span>`;
+        infoPeserta.style.fontSize = "20px";
+        infoPeserta.style.lineHeight = "1.4";
+    }
+};
