@@ -67,3 +67,19 @@ input, select, textarea { width: 100%; padding: 12px; margin-bottom: 10px; borde
     background: #e9ecef !important;
     transform: scale(0.98);
 }
+
+.btn-pilih-akun {
+    flex: 1;
+    text-align: left;
+    padding: 15px;
+    background: #ffffff;
+    border: 2px solid #eeeeee;
+    border-radius: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    color: #2c3e50 !important; /* Warna teks biru gelap agar kontras */
+}
+
+.btn-pilih-akun:hover {
+    background: #f1f2f6;
+}
