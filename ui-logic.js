@@ -6,7 +6,6 @@ export const WILAYAH = {
     "TEMON": ["TAWANGSARI", "HARGOREJO", "SIDATAN 1", "SIDATAN 2", "JOGOBOYO", "JOGORESAN"]
 };
 
-// Variabel global untuk menampung data master
 window.masterCache = [];
 
 window.toggleSidebar = () => {
@@ -27,46 +26,29 @@ window.updateKelompok = (targetId, desa) => {
     if(WILAYAH[desa]) WILAYAH[desa].forEach(k => el.innerHTML += `<option value="${k}">${k}</option>`);
 };
 
-// FITUR SARAN NAMA (AUTOCOMPLETE)
+// SARAN NAMA
 window.handleNameInput = (val) => {
     const desa = document.getElementById('p-desa').value;
     const kel = document.getElementById('p-kelompok').value;
     const box = document.getElementById('suggestion-box');
-    
-    if(!desa || !kel || val.length < 2) { 
-        box.classList.add('hidden'); 
-        return; 
-    }
-    
-    // Cari nama yang cocok di desa & kelompok yang sama
-    const matches = window.masterCache.filter(m => 
-        m.desa === desa && 
-        m.kelompok === kel && 
-        m.nama.toLowerCase().includes(val.toLowerCase())
-    );
-
+    if(!desa || !kel || val.length < 2) { box.classList.add('hidden'); return; }
+    const matches = window.masterCache.filter(m => m.desa === desa && m.kelompok === kel && m.nama.toLowerCase().includes(val.toLowerCase()));
     if(matches.length > 0) {
         box.classList.remove('hidden');
-        box.innerHTML = matches.map(m => `
-            <div class="suggestion-item" onclick="selectSug('${m.nama}')">${m.nama}</div>
-        `).join('');
-    } else {
-        box.classList.add('hidden');
-    }
+        box.innerHTML = matches.map(m => `<div class="suggestion-item" onclick="selectSug('${m.nama}')">${m.nama}</div>`).join('');
+    } else box.classList.add('hidden');
 };
 
 window.selectSug = (n) => {
     document.getElementById('p-nama').value = n;
     document.getElementById('suggestion-box').classList.add('hidden');
 };
-// Fungsi untuk menampilkan salam ramah di atas scanner
+
+// SALAM HANGAT
 window.tampilkanSalam = () => {
     const infoPeserta = document.getElementById('display-nama');
     const akunAktif = JSON.parse(localStorage.getItem('akun_aktif'));
-
     if (infoPeserta && akunAktif) {
         infoPeserta.innerHTML = `Assalaamualaikum,<br><span style="color: #27ae60;">${akunAktif.nama}</span>`;
-        infoPeserta.style.fontSize = "20px";
-        infoPeserta.style.lineHeight = "1.4";
     }
 };
