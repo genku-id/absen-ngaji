@@ -104,13 +104,21 @@ window.startScanner = () => {
             if(new Date() > new Date(tm.getTime() + 5*60000)) st = "TERLAMBAT";
         }
 
-        await addDoc(collection(db, "attendance"), { ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() });
+       await addDoc(collection(db, "attendance"), { ...akun, tipe: st, event: ev.data().nama, timestamp: serverTimestamp() });
         
-        // EFEK PERCIKAN
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        // 1. Munculkan dulu pesan doa/ceklis
+        document.getElementById('success-msg').classList.remove('hidden');
 
+        // 2. Jalankan Confetti di atas pesan doa (Z-Index: 6000)
+        confetti({ 
+            particleCount: 150, 
+            spread: 70, 
+            origin: { y: 0.6 },
+            zIndex: 6000 // Memastikan dia di depan overlay sukses
+        });
+
+        // 3. Matikan kamera
         sc.stop().then(() => {
-            document.getElementById('success-msg').classList.remove('hidden');
             setTimeout(() => location.reload(), 3000);
         });
     });
