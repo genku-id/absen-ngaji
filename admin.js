@@ -73,3 +73,41 @@ window.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('pilih-akun-section').classList.remove('hidden');
     }
 });
+// --- BAGIAN PENARIK DATA MASTER UNTUK SARAN NAMA ---
+window.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const mSn = await getDocs(collection(db, "master_jamaah"));
+        window.masterCache = []; // Kosongkan cache lama
+        mSn.forEach(doc => {
+            window.masterCache.push(doc.data());
+        });
+        console.log("Database Master dimuat: " + window.masterCache.length + " nama.");
+    } catch (e) {
+        console.error("Gagal memuat Database Master: ", e);
+    }
+});
+
+// Pastikan fungsi simpan profil juga bisa menambah database baru jika nama belum ada
+window.saveProfile = async () => {
+    const n = document.getElementById('p-nama').value.trim();
+    const d = document.getElementById('p-desa').value;
+    const k = document.getElementById('p-kelompok').value;
+    if(!n || !d || !k) return alert("Lengkapi data!");
+    
+    const id = "USR-" + Date.now();
+    const akun = { nama: n, desa: d, kelompok: k, id: id };
+    
+    // Cek apakah nama sudah ada di database master
+    const exists = window.masterCache.some(m => m.nama === n && m.kelompok === k);
+    
+    // Jika belum ada, simpan sebagai database master baru
+    if(!exists) {
+        await setDoc(doc(db, "master_jamaah", id), { ...akun, status: "Baru" });
+    }
+
+    let list = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+    list.push(akun);
+    localStorage.setItem('daftar_akun', JSON.stringify(list));
+    localStorage.setItem('akun_aktif', JSON.stringify(akun));
+    location.reload();
+};
