@@ -12,9 +12,31 @@ window.loginAdmin = () => {
 };
 
 window.logout = () => {
+    // Hanya hapus akun yang sedang aktif/dipakai
     localStorage.removeItem('akun_aktif');
+    // Jika admin, hapus juga rolenya
     sessionStorage.removeItem('role');
     location.reload();
+};
+
+// Tambahkan juga fungsi hapus akun dari daftar (tombol X)
+window.hapusAkunLokal = (id) => {
+    if(confirm("Hapus akun ini dari daftar di HP ini?")) {
+        let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+        daftar = daftar.filter(a => a.id !== id);
+        localStorage.setItem('daftar_akun', JSON.stringify(daftar));
+        location.reload();
+    }
+};
+
+// Fungsi untuk memilih akun dari daftar
+window.pilihAkun = (id) => {
+    let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+    const akun = daftar.find(a => a.id === id);
+    if(akun) {
+        localStorage.setItem('akun_aktif', JSON.stringify(akun));
+        location.reload();
+    }
 };
 
 window.createNewEvent = async () => {
