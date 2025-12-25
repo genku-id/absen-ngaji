@@ -124,3 +124,80 @@ window.loadReports = () => {
         });
     });
 };
+
+// admin.js
+
+// 1. Fungsi Aktifkan QR (Membuat Event Baru)
+window.createNewEvent = async () => {
+    const n = document.getElementById('ev-nama').value;
+    const t = document.getElementById('ev-tgl').value;
+    const j = document.getElementById('ev-jam').value;
+    
+    if(!n || !t || !j) return alert("Lengkapi Nama Acara, Tanggal, dan Jam!");
+    
+    try {
+        const eventID = "EVT-" + Date.now();
+        await setDoc(doc(db, "settings", "event_aktif"), { 
+            id: eventID, 
+            status: "OPEN", 
+            nama: n, 
+            tanggal: t, 
+            jam: j 
+        });
+        
+        alert("Event Berhasil Diaktifkan!");
+        location.reload(); // Reload untuk memicu generator QR di DOMContentLoaded
+    } catch (e) {
+        alert("Gagal: " + e.message);
+    }
+};
+
+// 2. Fungsi Generator QR (Dipanggil otomatis saat halaman load jika admin)
+const generateAllQR = (eventID) => {
+    const cAbsen = document.getElementById('canvas-absen');
+    const cIzin = document.getElementById('canvas-izin');
+    
+    if (cAbsen && cIzin) {
+        // Simpan data ID ke dalam properti title untuk referensi download/modal
+        cAbsen.title = eventID + "|HADIR";
+        cIzin.title = eventID + "|IZIN";
+
+        // Gunakan library QRCode yang sudah di-load di index.html
+        QRCode.toCanvas(cAbsen, cAbsen.title, { width: 250, margin: 2 });
+        QRCode.toCanvas(cIzin, cIzin.title, { width: 250, margin: 2 });
+    }
+};
+
+// 3. Pastikan Fungsi Pendukung QR ada di window
+window.downloadQR = (id, file) => {
+    const canvas = document.getElementById(id);
+    const link = document.createElement('a');
+    link.download = file + '.png';
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+};
+
+window.showFullQR = (id, title) => {
+    document.getElementById('full-qr-modal').classList.remove('hidden');
+    document.getElementById('full-title').innerText = title;
+    const source = document.getElementById(id);
+    QRCode.toCanvas(document.getElementById('full-canvas'), source.title, { width: 500 });
+};
+
+// 4. Update bagian DOMContentLoaded di admin.js
+window.addEventListener('DOMContentLoaded', async () => {
+    // ... kode masterCache tetap sama ...
+    
+    const role = sessionStorage.getItem('role');
+    if (role === 'admin') {
+        const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
+        if (evSnap.exists() && evSnap.data().status === "OPEN") {
+            document.getElementById('setup-box').classList.add('hidden');
+            document.getElementById('qr-box').classList.remove('hidden');
+            
+            // JALANKAN GENERATOR QR
+            generateAllQR(evSnap.data().id);
+            window.loadReports();
+        }
+    }
+});
