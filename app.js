@@ -421,7 +421,7 @@ window.renderTabelDatabase = async () => {
     const cari = document.getElementById('cari-nama-db').value.toUpperCase();
     const snap = await getDocs(collection(db, "master_jamaah"));
     
-    let html = `<table><thead><tr><th>Nama</th><th>Desa/Kel</th><th>Aksi</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Aksi</th></tr></thead><tbody>`;
     
     snap.forEach(docSnap => {
         const d = docSnap.data();
@@ -429,9 +429,9 @@ window.renderTabelDatabase = async () => {
             html += `
                 <tr>
                     <td>${d.nama}</td>
-                    <td>${d.desa}<br><small>${d.kelompok}</small></td>
+                    <td>${d.desa}<br>${d.kelompok}<br><b>(${d.gender || '?'})</b></td>
                     <td>
-                        <button onclick="hapusJamaah('${docSnap.id}', '${d.nama}')" style="background:red; color:white; padding:5px; border:none; border-radius:3px;">🗑️</button>
+                        <button onclick="hapusJamaah('${docSnap.id}', '${d.nama}')" class="btn-hapus">🗑️</button>
                     </td>
                 </tr>`;
         }
@@ -450,14 +450,14 @@ window.hapusJamaah = async (id, nama) => {
 
 window.prosesLogin = async () => {
     const namaInputRaw = document.getElementById('reg-nama').value;
-    const namaInput = namaInputRaw.trim().toUpperCase(); // Bersihkan spasi depan/belakang & paksa kapital
+    const namaInput = namaInputRaw.trim().toUpperCase();
     const desa = document.getElementById('reg-desa').value;
     const kelompok = document.getElementById('reg-kelompok').value;
 
-    if (!namaInput || !desa || !kelompok) return alert("Mohon lengkapi Desa, Kelompok, dan Nama!");
+    if (!namaInput || !desa || !kelompok) return alert("Mohon lengkapi data!");
 
     try {
-        // 1. Cari apakah nama ini sudah ada di master_jamaah (filter per desa & kelompok agar akurat)
+        // 1. Cek apakah sudah ada di master_jamaah
         const q = query(
             collection(db, "master_jamaah"), 
             where("desa", "==", desa),
@@ -466,36 +466,39 @@ window.prosesLogin = async () => {
         );
         
         const snap = await getDocs(q);
-
         let userData;
 
         if (!snap.empty) {
-            // JIKA ADA: Gunakan data yang sudah terdaftar (tidak menulis ulang)
+            // DATA SUDAH ADA: Ambil data lama (termasuk gender dll jika ada)
             const docData = snap.docs[0].data();
             userData = { 
                 nama: docData.nama, 
                 desa: docData.desa, 
                 kelompok: docData.kelompok 
             };
-            console.log("Menggunakan akun terdaftar:", userData.nama);
+            console.log("Menggunakan data yang sudah ada di Master.");
         } else {
-            // JIKA TIDAK ADA: Konfirmasi apakah mau daftar sebagai jamaah baru
-            const konfirmasi = confirm(`Nama "${namaInput}" belum ada di database ${desa} - ${kelompok}. Daftarkan sebagai jamaah baru?`);
-            
+            // DATA BELUM ADA: Tulis sebagai data baru ke master_jamaah
+            const konfirmasi = confirm(`Nama "${namaInput}" belum terdaftar. Daftarkan sebagai jamaah baru di ${desa}?`);
             if (konfirmasi) {
-                userData = { nama: namaInput, desa, kelompok };
+                userData = { 
+                    nama: namaInput, 
+                    desa: desa, 
+                    kelompok: kelompok,
+                    gender: "-" // Default kosong, admin bisa edit nanti di menu Database
+                };
                 await addDoc(collection(db, "master_jamaah"), userData);
-                alert("Berhasil didaftarkan sebagai jamaah baru!");
+                alert("Berhasil mendaftar ke Master Database!");
             } else {
-                return; // Batalkan login jika salah ketik
+                return;
             }
         }
 
-        // Simpan ke HP agar tidak perlu login lagi
+        // Simpan login ke HP
         localStorage.setItem('currentUser', JSON.stringify(userData));
         showScanner(userData);
 
     } catch (e) {
-        alert("Terjadi kesalahan: " + e.message);
+        alert("Gagal koneksi: " + e.message);
     }
 };
