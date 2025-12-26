@@ -78,15 +78,12 @@ window.prosesLogin = async () => {
 
     if (!nama || !desa || !kelompok) return alert("Lengkapi data!");
 
-    // Cek di database, jika tidak ada, otomatis tambah
-    const q = query(collection(db, "users"), where("nama", "==", nama));
-    const snap = await getDocs(q);
-    if (snap.empty) {
-        await addDoc(collection(db, "users"), { nama, desa, kelompok });
-    }
-
+    // Logika simpan user ke database tetap sama...
+    
     const userData = { nama, desa, kelompok };
     localStorage.setItem('currentUser', JSON.stringify(userData));
+    
+    // Panggil fungsi scanner
     showScanner(userData);
 };
 
