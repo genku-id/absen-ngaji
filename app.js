@@ -313,3 +313,9 @@ window.renderTabelLaporan = async () => {
     html += `</tbody></table>`;
     tableDiv.innerHTML = html;
 };
+
+window.downloadLaporan = () => {
+    const table = document.querySelector("#tabel-container table");
+    const wb = XLSX.utils.table_to_book(table);
+    XLSX.writeFile(wb, "Laporan_Presensi_Ngaji.xlsx");
+};
