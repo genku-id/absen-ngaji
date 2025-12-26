@@ -1,6 +1,6 @@
 import { db } from './firebase-config.js';
 import { collection, getDocs, query, where, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
+import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 // Tampilan awal: Cek apakah sudah ada akun tersimpan
 async function initApp() {
     const savedUser = localStorage.getItem('currentUser');
@@ -91,3 +91,57 @@ window.prosesLogin = async () => {
 };
 
 initApp();
+// Tambahkan import ini di baris paling atas app.js jika belum ada
+
+
+let html5QrCode;
+
+window.showScanner = (userData) => {
+    const content = document.getElementById('app-content');
+    content.innerHTML = `
+        <div class="card">
+            <h3>Halo, ${userData.nama}</h3>
+            <p>Silakan scan Barcode Absensi/Izin</p>
+            <div id="reader" style="width: 100%"></div>
+            <button onclick="showPageRegistrasi()" class="secondary-btn">Ganti Akun</button>
+        </div>
+    `;
+
+    html5QrCode = new Html5Qrcode("reader");
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+    html5QrCode.start({ facingMode: "environment" }, config, async (decodedText) => {
+        // Berhenti scan setelah dapet kode
+        await html5QrCode.stop();
+        prosesAbsensi(decodedText, userData);
+    });
+};
+
+async function prosesAbsensi(eventID, userData) {
+    try {
+        // Simpan ke collection 'attendance'
+        const attendanceID = `${eventID}_${userData.nama.replace(/\s/g, '')}`;
+        await setDoc(doc(db, "attendance", attendanceID), {
+            nama: userData.nama,
+            desa: userData.desa,
+            kelompok: userData.kelompok,
+            eventId: eventID,
+            waktu: serverTimestamp(),
+            status: "hadir"
+        });
+
+        // Tampilkan Lancar Barokah
+        const overlay = document.getElementById('success-overlay');
+        overlay.style.display = 'flex';
+
+        // Hilangkan overlay setelah 3 detik dan buka scanner lagi
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            showScanner(userData); 
+        }, 3000);
+
+    } catch (e) {
+        alert("Gagal absen: " + e.message);
+        showScanner(userData);
+    }
+}
