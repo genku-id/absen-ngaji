@@ -248,3 +248,17 @@ table {
     width: 100%;
     min-width: 300px; /* Menjamin isi tabel tidak dempet */
 }
+
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    /* Mencegah zoom saat double tap dan scrolling liar */
+    touch-action: manipulation; 
+    user-select: none; /* Mencegah teks terpilih/keblok */
+}
+
+/* Pastikan header tetap di atas saat mode Standalone PWA */
+header {
+    padding-top: env(safe-area-inset-top); /* Menyesuaikan poni HP modern */
+}
