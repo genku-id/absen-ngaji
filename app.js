@@ -176,9 +176,7 @@ window.showDashboard = (userData) => {
                 <h1 style="color: #075e54;">${userData.nama}</h1>
                 <p>${userData.desa} - ${userData.kelompok}</p>
             </div>
-            <button onclick="mulaiScanner(${JSON.stringify(userData)})" class="scan-btn">
-                📸 MULAI SCAN BARCODE
-            </button>
+            <button onclick="mulaiScanner(${JSON.stringify(userData)})" class="scan-btn">📸 MULAI SCAN</button>
             <button onclick="showPageRegistrasi()" class="secondary-btn" style="margin-top:20px;">Ganti Akun</button>
         </div>
     `;
@@ -209,7 +207,7 @@ async function prosesAbsensi(eventID, userData) {
     // Setelah berhasil simpan ke Firestore:
     
     const overlay = document.getElementById('success-overlay');
-    overlay.innerHTML = "<h1>LANCAR BAROKAH!</h1>";
+    overlay.innerHTML = "<h1>Alhamdulillah Jazaa Kumullahu Khoiroo, LANCAR BAROKAH!</h1>";
     overlay.style.display = 'flex';
 
     setTimeout(() => {
