@@ -1,13 +1,15 @@
 {
-  "name": "Absensi Ngaji",
-  "short_name": "AbsenNgaji",
+  "name": "E-Presensi Ku",
+  "short_name": "PresensiKu",
+  "description": "Aplikasi Presensi Ngaji Berbasis QR Code",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#f4f7f6",
-  "theme_color": "#27ae60",
+  "background_color": "#075e54",
+  "theme_color": "#075e54",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/1048/1048953.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/1160/1160358.png",
       "sizes": "512x512",
       "type": "image/png"
     }
