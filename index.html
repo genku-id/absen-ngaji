@@ -53,7 +53,7 @@
         </div>
 
         <div id="peserta-section" class="card hidden">
-            <h2 id="display-nama"></h2>
+            <div id="display-nama" style="margin-bottom: 20px; font-weight: bold; font-size: 1.2em;"></div>
             <div id="reader"></div>
             <button onclick="startScanner()" style="margin-top:15px">MULAI SCAN</button>
         </div>
@@ -78,14 +78,14 @@
                 <div id="qr-box" class="hidden">
                     <div class="card" style="margin-bottom: 15px;">
                         <h4>BARCODE HADIR</h4>
-                        <div style="display: flex; justify-content: center; padding: 10px;">
+                        <div style="display: flex; justify-content: center; padding: 10px; background: white;">
                             <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')"></canvas>
                         </div>
                         <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e; font-size:12px; width: auto; padding: 10px 20px;">💾 Simpan QR Hadir</button>
                     </div>
                     <div class="card" style="margin-bottom: 15px;">
                         <h4>BARCODE IZIN</h4>
-                        <div style="display: flex; justify-content: center; padding: 10px;">
+                        <div style="display: flex; justify-content: center; padding: 10px; background: white;">
                             <canvas id="canvas-izin" onclick="showFullQR('canvas-izin','IZIN')"></canvas>
                         </div>
                         <button onclick="downloadQR('canvas-izin', 'QR_IZIN')" style="background:#34495e; font-size:12px; width: auto; padding: 10px 20px;">💾 Simpan QR Izin</button>
@@ -102,7 +102,7 @@
 
                 <div class="card" style="padding:15px; text-align:left; background: #f9f9f9;">
                     <label style="font-size:12px; font-weight:bold;">Filter Desa:</label>
-                    <select id="f-desa" onchange="updateKelompok('f-kelompok', this.value); filterLaporan();">
+                    <select id="f-desa" onchange="updateFilterKelompok(this.value); filterLaporan();">
                         <option value="">-- Semua Desa --</option>
                         <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
                     </select>
