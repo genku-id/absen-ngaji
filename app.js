@@ -228,6 +228,29 @@ async function prosesAbsensi(eventID, userData) {
     }
 }
 // --- 6. LOGIKA ADMIN ---
+// Membuka Modal
+window.promptAdmin = () => {
+    document.getElementById('admin-modal').classList.remove('hidden');
+    document.getElementById('admin-pass-input').value = ""; // Reset input
+    document.getElementById('admin-pass-input').focus();
+};
+
+// Menutup Modal
+window.tutupModalAdmin = () => {
+    document.getElementById('admin-modal').classList.add('hidden');
+};
+
+// Mengecek Password
+window.cekPasswordAdmin = () => {
+    const pass = document.getElementById('admin-pass-input').value;
+    if (pass === "1234") { // Ganti dengan password Anda
+        tutupModalAdmin();
+        bukaAdmin(); // Jalankan fungsi admin yang sudah ada
+    } else {
+        alert("Password Salah!");
+    }
+};
+
 window.bukaAdmin = () => {
     const pass = prompt("Password Admin:");
     if (pass !== "1234") return alert("Salah!");
