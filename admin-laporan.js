@@ -27,27 +27,31 @@ window.filterLaporan = () => {
 };
 
 // Fungsi Download cerdas (sesuai filter)
-window.downloadExcel = async () => {
-    const desa = document.getElementById('f-desa').value;
-    const kel = document.getElementById('f-kelompok').value;
-    const sn = await getDocs(query(collection(db, "attendance"), orderBy("timestamp", "desc")));
+// Fungsi Download Berdasarkan Apa yang Tampil (Filter)
+window.downloadExcelCerdas = async () => {
+    const fDesa = document.getElementById('f-desa')?.value; // Tambahkan id ini di HTML
+    const fKel = document.getElementById('f-kelompok')?.value;
     
-    let csv = "Nama,Desa,Kelompok,Status\n";
+    const sn = await getDocs(collection(db, "attendance"));
+    let csv = "NAMA,DESA,KELOMPOK,STATUS\n";
+    
     sn.forEach(doc => {
         const r = doc.data();
-        if((!desa || r.desa === desa) && (!kel || r.kelompok === kel)) {
+        const matchDesa = !fDesa || r.desa === fDesa;
+        const matchKel = !fKel || r.kelompok === fKel;
+
+        if(matchDesa && matchKel) {
             csv += `${r.nama},${r.desa},${r.kelompok},${r.tipe}\n`;
         }
     });
-    
+
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
+    const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `Laporan_${desa||'Semua'}.csv`;
+    a.setAttribute('href', url);
+    a.setAttribute('download', `Laporan_${fDesa || 'Semua'}.csv`);
     a.click();
 };
-
 window.resetLaporan = async () => {
     if(!confirm("Hapus semua riwayat? Data ALFA yang tadi akan hilang semua.")) return;
     const sn = await getDocs(collection(db, "attendance"));
