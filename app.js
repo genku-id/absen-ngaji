@@ -365,7 +365,7 @@ window.renderTabelDatabase = async () => {
                     <td>${d.nama}</td>
                     <td>${d.desa}<br><small>${d.kelompok}</small></td>
                     <td>
-                        <button onclick="hapusJamaah('${docSnap.id}', '${d.nama}')" style="background:red; color:white; padding:5px; border:none; border-radius:3px;">Hapus</button>
+                        <button onclick="hapusJamaah('${docSnap.id}', '${d.nama}')" style="background:red; color:white; padding:5px; border:none; border-radius:3px;">X</button>
                     </td>
                 </tr>`;
         }
