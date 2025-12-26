@@ -107,24 +107,40 @@ window.showScanner = (userData) => {
 // --- 4. FUNGSI ABSENSI ---
 async function prosesAbsensi(eventID, userData) {
     try {
+        // CEK DULU: Apakah event masih ada di Firebase?
+        const eventRef = doc(db, "events", eventID);
+        const eventSnap = await getDoc(eventRef);
+
+        if (!eventSnap.exists()) {
+            alert("MAAF, BARCODE SUDAH TIDAK BERLAKU / EVENT SUDAH DITUTUP");
+            showScanner(userData);
+            return;
+        }
+
+        // Jika ada, lanjut proses simpan kehadiran
         const attendanceID = `${eventID}_${userData.nama.replace(/\s/g, '')}`;
         await setDoc(doc(db, "attendance", attendanceID), {
-            nama: userData.nama, desa: userData.desa, kelompok: userData.kelompok,
-            eventId: eventID, waktu: serverTimestamp(), status: "hadir"
+            nama: userData.nama,
+            desa: userData.desa,
+            kelompok: userData.kelompok,
+            eventId: eventID,
+            waktu: serverTimestamp(),
+            status: "hadir"
         });
 
+        // Tampilkan Lancar Barokah
         const overlay = document.getElementById('success-overlay');
         overlay.style.display = 'flex';
         setTimeout(() => {
             overlay.style.display = 'none';
             showScanner(userData); 
         }, 3000);
+
     } catch (e) {
         alert("Gagal absen: " + e.message);
         showScanner(userData);
     }
 }
-
 // --- 5. JALANKAN APLIKASI ---
 const savedUser = localStorage.getItem('currentUser');
 if (savedUser) {
@@ -175,28 +191,42 @@ window.formBuatEvent = () => {
     const container = document.getElementById('admin-dynamic-content');
     container.innerHTML = `
         <h3>Buat Event Baru</h3>
-        <input type="text" id="ev-nama" placeholder="Nama Pengajian (misal: Selasa Pon)">
-        <input type="date" id="ev-tgl">
+        <label>Nama Pengajian:</label>
+        <input type="text" id="ev-nama" placeholder="">
+        <label>Tanggal & Jam Mulai:</label>
+        <input type="datetime-local" id="ev-waktu"> 
         <button onclick="simpanEvent()" class="primary-btn">Terbitkan & Buat Barcode</button>
     `;
 };
 
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
-    const tgl = document.getElementById('ev-tgl').value;
-    if (!nama || !tgl) return alert("Isi nama dan tanggal!");
+    const waktu = document.getElementById('ev-waktu').value; // Ini mengambil Tgl & Jam
+    if (!nama || !waktu) return alert("Isi nama dan waktu!");
 
     const eventId = "EVT-" + Date.now();
     await setDoc(doc(db, "events", eventId), {
         nama: nama,
-        tanggal: tgl,
+        waktu: waktu,
         status: "open",
         createdAt: serverTimestamp()
     });
 
-    tampilkanBarcode(eventId, nama);
+    tampilkanBarcode(eventId, nama, waktu);
 };
 
+// Fungsi tutup event sekarang menghapus data di Firebase
+window.tutupEvent = async (id) => {
+    if(confirm("Jika ditutup, data event & Barcode akan DIHAPUS permanen. Lanjutkan?")) {
+        try {
+            await deleteDoc(doc(db, "events", id));
+            alert("Event Berhasil Ditutup & Barcode dinonaktifkan!");
+            bukaAdmin(); // Refresh ke tampilan awal admin
+        } catch (e) {
+            alert("Gagal menutup: " + e.message);
+        }
+    }
+};
 function tampilkanBarcode(id, nama) {
     const container = document.getElementById('admin-dynamic-content');
     container.innerHTML = `
