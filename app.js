@@ -189,7 +189,7 @@ async function prosesAbsensi(eventID, userData) {
             showDashboard(userData);
         }, 4000);
     } catch (e) { alert("Error: " + e.message); showDashboard(userData); }
-}
+};
 
 // --- 6. LOGIKA ADMIN ---
 window.bukaAdmin = () => {
