@@ -43,7 +43,7 @@ window.showPageRegistrasi = () => {
     let htmlList = "";
     if (accounts.length > 0) {
         htmlList = `<div class="account-list" style="margin-bottom:15px;">
-            <p style="font-size: 12px; color: #666; margin-bottom:10px;">Pilih akun tersimpan:</p>
+            <p style="font-size: 12px; color: #010530; margin-bottom:10px;">Pilih akun tersimpan:</p>
             ${accounts.map(acc => `
                 <div class="account-item" style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:10px; border-radius:8px; margin-bottom:5px;">
                     <div onclick='pilihAkun(${JSON.stringify(acc)})' style="flex-grow:1; cursor:pointer;">
@@ -60,7 +60,7 @@ window.showPageRegistrasi = () => {
         <div class="card">
             <h2>LogIn</h2>
             ${htmlList}
-            <p style="font-size: 12px; color: #666;">Masukakan data:</p>
+            <p style="font-size: 12px; color: #010530;">Masukakan data:</p>
             <select id="reg-desa">
                 <option value="">Pilih Desa</option>
                 ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
@@ -137,7 +137,7 @@ window.showDashboard = (userData) => {
     content.innerHTML = `
         <div class="card animate-in">
             <div style="text-align:center; padding:30px 0;">
-                <h2 style="font-weight: normal; color: #666;">Assalaamualaikum,</h2>
+                <h2 style="font-weight: normal; color: #010530;">Assalaamualaikum,</h2>
                 <h1 style="color: #075e54; margin:10px 0; font-size: 2.2em;">${userData.nama}</h1>
                 <p style="color: #888; letter-spacing: 1px;">${userData.desa} - ${userData.kelompok}</p>
             </div>
