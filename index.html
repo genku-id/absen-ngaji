@@ -85,12 +85,15 @@
             </div>
 
             <div id="tab-laporan" class="tab-content hidden">
-                <div style="display: flex; gap: 5px; margin-bottom: 15px;">
-                    <button id="btn-dl-excel" style="background:#27ae60; flex:1;">💾 DOWNLOAD</button>
-                    <button class="btn-danger" id="btn-reset-laporan" style="flex:1;">🗑️ RESET</button>
-                </div>
-                <div id="report-list-cont" style="margin-top: 15px;"></div>
-            </div>
+    <div style="margin-bottom:10px; display:flex; gap:5px;">
+        <select id="f-desa" onchange="window.filterLaporan()">
+            <option value="">Semua Desa</option>
+            <option>WATES</option><option>SAMIGALUH</option> </select>
+        <select id="f-kelompok" onchange="window.filterLaporan()">
+            <option value="">Semua Kelompok</option>
+        </select>
+    </div>
+    </div>
         </div>
     </div>
 </body>
