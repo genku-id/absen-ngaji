@@ -58,9 +58,9 @@ window.showPageRegistrasi = () => {
 
     content.innerHTML = `
         <div class="card">
-            <h2>E-PRESENSI KU</h2>
+            <h2>LogIn</h2>
             ${htmlList}
-            <p style="font-size: 12px; color: #666;">Masuk dengan nama baru:</p>
+            <p style="font-size: 12px; color: #666;">Masukakan data:</p>
             <select id="reg-desa">
                 <option value="">Pilih Desa</option>
                 ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
