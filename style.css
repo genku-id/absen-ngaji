@@ -8,14 +8,17 @@ body {
 
 header {
     width: 100%;
-    background: #075e54; 
+    /* Mengambil gambar logo.png sebagai background */
+    background: linear-gradient(rgba(7, 94, 84, 0.8), rgba(7, 94, 84, 0.8)), url('logo.png');
+    background-size: cover;
+    background-position: center;
     color: white;
-    padding: 10px 15px; 
+    padding: 15px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     box-sizing: border-box;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -61,11 +64,15 @@ input, select, button {
 }
 
 .primary-btn {
-    background-color: #25d366;
+    background-color: #007bff; /* Warna Biru Utama */
     color: white;
     border: none;
+    padding: 15px;
+    border-radius: 8px;
     font-weight: bold;
     cursor: pointer;
+    width: 100%;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
 }
 
 .hidden { display: none; }
@@ -126,7 +133,7 @@ input, select, button {
 
 /* Tombol Saat Aktif (Hijau) */
 .admin-btn.active {
-    background-color: #25d366; /* Hijau */
+    background-color: #00aaff !important; /* Biru yang lebih muda */
 }
 
 /* Tabel agar tidak memakan tempat */
@@ -211,10 +218,15 @@ th { background-color: #075e54; color: white; }
 /* Dashboard Sapaan */
 .salam-box { padding: 20px 0; text-align: center; }
 .scan-btn {
-    background: #25d366; color: white; border: none;
-    padding: 20px; width: 100%; border-radius: 50px;
-    font-size: 18px; font-weight: bold; cursor: pointer;
-    box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+    background-color: #007bff; /* Warna Biru Utama */
+    color: white;
+    border: none;
+    padding: 15px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
 }
 
 /* Success Overlay Full Screen */
@@ -271,4 +283,7 @@ header {
 body {
     padding-top: env(safe-area-inset-top);
     padding-bottom: env(safe-area-inset-bottom);
+}
+.card h1 {
+    color: #0056b3; /* Biru Tua untuk Nama Jamaah */
 }
