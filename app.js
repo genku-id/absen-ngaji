@@ -83,17 +83,116 @@ async function prosesLogin() {
 }
 
 // --- 3. FUNGSI SCANNER ---
-window.showScanner = (userData) => {
+// --- 1. LOGIKA MULTI-AKUN (LOCALSTORAGE) ---
+function getSavedAccounts() {
+    return JSON.parse(localStorage.getItem('saved_accounts')) || [];
+}
+
+function saveAccount(userData) {
+    let accounts = getSavedAccounts();
+    const exists = accounts.find(a => a.nama === userData.nama && a.desa === userData.desa);
+    if (!exists) {
+        accounts.push(userData);
+        localStorage.setItem('saved_accounts', JSON.stringify(accounts));
+    }
+}
+
+window.hapusAkunDariList = (nama) => {
+    let accounts = getSavedAccounts().filter(a => a.nama !== nama);
+    localStorage.setItem('saved_accounts', JSON.stringify(accounts));
+    showPageRegistrasi(); // Refresh tampilan
+};
+
+// --- 2. INITIALIZE APP (LOGIKA AUTO-LOGIN) ---
+const initApp = () => {
+    const accounts = getSavedAccounts();
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+    if (currentUser) {
+        showDashboard(currentUser);
+    } else if (accounts.length === 1) {
+        // Jika cuma ada 1 akun, langsung masuk
+        localStorage.setItem('currentUser', JSON.stringify(accounts[0]));
+        showDashboard(accounts[0]);
+    } else {
+        showPageRegistrasi();
+    }
+};
+
+// --- 3. HALAMAN LOGIN & LIST AKUN ---
+window.showPageRegistrasi = () => {
+    localStorage.removeItem('currentUser');
+    const accounts = getSavedAccounts();
     const content = document.getElementById('app-content');
+    
+    let htmlList = "";
+    if (accounts.length > 0) {
+        htmlList = `<div class="account-list">
+            <p style="font-size: 12px; color: #666;">Pilih akun yang sudah tersimpan:</p>
+            ${accounts.map(acc => `
+                <div class="account-item">
+                    <div class="acc-info" onclick='pilihAkun(${JSON.stringify(acc)})'>
+                        <b>${acc.nama}</b><br><small>${acc.desa} - ${acc.kelompok}</small>
+                    </div>
+                    <button class="btn-x" onclick="hapusAkunDariList('${acc.nama}')">✕</button>
+                </div>
+            `).join('')}
+            <hr>
+            <p style="font-size: 12px; color: #666;">Atau masuk dengan nama lain:</p>
+        </div>`;
+    }
+
     content.innerHTML = `
         <div class="card">
-            <h3>Halo, ${userData.nama}</h3>
-            <div id="reader" style="width: 100%"></div>
-            <button id="btn-ganti" class="secondary-btn">Ganti Akun</button>
+            <h2>E-PRESENSI KU</h2>
+            ${htmlList}
+            <select id="reg-desa">
+                <option value="">Pilih Desa</option>
+                ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
+            </select>
+            <select id="reg-kelompok" disabled><option value="">Pilih Kelompok</option></select>
+            <input type="text" id="reg-nama" placeholder="Ketik Nama..." list="list-nama" disabled>
+            <datalist id="list-nama"></datalist>
+            <button id="btn-login" class="primary-btn">MASUK</button>
         </div>
     `;
 
-    document.getElementById('btn-ganti').onclick = showPageRegistrasi;
+    // ... (Logika onchange desa/kelompok tetap sama seperti sebelumnya) ...
+    setupRegLogic(); 
+};
+
+window.pilihAkun = (userData) => {
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    showDashboard(userData);
+};
+
+// --- 4. DASHBOARD (SAPAAN & TOMBOL SCAN) ---
+window.showDashboard = (userData) => {
+    const content = document.getElementById('app-content');
+    content.innerHTML = `
+        <div class="card animate-in">
+            <div class="salam-box">
+                <h2>Assalaamualaikum,</h2>
+                <h1 style="color: #075e54;">${userData.nama}</h1>
+                <p>${userData.desa} - ${userData.kelompok}</p>
+            </div>
+            <button onclick="mulaiScanner(${JSON.stringify(userData)})" class="scan-btn">
+                📸 MULAI SCAN BARCODE
+            </button>
+            <button onclick="showPageRegistrasi()" class="secondary-btn" style="margin-top:20px;">Ganti Akun</button>
+        </div>
+    `;
+};
+
+window.mulaiScanner = (userData) => {
+    const content = document.getElementById('app-content');
+    content.innerHTML = `
+        <div class="card">
+            <h3>Scanning...</h3>
+            <div id="reader" style="width: 100%"></div>
+            <button onclick="showDashboard(${JSON.stringify(userData)})" class="secondary-btn">Batal</button>
+        </div>
+    `;
 
     html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
@@ -101,8 +200,25 @@ window.showScanner = (userData) => {
             await html5QrCode.stop();
             prosesAbsensi(decodedText, userData);
         }
-    ).catch(err => console.error("Kamera Error:", err));
+    );
 };
+
+// --- 5. LOGIKA PROSES ABSEN & OVERLAY ---
+async function prosesAbsensi(eventID, userData) {
+    // ... (Logika cek firebase tetap sama) ...
+    // Setelah berhasil simpan ke Firestore:
+    
+    const overlay = document.getElementById('success-overlay');
+    overlay.innerHTML = "<h1>LANCAR BAROKAH!</h1>";
+    overlay.style.display = 'flex';
+
+    setTimeout(() => {
+        overlay.style.display = 'none';
+        showDashboard(userData); // Balik ke halaman sapaan (bukan scanner langsung)
+    }, 4000);
+}
+
+initApp();
 
 // --- 4. FUNGSI ABSENSI ---
 async function prosesAbsensi(eventID, userData) {
