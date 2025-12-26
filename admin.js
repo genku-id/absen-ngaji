@@ -124,9 +124,7 @@ window.closeEvent = async () => {
     }
 };
 
-// --- 4. LAPORAN & DATABASE ---
-
-// Fungsi Filter Laporan Realtime
+// --- 4. LAPORAN, FILTER & DOWNLOAD ---
 window.filterLaporan = () => {
     const desa = document.getElementById('f-desa').value;
     const kel = document.getElementById('f-kelompok').value;
@@ -134,7 +132,6 @@ window.filterLaporan = () => {
     
     if(!cont) return;
 
-    // Listener OnSnapshot untuk update otomatis saat ada perubahan atau filter
     onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
         cont.innerHTML = "";
         sn.forEach(doc => {
@@ -144,9 +141,9 @@ window.filterLaporan = () => {
             
             if(matchDesa && matchKel) {
                 cont.innerHTML += `
-                    <div class="report-item" style="padding: 10px; border-bottom: 1px solid #eee;">
-                        <b>${r.nama}</b> <span class="badge">${r.tipe}</span><br>
-                        <small>${r.desa} - ${r.kelompok}</small>
+                    <div class="report-item" style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">
+                        <b>${r.nama}</b> <span style="background: ${r.tipe === 'HADIR' ? '#2ecc71' : '#e74c3c'}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${r.tipe}</span><br>
+                        <small style="color: #666;">${r.desa} - ${r.kelompok}</small>
                     </div>`;
             }
         });
@@ -175,23 +172,22 @@ window.downloadExcel = async () => {
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
     a.setAttribute('href', url);
-    a.setAttribute('download', `Laporan_${desa||'Semua'}_${Date.now()}.csv`);
+    a.setAttribute('download', `Laporan_${desa||'Semua'}.csv`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 };
 
 window.resetLaporan = async () => {
-    if(!confirm("PERINGATAN! Ini akan menghapus SEMUA riwayat absen. Lanjutkan?")) return;
-    
+    if(!confirm("Hapus SEMUA riwayat absen?")) return;
     try {
         const sn = await getDocs(collection(db, "attendance"));
         const batch = writeBatch(db);
         sn.forEach(d => batch.delete(d.ref));
         await batch.commit();
-        alert("Semua riwayat laporan telah dihapus!");
+        alert("Berhasil reset!");
         location.reload();
-    } catch (e) { alert("Gagal Reset: " + e.message); }
+    } catch (e) { alert(e.message); }
 };
 
 // --- 5. LOGIKA UTAMA ---
@@ -215,7 +211,7 @@ window.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('qr-box').classList.remove('hidden');
                 setTimeout(() => generateAllQR(evSnap.data().id), 500);
             }
-            window.filterLaporan(); // Panggil filter saat pertama kali admin load
+            window.filterLaporan(); 
         } else if(aktif) {
             document.getElementById('peserta-section').classList.remove('hidden');
             if(window.tampilkanSalam) window.tampilkanSalam();
