@@ -107,8 +107,11 @@ window.showScanner = (userData) => {
 // --- 4. FUNGSI ABSENSI ---
 async function prosesAbsensi(eventID, userData) {
     try {
-        // CEK DULU: Apakah event masih ada di Firebase?
-        const eventRef = doc(db, "events", eventID);
+        // 1. Cek apakah Event ID valid (Bukan Scan asal-asalan)
+        // Jika scan Barcode Izin (ada tambahan _IZIN), kita bersihkan dulu ID-nya
+        const cleanEventID = eventID.replace("_IZIN", "");
+        
+        const eventRef = doc(db, "events", cleanEventID);
         const eventSnap = await getDoc(eventRef);
 
         if (!eventSnap.exists()) {
@@ -117,18 +120,21 @@ async function prosesAbsensi(eventID, userData) {
             return;
         }
 
-        // Jika ada, lanjut proses simpan kehadiran
-        const attendanceID = `${eventID}_${userData.nama.replace(/\s/g, '')}`;
+        // 2. Tentukan status (Hadir atau Izin)
+        const statusAbsen = eventID.includes("_IZIN") ? "izin" : "hadir";
+
+        // 3. Simpan Kehadiran
+        const attendanceID = `${cleanEventID}_${userData.nama.replace(/\s/g, '')}`;
         await setDoc(doc(db, "attendance", attendanceID), {
             nama: userData.nama,
             desa: userData.desa,
             kelompok: userData.kelompok,
-            eventId: eventID,
+            eventId: cleanEventID,
             waktu: serverTimestamp(),
-            status: "hadir"
+            status: statusAbsen
         });
 
-        // Tampilkan Lancar Barokah
+        // 4. Efek Lancar Barokah
         const overlay = document.getElementById('success-overlay');
         overlay.style.display = 'flex';
         setTimeout(() => {
@@ -137,7 +143,8 @@ async function prosesAbsensi(eventID, userData) {
         }, 3000);
 
     } catch (e) {
-        alert("Gagal absen: " + e.message);
+        console.error("Detail Error:", e);
+        alert("Gagal scan: " + e.message);
         showScanner(userData);
     }
 }
