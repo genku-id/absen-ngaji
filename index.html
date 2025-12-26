@@ -100,18 +100,20 @@
                     <button class="btn-danger" onclick="resetLaporan()" style="flex:1;">🗑️ RESET</button>
                 </div>
 
-                <div class="card" style="padding:15px; text-align:left; background: #f9f9f9;">
-                    <label style="font-size:12px; font-weight:bold;">Filter Desa:</label>
+                <div class="card" style="padding:15px; text-align:left; background: #fdfdfd; border: 1px solid #eee;">
+                    <h4 style="margin-top:0; color:#2c3e50; font-size: 14px;">🔍 FILTER DATA</h4>
+                    <label style="font-size:11px; font-weight:bold; color:#7f8c8d;">DESA:</label>
                     <select id="f-desa" onchange="updateKelompok('f-kelompok', this.value); filterLaporan();">
                         <option value="">-- Semua Desa --</option>
                         <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
                     </select>
-                    <label style="font-size:12px; font-weight:bold; margin-top: 10px; display: block;">Filter Kelompok:</label>
+                    <label style="font-size:11px; font-weight:bold; color:#7f8c8d; margin-top: 8px; display: block;">KELOMPOK:</label>
                     <select id="f-kelompok" onchange="filterLaporan()">
                         <option value="">-- Semua Kelompok --</option>
                     </select>
                 </div>
-                <div id="report-list-cont" style="margin-top: 15px;"></div>
+
+                <div id="report-list-cont" style="margin-top: 15px; max-height: 400px; overflow-y: auto;"></div>
             </div>
 
             <div id="tab-master" class="tab-content hidden">
