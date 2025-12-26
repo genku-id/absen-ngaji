@@ -447,3 +447,55 @@ window.hapusJamaah = async (id, nama) => {
         renderTabelDatabase();
     }
 };
+
+window.prosesLogin = async () => {
+    const namaInputRaw = document.getElementById('reg-nama').value;
+    const namaInput = namaInputRaw.trim().toUpperCase(); // Bersihkan spasi depan/belakang & paksa kapital
+    const desa = document.getElementById('reg-desa').value;
+    const kelompok = document.getElementById('reg-kelompok').value;
+
+    if (!namaInput || !desa || !kelompok) return alert("Mohon lengkapi Desa, Kelompok, dan Nama!");
+
+    try {
+        // 1. Cari apakah nama ini sudah ada di master_jamaah (filter per desa & kelompok agar akurat)
+        const q = query(
+            collection(db, "master_jamaah"), 
+            where("desa", "==", desa),
+            where("kelompok", "==", kelompok),
+            where("nama", "==", namaInput)
+        );
+        
+        const snap = await getDocs(q);
+
+        let userData;
+
+        if (!snap.empty) {
+            // JIKA ADA: Gunakan data yang sudah terdaftar (tidak menulis ulang)
+            const docData = snap.docs[0].data();
+            userData = { 
+                nama: docData.nama, 
+                desa: docData.desa, 
+                kelompok: docData.kelompok 
+            };
+            console.log("Menggunakan akun terdaftar:", userData.nama);
+        } else {
+            // JIKA TIDAK ADA: Konfirmasi apakah mau daftar sebagai jamaah baru
+            const konfirmasi = confirm(`Nama "${namaInput}" belum ada di database ${desa} - ${kelompok}. Daftarkan sebagai jamaah baru?`);
+            
+            if (konfirmasi) {
+                userData = { nama: namaInput, desa, kelompok };
+                await addDoc(collection(db, "master_jamaah"), userData);
+                alert("Berhasil didaftarkan sebagai jamaah baru!");
+            } else {
+                return; // Batalkan login jika salah ketik
+            }
+        }
+
+        // Simpan ke HP agar tidak perlu login lagi
+        localStorage.setItem('currentUser', JSON.stringify(userData));
+        showScanner(userData);
+
+    } catch (e) {
+        alert("Terjadi kesalahan: " + e.message);
+    }
+};
