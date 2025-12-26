@@ -9,7 +9,7 @@ body {
 header {
     width: 100%;
     /* Mengambil gambar logo.png sebagai background */
-    background: linear-gradient(rgba(7, 94, 84, 0.8), rgba(7, 94, 84, 0.8)), url('logo.png');
+    background: linear-gradient(rgba(7, 94, 84, 0.8), rgba(7, 94, 84, 0.8)), url('logo1.png');
     background-size: cover;
     background-position: center;
     color: white;
