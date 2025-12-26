@@ -132,3 +132,89 @@ if (savedUser) {
 } else {
     showPageRegistrasi();
 }
+
+// --- 6. LOGIKA ADMIN ---
+window.bukaAdmin = () => {
+    const password = prompt("Masukkan Password Admin:");
+    if (password !== "admin123") return alert("Password Salah!"); // Ganti password sesukamu
+
+    const content = document.getElementById('app-content');
+    content.innerHTML = `
+        <div class="card admin-card">
+            <h2>Panel Admin</h2>
+            <div class="admin-actions">
+                <button onclick="formBuatEvent()" class="primary-btn">➕ Buat Event Ngaji Baru</button>
+                <button onclick="lihatLaporan()" class="secondary-btn">📊 Lihat Laporan Kehadiran</button>
+                <button onclick="lihatDatabase()" class="secondary-btn">🗂️ Database Jamaah</button>
+            </div>
+            <div id="admin-dynamic-content"></div>
+        </div>
+    `;
+};
+
+window.formBuatEvent = () => {
+    const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = `
+        <h3>Buat Event Baru</h3>
+        <input type="text" id="ev-nama" placeholder="Nama Pengajian (misal: Selasa Pon)">
+        <input type="date" id="ev-tgl">
+        <button onclick="simpanEvent()" class="primary-btn">Terbitkan & Buat Barcode</button>
+    `;
+};
+
+window.simpanEvent = async () => {
+    const nama = document.getElementById('ev-nama').value;
+    const tgl = document.getElementById('ev-tgl').value;
+    if (!nama || !tgl) return alert("Isi nama dan tanggal!");
+
+    const eventId = "EVT-" + Date.now();
+    await setDoc(doc(db, "events", eventId), {
+        nama: nama,
+        tanggal: tgl,
+        status: "open",
+        createdAt: serverTimestamp()
+    });
+
+    tampilkanBarcode(eventId, nama);
+};
+
+function tampilkanBarcode(id, nama) {
+    const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = `
+        <div class="qr-result">
+            <h4>Barcode untuk: ${nama}</h4>
+            <div class="qr-item">
+                <p><b>BARCODE ABSENSI</b> (Pajang di Meja)</p>
+                <div id="qrcode-absen"></div>
+                <button onclick="downloadQR('qrcode-absen', 'Absen_${nama}')">Download Barcode Absen</button>
+            </div>
+            <hr>
+            <div class="qr-item">
+                <p><b>BARCODE IZIN</b> (Share ke WA)</p>
+                <div id="qrcode-izin"></div>
+                <button onclick="downloadQR('qrcode-izin', 'Izin_${nama}')">Download Barcode Izin</button>
+            </div>
+            <button onclick="tutupEvent('${id}')" style="background:red; color:white; margin-top:20px">Tutup Pendaftaran (Matikan Barcode)</button>
+        </div>
+    `;
+
+    // Generate QR
+    new QRCode(document.getElementById("qrcode-absen"), id);
+    new QRCode(document.getElementById("qrcode-izin"), id + "_IZIN");
+}
+
+window.downloadQR = (elementId, fileName) => {
+    const img = document.getElementById(elementId).querySelector("img");
+    const link = document.createElement("a");
+    link.href = img.src;
+    link.download = fileName + ".png";
+    link.click();
+};
+
+window.tutupEvent = async (id) => {
+    if(confirm("Jika ditutup, barcode tidak bisa digunakan lagi. Lanjut?")) {
+        await setDoc(doc(db, "events", id), { status: "closed" }, { merge: true });
+        alert("Event ditutup!");
+        bukaAdmin();
+    }
+};
