@@ -47,9 +47,9 @@ window.showPageRegistrasi = () => {
     // Logika Saran Nama
     namaInp.oninput = async () => {
         if (namaInp.value.length < 2) return;
-        const q = query(collection(db, "users"), 
-                  where("desa", "==", desaSel.value),
-                  where("kelompok", "==", kelSel.value));
+        const q = query(collection(db, "master_jamaah"), 
+          where("desa", "==", desaSel.value),
+          where("kelompok", "==", kelSel.value));
         const snap = await getDocs(q);
         const list = document.getElementById('list-nama');
         list.innerHTML = "";
@@ -244,4 +244,72 @@ window.promptAdmin = () => {
     } else {
         alert("Password Salah!");
     }
+};
+
+window.lihatLaporan = async () => {
+    const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = `
+        <h3>Laporan Kehadiran</h3>
+        <div class="filter-box">
+            <select id="f-desa">
+                <option value="">Semua Desa</option>
+                ${Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('')}
+            </select>
+            <select id="f-kelompok">
+                <option value="">Semua Kelompok</option>
+            </select>
+            <button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan</button>
+            <button onclick="downloadLaporan()" class="secondary-btn">📥 Download Hasil Filter</button>
+        </div>
+        <div id="tabel-container" class="table-responsive">
+            <p>Memuat data...</p>
+        </div>
+    `;
+    
+    // Logika filter kelompok yang dinamis di laporan
+    document.getElementById('f-desa').onchange = (e) => {
+        const kel = dataWilayah[e.target.value] || [];
+        document.getElementById('f-kelompok').innerHTML = '<option value="">Semua Kelompok</option>' + 
+            kel.map(k => `<option value="${k}">${k}</option>`).join('');
+    };
+    
+    renderTabelLaporan();
+};
+
+window.renderTabelLaporan = async () => {
+    const fDesa = document.getElementById('f-desa').value;
+    const fKel = document.getElementById('f-kelompok').value;
+    const tableDiv = document.getElementById('tabel-container');
+
+    // 1. Ambil semua master jamaah untuk cek siapa yang ALFA
+    let qMaster = collection(db, "master_jamaah");
+    if(fDesa) qMaster = query(qMaster, where("desa", "==", fDesa));
+    if(fKel) qMaster = query(qMaster, where("kelompok", "==", fKel));
+    
+    const masterSnap = await getDocs(qMaster);
+    const daftarHadirSnap = await getDocs(collection(db, "attendance")); // Sesuai event aktif
+    
+    const hadirNames = [];
+    daftarHadirSnap.forEach(doc => hadirNames.push(doc.data().nama));
+
+    let html = `<table>
+        <thead>
+            <tr><th>Nama</th><th>Desa</th><th>Kelompok</th><th>Status</th></tr>
+        </thead>
+        <tbody>`;
+
+    masterSnap.forEach(doc => {
+        const d = doc.data();
+        const isHadir = hadirNames.includes(d.nama);
+        html += `
+            <tr class="${isHadir ? 'row-hadir' : 'row-alfa'}">
+                <td>${d.nama}</td>
+                <td>${d.desa}</td>
+                <td>${d.kelompok}</td>
+                <td><b>${isHadir ? '✅ HADIR' : '❌ ALFA'}</b></td>
+            </tr>`;
+    });
+
+    html += `</tbody></table>`;
+    tableDiv.innerHTML = html;
 };
