@@ -127,3 +127,9 @@ input, select, button {
 .hidden {
     display: none !important;
 }
+table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
+th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+th { background-color: #075e54; color: white; }
+.row-alfa { background-color: #ffebee; color: #c62828; }
+.row-hadir { background-color: #e8f5e9; color: #2e7d32; }
+.filter-box { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
