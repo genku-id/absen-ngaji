@@ -194,16 +194,30 @@ window.switchAdminTab = (tab) => {
     }
 };
 
-window.formBuatEvent = () => {
+window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    container.innerHTML = `
-        <h3>Buat Event Baru</h3>
-        <label>Nama Pengajian:</label>
-        <input type="text" id="ev-nama" placeholder="">
-        <label>Tanggal & Jam Mulai:</label>
-        <input type="datetime-local" id="ev-waktu"> 
-        <button onclick="simpanEvent()" class="primary-btn">Terbitkan & Buat Barcode</button>
-    `;
+    container.innerHTML = `<p>Memeriksa status event...</p>`;
+
+    // Cek apakah ada event yang statusnya masih 'open'
+    const q = query(collection(db, "events"), where("status", "==", "open"));
+    const snap = await getDocs(q);
+
+    if (!snap.empty) {
+        // Jika ada event aktif, langsung tampilkan QR-nya
+        const evData = snap.docs[0].data();
+        const evId = snap.docs[0].id;
+        tampilkanBarcode(evId, evData.nama, evData.waktu);
+    } else {
+        // Jika tidak ada, tampilkan form buat baru
+        container.innerHTML = `
+            <h3>Buat Event Baru</h3>
+            <label>Nama Pengajian:</label>
+            <input type="text" id="ev-nama" placeholder="">
+            <label>Tanggal & Jam Mulai:</label>
+            <input type="datetime-local" id="ev-waktu"> 
+            <button onclick="simpanEvent()" class="primary-btn">Terbitkan & Buat Barcode</button>
+        `;
+    }
 };
 
 window.simpanEvent = async () => {
@@ -234,27 +248,28 @@ window.tutupEvent = async (id) => {
         }
     }
 };
-function tampilkanBarcode(id, nama) {
+function tampilkanBarcode(id, nama, waktu) {
     const container = document.getElementById('admin-dynamic-content');
     container.innerHTML = `
         <div class="qr-result">
-            <h4>Barcode untuk: ${nama}</h4>
+            <h4>${nama}</h4>
+            <p>Jadwal: ${waktu.replace('T', ' Jam ')}</p>
             <div class="qr-item">
-                <p><b>BARCODE ABSENSI</b> (Pajang di Meja)</p>
+                <p><b>BARCODE ABSENSI</b></p>
                 <div id="qrcode-absen"></div>
                 <button onclick="downloadQR('qrcode-absen', 'Absen_${nama}')">Download Barcode Absen</button>
             </div>
-            <hr>
             <div class="qr-item">
-                <p><b>BARCODE IZIN</b> (Share ke WA)</p>
+                <p><b>BARCODE IZIN</b></p>
                 <div id="qrcode-izin"></div>
                 <button onclick="downloadQR('qrcode-izin', 'Izin_${nama}')">Download Barcode Izin</button>
             </div>
-            <button onclick="tutupEvent('${id}')" style="background:red; color:white; margin-top:20px">Tutup Pendaftaran (Matikan Barcode)</button>
+            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:10px;">
+                TUTUP EVENT (QR MATI & HAPUS EVENT)
+            </button>
         </div>
     `;
 
-    // Generate QR
     new QRCode(document.getElementById("qrcode-absen"), id);
     new QRCode(document.getElementById("qrcode-izin"), id + "_IZIN");
 }
@@ -316,6 +331,7 @@ window.lihatLaporan = async () => {
             </select>
             <button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan</button>
             <button onclick="downloadLaporan()" class="secondary-btn">📥 Download Hasil Filter</button>
+            <button onclick="resetAbsensi()" style="background: #d32f2f; color: white; margin-top: 10px;">🗑️ Reset</button>
         </div>
         <div id="tabel-container" class="table-responsive">
             <p>Memuat data...</p>
@@ -374,6 +390,19 @@ window.downloadLaporan = () => {
     const table = document.querySelector("#tabel-container table");
     const wb = XLSX.utils.table_to_book(table);
     XLSX.writeFile(wb, "Laporan_Presensi_Ngaji.xlsx");
+};
+window.resetAbsensi = async () => {
+    if (confirm("PERINGATAN! Semua data kehadiran akan DIHAPUS PERMANEN. Pastikan sudah download laporan. Lanjut?")) {
+        try {
+            const snap = await getDocs(collection(db, "attendance"));
+            const promises = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
+            await Promise.all(promises);
+            alert("Riwayat absen telah dibersihkan!");
+            renderTabelLaporan();
+        } catch (e) {
+            alert("Gagal reset: " + e.message);
+        }
+    }
 };
 window.lihatDatabase = async () => {
     const container = document.getElementById('admin-dynamic-content');
