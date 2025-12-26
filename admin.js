@@ -105,7 +105,6 @@ window.closeEvent = async () => {
         const batch = writeBatch(db);
         let c = 0;
         
-        // Perbaikan variabel: mSn.forEach (bukan masterSn)
         mSn.forEach(docM => {
             if(!sudah.includes(docM.data().nama)) {
                 batch.set(doc(collection(db, "attendance")), { 
@@ -126,43 +125,34 @@ window.closeEvent = async () => {
 };
 
 // --- 4. LAPORAN & DATABASE ---
-window.loadReports = () => {
-    const cont = document.getElementById('report-list-cont');
-    if(!cont) return;
-    onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
-        cont.innerHTML = "";
-        sn.forEach(doc => {
-            const r = doc.data();
-            cont.innerHTML += `<div class="report-item"><b>${r.nama}</b><span>${r.tipe}</span></div>`;
-        });
-    });
-};
-// admin.js
 
-// --- FUNGSI FILTER LAPORAN ---
+// Fungsi Filter Laporan Realtime
 window.filterLaporan = () => {
     const desa = document.getElementById('f-desa').value;
     const kel = document.getElementById('f-kelompok').value;
+    const cont = document.getElementById('report-list-cont');
     
-    // Kita filter dari masterCache yang sudah di-load di DOMContentLoaded
+    if(!cont) return;
+
+    // Listener OnSnapshot untuk update otomatis saat ada perubahan atau filter
     onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
-        const cont = document.getElementById('report-list-cont');
         cont.innerHTML = "";
-        
         sn.forEach(doc => {
             const r = doc.data();
-            // Logika Filter
             const matchDesa = !desa || r.desa === desa;
             const matchKel = !kel || r.kelompok === kel;
             
             if(matchDesa && matchKel) {
-                cont.innerHTML += `<div class="report-item"><b>${r.nama}</b> <span>${r.tipe}</span><br><small>${r.desa} - ${r.kelompok}</small></div>`;
+                cont.innerHTML += `
+                    <div class="report-item" style="padding: 10px; border-bottom: 1px solid #eee;">
+                        <b>${r.nama}</b> <span class="badge">${r.tipe}</span><br>
+                        <small>${r.desa} - ${r.kelompok}</small>
+                    </div>`;
             }
         });
     });
 };
 
-// --- FUNGSI DOWNLOAD EXCEL (SESUAI FILTER) ---
 window.downloadExcel = async () => {
     const desa = document.getElementById('f-desa').value;
     const kel = document.getElementById('f-kelompok').value;
@@ -185,26 +175,23 @@ window.downloadExcel = async () => {
     const a = document.createElement('a');
     a.setAttribute('hidden', '');
     a.setAttribute('href', url);
-    a.setAttribute('download', `Laporan_Absen_${desa||'Semua'}.csv`);
+    a.setAttribute('download', `Laporan_${desa||'Semua'}_${Date.now()}.csv`);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 };
 
-// --- FUNGSI RESET (HAPUS SEMUA DATA LAPORAN) ---
 window.resetLaporan = async () => {
-    if(!confirm("PERINGATAN! Ini akan menghapus SEMUA riwayat absen di database. Lanjutkan?")) return;
+    if(!confirm("PERINGATAN! Ini akan menghapus SEMUA riwayat absen. Lanjutkan?")) return;
     
-    const sn = await getDocs(collection(db, "attendance"));
-    const batch = writeBatch(db);
-    
-    sn.forEach(d => {
-        batch.delete(d.ref);
-    });
-    
-    await batch.commit();
-    alert("Semua riwayat laporan telah dihapus!");
-    location.reload();
+    try {
+        const sn = await getDocs(collection(db, "attendance"));
+        const batch = writeBatch(db);
+        sn.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        alert("Semua riwayat laporan telah dihapus!");
+        location.reload();
+    } catch (e) { alert("Gagal Reset: " + e.message); }
 };
 
 // --- 5. LOGIKA UTAMA ---
@@ -228,7 +215,7 @@ window.addEventListener('DOMContentLoaded', async () => {
                 document.getElementById('qr-box').classList.remove('hidden');
                 setTimeout(() => generateAllQR(evSnap.data().id), 500);
             }
-            window.loadReports();
+            window.filterLaporan(); // Panggil filter saat pertama kali admin load
         } else if(aktif) {
             document.getElementById('peserta-section').classList.remove('hidden');
             if(window.tampilkanSalam) window.tampilkanSalam();
