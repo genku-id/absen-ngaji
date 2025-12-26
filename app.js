@@ -11,17 +11,89 @@ const dataWilayah = {
 
 let html5QrCode;
 
-// --- FUNGSI SCANNER ---
+// --- 1. FUNGSI REGISTRASI ---
+window.showPageRegistrasi = () => {
+    localStorage.removeItem('currentUser');
+    const content = document.getElementById('app-content');
+    content.innerHTML = `
+        <div class="card">
+            <h2>Masuk Peserta</h2>
+            <select id="reg-desa">
+                <option value="">Pilih Desa</option>
+                ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
+            </select>
+            <select id="reg-kelompok" disabled>
+                <option value="">Pilih Kelompok</option>
+            </select>
+            <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." list="list-nama" disabled>
+            <datalist id="list-nama"></datalist>
+            <button id="btn-login" class="primary-btn">Mulai Scan</button>
+        </div>
+    `;
+
+    const desaSel = document.getElementById('reg-desa');
+    const kelSel = document.getElementById('reg-kelompok');
+    const namaInp = document.getElementById('reg-nama');
+
+    desaSel.onchange = () => {
+        const kelompok = dataWilayah[desaSel.value] || [];
+        kelSel.innerHTML = '<option value="">Pilih Kelompok</option>' + 
+                           kelompok.map(k => `<option value="${k}">${k}</option>`).join('');
+        kelSel.disabled = false;
+    };
+
+    kelSel.onchange = () => { namaInp.disabled = false; };
+
+    // Logika Saran Nama
+    namaInp.oninput = async () => {
+        if (namaInp.value.length < 2) return;
+        const q = query(collection(db, "users"), 
+                  where("desa", "==", desaSel.value),
+                  where("kelompok", "==", kelSel.value));
+        const snap = await getDocs(q);
+        const list = document.getElementById('list-nama');
+        list.innerHTML = "";
+        snap.forEach(d => {
+            let opt = document.createElement('option');
+            opt.value = d.data().nama;
+            list.appendChild(opt);
+        });
+    };
+
+    document.getElementById('btn-login').onclick = prosesLogin;
+};
+
+// --- 2. FUNGSI LOGIN ---
+async function prosesLogin() {
+    const nama = document.getElementById('reg-nama').value.toUpperCase();
+    const desa = document.getElementById('reg-desa').value;
+    const kelompok = document.getElementById('reg-kelompok').value;
+
+    if (!nama || !desa || !kelompok) return alert("Lengkapi data!");
+
+    const q = query(collection(db, "users"), where("nama", "==", nama));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+        await addDoc(collection(db, "users"), { nama, desa, kelompok });
+    }
+
+    const userData = { nama, desa, kelompok };
+    localStorage.setItem('currentUser', JSON.stringify(userData));
+    showScanner(userData);
+}
+
+// --- 3. FUNGSI SCANNER ---
 window.showScanner = (userData) => {
     const content = document.getElementById('app-content');
     content.innerHTML = `
         <div class="card">
             <h3>Halo, ${userData.nama}</h3>
-            <p>Silakan scan Barcode Absensi/Izin</p>
             <div id="reader" style="width: 100%"></div>
-            <button onclick="showPageRegistrasi()" class="secondary-btn">Ganti Akun</button>
+            <button id="btn-ganti" class="secondary-btn">Ganti Akun</button>
         </div>
     `;
+
+    document.getElementById('btn-ganti').onclick = showPageRegistrasi;
 
     html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
@@ -29,9 +101,10 @@ window.showScanner = (userData) => {
             await html5QrCode.stop();
             prosesAbsensi(decodedText, userData);
         }
-    ).catch(err => alert("Kamera Error: " + err));
+    ).catch(err => console.error("Kamera Error:", err));
 };
 
+// --- 4. FUNGSI ABSENSI ---
 async function prosesAbsensi(eventID, userData) {
     try {
         const attendanceID = `${eventID}_${userData.nama.replace(/\s/g, '')}`;
@@ -52,58 +125,10 @@ async function prosesAbsensi(eventID, userData) {
     }
 }
 
-// --- FUNGSI REGISTRASI & SARAN NAMA ---
-window.showPageRegistrasi = () => {
-    localStorage.removeItem('currentUser'); // Reset saat ganti akun
-    const content = document.getElementById('app-content');
-    content.innerHTML = `
-        <div class="card">
-            <h2>Masuk Peserta</h2>
-            <select id="reg-desa">
-                <option value="">Pilih Desa</option>
-                ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
-            </select>
-            <select id="reg-kelompok" disabled>
-                <option value="">Pilih Kelompok</option>
-            </select>
-            <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." list="list-nama" disabled>
-            <datalist id="list-nama"></datalist>
-            <button onclick="prosesLogin()" class="primary-btn">Mulai Scan</button>
-        </div>
-    `;
-
-    const desaSel = document.getElementById('reg-desa');
-    const kelSel = document.getElementById('reg-kelompok');
-    const namaInp = document.getElementById('reg-nama');
-
-    desaSel.onchange = () => {
-        const kelompok = dataWilayah[desaSel.value] || [];
-        kelSel.innerHTML = '<option value="">Pilih Kelompok</option>' + 
-                           kelompok.map(k => `<option value="${k}">${k}</option>`).join('');
-        kelSel.disabled = false;
-    };
-
-    kelSel.onchange = () => { namaInp.disabled = false; };
-
-    namaInp.oninput = async () => {
-        if (namaInp.value.length < 2) return;
-        const q = query(collection(db, "users"), 
-                  where("desa", "==", desaSel.value),
-                  where("kelompok", "==", kelSel.value));
-        const snap = await getDocs(q);
-        const list = document.getElementById('list-nama');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            let opt = document.createElement('option');
-            opt.value = d.data().nama;
-            list.appendChild(opt);
-        });
-    };
-};
-
-window.prosesLogin = async () => {
-    const nama = document.getElementById('reg-nama').value.toUpperCase();
-    const desa = document.getElementById('reg-desa').value;
-    const kelompok = document.getElementById('reg-kelompok').value;
-
-    if (!nama || !desa || !kelompok)
+// --- 5. JALANKAN APLIKASI ---
+const savedUser = localStorage.getItem('currentUser');
+if (savedUser) {
+    showScanner(JSON.parse(savedUser));
+} else {
+    showPageRegistrasi();
+}
