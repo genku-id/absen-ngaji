@@ -218,3 +218,30 @@ window.tutupEvent = async (id) => {
         bukaAdmin();
     }
 };
+
+// --- LOGIKA MENU TITIK 3 ---
+const menuBtn = document.getElementById('menu-btn');
+const menuDropdown = document.getElementById('menu-dropdown');
+
+// Klik titik 3 untuk buka/tutup menu
+menuBtn.onclick = (e) => {
+    e.stopPropagation();
+    menuDropdown.classList.toggle('hidden');
+};
+
+// Klik di mana saja di luar menu untuk menutup
+window.onclick = () => {
+    if (!menuDropdown.classList.contains('hidden')) {
+        menuDropdown.classList.add('hidden');
+    }
+};
+
+// Fungsi untuk prompt password admin
+window.promptAdmin = () => {
+    const pass = prompt("Masukkan Password Admin:");
+    if (pass === "1234") {
+        bukaAdmin();
+    } else {
+        alert("Password Salah!");
+    }
+};
