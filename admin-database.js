@@ -1,19 +1,25 @@
 import { db } from "./firebase-config.js";
-import { collection, getDocs, doc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, getDocs, doc, deleteDoc, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-window.importMaster = async () => {
-    const namesRaw = document.getElementById('m-names').value;
-    const desa = prompt("Input untuk desa mana?");
-    const kelompok = prompt("Input untuk kelompok mana?");
-    if(!namesRaw || !desa || !kelompok) return;
+// Fungsi menampilkan daftar jamaah untuk dihapus (pindah domisili)
+window.loadMasterList = async () => {
+    const cont = document.getElementById('report-list-cont'); // Kita pakai container yang ada
+    const snap = await getDocs(collection(db, "users_master"));
+    cont.innerHTML = "<h4>Daftar Master Jamaah</h4>";
+    snap.forEach(d => {
+        const r = d.data();
+        cont.innerHTML += `
+            <div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #ddd;">
+                <span>${r.nama} (${r.desa})</span>
+                <button onclick="window.hapusJamaah('${d.id}')" style="background:red; color:white; border:none; border-radius:3px;">Hapus</button>
+            </div>`;
+    });
+};
 
-    const names = namesRaw.split("\n").filter(n => n.trim() !== "");
-    for(let n of names) {
-        const id = "MASTER-" + Date.now() + Math.random();
-        await setDoc(doc(db, "master_jamaah", id), {
-            nama: n.trim(), desa: desa, kelompok: kelompok
-        });
+window.hapusJamaah = async (id) => {
+    if(confirm("Hapus jamaah ini karena pindah?")) {
+        await deleteDoc(doc(db, "users_master", id));
+        alert("Terhapus");
+        window.loadMasterList();
     }
-    alert("Impor selesai!");
-    location.reload();
 };
