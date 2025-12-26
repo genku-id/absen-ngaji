@@ -164,33 +164,49 @@ window.mulaiScanner = (userData) => {
 
 async function prosesAbsensi(eventID, userData) {
     try {
+        // 1. Bersihkan ID jika itu scan Barcode Izin
         const cleanID = eventID.replace("_IZIN", "");
-        const eventSnap = await getDoc(doc(db, "events", cleanID));
+        
+        // 2. Cek apakah Event masih aktif di Firebase
+        const eventRef = doc(db, "events", cleanID);
+        const eventSnap = await getDoc(eventRef);
 
         if (!eventSnap.exists()) {
             alert("MAAF, BARCODE SUDAH TIDAK BERLAKU / EVENT SUDAH DITUTUP");
-            return showDashboard(userData);
+            return showDashboard(userData); // Kembali ke sapaan
         }
 
+        // 3. Tentukan status (hadir atau izin)
         const statusAbsen = eventID.includes("_IZIN") ? "izin" : "hadir";
+
+        // 4. Simpan ke database koleksi 'attendance'
         const attID = `${cleanID}_${userData.nama.replace(/\s/g, '')}`;
-        
         await setDoc(doc(db, "attendance", attID), {
-            nama: userData.nama, desa: userData.desa, kelompok: userData.kelompok,
-            eventId: cleanID, waktu: serverTimestamp(), status: statusAbsen
+            nama: userData.nama,
+            desa: userData.desa,
+            kelompok: userData.kelompok,
+            eventId: cleanID,
+            waktu: serverTimestamp(),
+            status: statusAbsen
         });
 
+        // 5. Tampilkan Overlay "Lancar Barokah" Full Layar
         const overlay = document.getElementById('success-overlay');
         overlay.innerHTML = "<h1 style='padding:20px; text-align:center;'>Alhamdulillah Jazaa Kumullahu Khoiroo,<br>LANCAR BAROKAH!</h1>";
-        overlay.style.display = 'flex';
+        overlay.style.display = 'flex'; // Mengaktifkan tampilan hijau
 
+        // 6. Tunggu 4 detik, lalu sembunyikan dan kembali ke Dashboard
         setTimeout(() => {
             overlay.style.display = 'none';
-            showDashboard(userData);
+            showDashboard(userData); // Kembali ke halaman "Assalaamualaikum"
         }, 4000);
-    } catch (e) { alert("Error: " + e.message); showDashboard(userData); }
-};
 
+    } catch (e) {
+        console.error("Detail Error:", e);
+        alert("Gagal memproses absensi: " + e.message);
+        showDashboard(userData);
+    }
+}
 // --- 6. LOGIKA ADMIN ---
 window.bukaAdmin = () => {
     const pass = prompt("Password Admin:");
