@@ -42,12 +42,12 @@ window.showPageRegistrasi = () => {
     
     let htmlList = "";
     if (accounts.length > 0) {
-        htmlList = `<div class="account-list">
+        htmlList = `<div class="account-list" style="margin-bottom:15px;">
             <p style="font-size: 12px; color: #666; margin-bottom:10px;">Pilih akun tersimpan:</p>
             ${accounts.map(acc => `
                 <div class="account-item" style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:10px; border-radius:8px; margin-bottom:5px;">
                     <div onclick='pilihAkun(${JSON.stringify(acc)})' style="flex-grow:1; cursor:pointer;">
-                        <b>${acc.nama}</b><br><small>${acc.desa}</small>
+                        <b>${acc.nama}</b><br><small>${acc.desa} - ${acc.kelompok}</small>
                     </div>
                     <button onclick="hapusAkunDariList('${acc.nama}')" style="background:none; border:none; color:red; font-weight:bold; cursor:pointer; padding:10px;">✕</button>
                 </div>
@@ -102,7 +102,7 @@ window.pilihAkun = (userData) => {
     showDashboard(userData);
 };
 
-// --- 3. PROSES LOGIN (CEK MASTER JAMAAH) ---
+// --- 3. PROSES LOGIN ---
 window.prosesLogin = async () => {
     const namaRaw = document.getElementById('reg-nama').value;
     const nama = namaRaw.trim().toUpperCase();
@@ -156,7 +156,7 @@ window.mulaiScanner = (userData) => {
     html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (decodedText) => {
         await html5QrCode.stop();
         prosesAbsensi(decodedText, userData);
-    });
+    }).catch(err => alert("Kamera error: " + err));
 };
 
 async function prosesAbsensi(eventID, userData) {
@@ -165,7 +165,7 @@ async function prosesAbsensi(eventID, userData) {
         const eventSnap = await getDoc(doc(db, "events", cleanID));
 
         if (!eventSnap.exists()) {
-            alert("BARCODE TIDAK BERLAKU");
+            alert("MAAF, BARCODE SUDAH TIDAK BERLAKU / EVENT SUDAH DITUTUP");
             return showDashboard(userData);
         }
 
@@ -188,7 +188,7 @@ async function prosesAbsensi(eventID, userData) {
     } catch (e) { alert("Error: " + e.message); showDashboard(userData); }
 }
 
-// --- 6. LOGIKA ADMIN (SAMA SEPERTI SEBELUMNYA) ---
+// --- 6. LOGIKA ADMIN ---
 window.bukaAdmin = () => {
     const pass = prompt("Password Admin:");
     if (pass !== "1234") return alert("Salah!");
@@ -197,9 +197,9 @@ window.bukaAdmin = () => {
         <div class="card" style="max-width:95%">
             <h2>Panel Admin</h2>
             <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
-                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1;">EVENT</button>
-                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1;">LAPORAN</button>
-                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')" style="flex:1;">DATABASE</button>
+                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white;">EVENT</button>
+                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white;">LAPORAN</button>
+                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')" style="flex:1; padding:10px; border:none; color:white;">DATABASE</button>
             </div>
             <div id="admin-dynamic-content"></div>
         </div>`;
@@ -218,6 +218,7 @@ window.switchAdminTab = (tab) => {
 
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = "Memeriksa...";
     const q = query(collection(db, "events"), where("status", "==", "open"));
     const snap = await getDocs(q);
     if (!snap.empty) {
@@ -240,11 +241,11 @@ function tampilkanBarcode(id, nama, waktu) {
     document.getElementById('admin-dynamic-content').innerHTML = `
         <div style="text-align:center;">
             <h4>${nama}</h4><p>${waktu.replace('T',' ')}</p>
-            <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div>
-            <button onclick="downloadQR('qrcode-absen','Absen')">Download Absen</button>
-            <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div>
-            <button onclick="downloadQR('qrcode-izin','Izin')">Download Izin</button>
-            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:10px; margin-top:10px;">TUTUP EVENT</button>
+            <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div><br>
+            <button onclick="downloadQR('qrcode-absen','Absen')" class="secondary-btn">Download Absen</button>
+            <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div><br>
+            <button onclick="downloadQR('qrcode-izin','Izin')" class="secondary-btn">Download Izin</button>
+            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px;">TUTUP EVENT</button>
         </div>`;
     new QRCode(document.getElementById("qrcode-absen"), id);
     new QRCode(document.getElementById("qrcode-izin"), id + "_IZIN");
@@ -257,30 +258,9 @@ window.downloadQR = (el, name) => {
 };
 
 window.tutupEvent = async (id) => {
-    if(confirm("Tutup dan Hapus?")) {
+    if(confirm("Tutup dan Hapus QR?")) {
         await deleteDoc(doc(db, "events", id));
         bukaAdmin();
-    }
-};
-
-// --- LOGIKA AWAL ---
-const initApp = () => {
-    const accounts = getSavedAccounts();
-    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-    if (currentUser) showDashboard(currentUser);
-    else if (accounts.length === 1) pilihAkun(accounts[0]);
-    else showPageRegistrasi();
-};
-
-initApp();
-
-// Fungsi untuk prompt password admin
-window.promptAdmin = () => {
-    const pass = prompt("Masukkan Password Admin:");
-    if (pass === "1234") {
-        bukaAdmin();
-    } else {
-        alert("Password Salah!");
     }
 };
 
@@ -297,21 +277,15 @@ window.lihatLaporan = async () => {
                 <option value="">Semua Kelompok</option>
             </select>
             <button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan</button>
-            <button onclick="downloadLaporan()" class="secondary-btn">📥 Download Hasil Filter</button>
-            <button onclick="resetAbsensi()" style="background: #d32f2f; color: white; margin-top: 10px;">🗑️ Reset</button>
+            <button onclick="downloadLaporan()" class="secondary-btn">📥 Download Excel</button>
+            <button onclick="resetAbsensi()" style="background: #d32f2f; color: white; margin-top: 10px; padding:10px; border:none; width:100%;">🗑️ Reset Riwayat</button>
         </div>
-        <div id="tabel-container" class="table-responsive">
-            <p>Memuat data...</p>
-        </div>
+        <div id="tabel-container" class="table-responsive"></div>
     `;
-    
-    // Logika filter kelompok yang dinamis di laporan
     document.getElementById('f-desa').onchange = (e) => {
         const kel = dataWilayah[e.target.value] || [];
-        document.getElementById('f-kelompok').innerHTML = '<option value="">Semua Kelompok</option>' + 
-            kel.map(k => `<option value="${k}">${k}</option>`).join('');
+        document.getElementById('f-kelompok').innerHTML = '<option value="">Semua Kelompok</option>' + kel.map(k => `<option value="${k}">${k}</option>`).join('');
     };
-    
     renderTabelLaporan();
 };
 
@@ -319,153 +293,75 @@ window.renderTabelLaporan = async () => {
     const fDesa = document.getElementById('f-desa').value;
     const fKel = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
+    tableDiv.innerHTML = "Memuat...";
 
-    // 1. Ambil semua master jamaah untuk cek siapa yang ALFA
     let qMaster = collection(db, "master_jamaah");
     if(fDesa) qMaster = query(qMaster, where("desa", "==", fDesa));
     if(fKel) qMaster = query(qMaster, where("kelompok", "==", fKel));
     
     const masterSnap = await getDocs(qMaster);
-    const daftarHadirSnap = await getDocs(collection(db, "attendance")); // Sesuai event aktif
-    
-    const hadirNames = [];
-    daftarHadirSnap.forEach(doc => hadirNames.push(doc.data().nama));
+    const hadirSnap = await getDocs(collection(db, "attendance"));
+    const hadirNames = hadirSnap.docs.map(d => d.data().nama);
 
-    let html = `<table>
-        <thead>
-            <tr><th>Nama</th><th>Desa</th><th>Kelompok</th><th>Status</th></tr>
-        </thead>
-        <tbody>`;
-
+    let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
     masterSnap.forEach(doc => {
         const d = doc.data();
         const isHadir = hadirNames.includes(d.nama);
-        html += `
-            <tr class="${isHadir ? 'row-hadir' : 'row-alfa'}">
-                <td>${d.nama}</td>
-                <td>${d.desa}</td>
-                <td>${d.kelompok}</td>
-                <td><b>${isHadir ? '✅ HADIR' : '❌ ALFA'}</b></td>
-            </tr>`;
+        html += `<tr style="background:${isHadir?'#e8f5e9':'#ffebee'}"><td>${d.nama}</td><td>${isHadir?'✅':'❌'}</td></tr>`;
     });
-
-    html += `</tbody></table>`;
-    tableDiv.innerHTML = html;
+    tableDiv.innerHTML = html + `</tbody></table>`;
 };
 
 window.downloadLaporan = () => {
     const table = document.querySelector("#tabel-container table");
     const wb = XLSX.utils.table_to_book(table);
-    XLSX.writeFile(wb, "Laporan_Presensi_Ngaji.xlsx");
+    XLSX.writeFile(wb, "Laporan.xlsx");
 };
+
 window.resetAbsensi = async () => {
-    if (confirm("PERINGATAN! Semua data kehadiran akan DIHAPUS PERMANEN. Pastikan sudah download laporan. Lanjut?")) {
-        try {
-            const snap = await getDocs(collection(db, "attendance"));
-            const promises = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
-            await Promise.all(promises);
-            alert("Riwayat absen telah dibersihkan!");
-            renderTabelLaporan();
-        } catch (e) {
-            alert("Gagal reset: " + e.message);
-        }
+    if (confirm("Hapus semua riwayat absen?")) {
+        const snap = await getDocs(collection(db, "attendance"));
+        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+        alert("Selesai!");
+        renderTabelLaporan();
     }
 };
+
 window.lihatDatabase = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    container.innerHTML = `
-        <div class="filter-box">
-            <input type="text" id="cari-nama-db" placeholder="Cari nama jamaah...">
-            <button onclick="renderTabelDatabase()" class="primary-btn">Cari</button>
-        </div>
-        <div id="db-container" class="table-responsive"></div>
-    `;
+    container.innerHTML = `<div class="filter-box"><input type="text" id="cari-nama-db" placeholder="Cari nama..."><button onclick="renderTabelDatabase()" class="primary-btn">Cari</button></div><div id="db-container" class="table-responsive"></div>`;
     renderTabelDatabase();
 };
 
 window.renderTabelDatabase = async () => {
-    const container = document.getElementById('db-container');
     const cari = document.getElementById('cari-nama-db').value.toUpperCase();
     const snap = await getDocs(collection(db, "master_jamaah"));
-    
-    let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Aksi</th></tr></thead><tbody>`;
-    
-    snap.forEach(docSnap => {
-        const d = docSnap.data();
-        if (d.nama.includes(cari) || cari === "") {
-            html += `
-                <tr>
-                    <td>${d.nama}</td>
-                    <td>${d.desa}<br>${d.kelompok}<br><b>(${d.gender || '?'})</b></td>
-                    <td>
-                        <button onclick="hapusJamaah('${docSnap.id}', '${d.nama}')" class="btn-hapus">🗑️</button>
-                    </td>
-                </tr>`;
+    let html = `<table><thead><tr><th>Nama</th><th>Aksi</th></tr></thead><tbody>`;
+    snap.forEach(ds => {
+        const d = ds.data();
+        if (d.nama.includes(cari) || !cari) {
+            html += `<tr><td>${d.nama}<br><small>${d.desa}</small></td><td><button onclick="hapusJamaah('${ds.id}','${d.nama}')" style="background:red; color:white; border:none; padding:5px;">🗑️</button></td></tr>`;
         }
     });
-    html += `</tbody></table>`;
-    container.innerHTML = html;
+    document.getElementById('db-container').innerHTML = html + `</tbody></table>`;
 };
 
 window.hapusJamaah = async (id, nama) => {
-    if (confirm(`Yakin ingin menghapus ${nama} dari database?`)) {
-        await deleteDoc(doc(db, "master_jamaah", id));
-        alert("Terhapus!");
-        renderTabelDatabase();
-    }
+    if (confirm(`Hapus ${nama}?`)) { await deleteDoc(doc(db, "master_jamaah", id)); renderTabelDatabase(); }
 };
 
-window.prosesLogin = async () => {
-    const namaInputRaw = document.getElementById('reg-nama').value;
-    const namaInput = namaInputRaw.trim().toUpperCase();
-    const desa = document.getElementById('reg-desa').value;
-    const kelompok = document.getElementById('reg-kelompok').value;
+// --- MENU TITIK 3 ---
+document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); document.getElementById('menu-dropdown').classList.toggle('hidden'); };
+window.onclick = () => document.getElementById('menu-dropdown').classList.add('hidden');
+window.promptAdmin = () => { const p = prompt("Pass:"); if(p==="1234") bukaAdmin(); };
 
-    if (!namaInput || !desa || !kelompok) return alert("Mohon lengkapi data!");
-
-    try {
-        // 1. Cek apakah sudah ada di master_jamaah
-        const q = query(
-            collection(db, "master_jamaah"), 
-            where("desa", "==", desa),
-            where("kelompok", "==", kelompok),
-            where("nama", "==", namaInput)
-        );
-        
-        const snap = await getDocs(q);
-        let userData;
-
-        if (!snap.empty) {
-            // DATA SUDAH ADA: Ambil data lama (termasuk gender dll jika ada)
-            const docData = snap.docs[0].data();
-            userData = { 
-                nama: docData.nama, 
-                desa: docData.desa, 
-                kelompok: docData.kelompok 
-            };
-            console.log("Menggunakan data yang sudah ada di Master.");
-        } else {
-            // DATA BELUM ADA: Tulis sebagai data baru ke master_jamaah
-            const konfirmasi = confirm(`Nama "${namaInput}" belum terdaftar. Daftarkan sebagai jamaah baru di ${desa}?`);
-            if (konfirmasi) {
-                userData = { 
-                    nama: namaInput, 
-                    desa: desa, 
-                    kelompok: kelompok,
-                    gender: "-" // Default kosong, admin bisa edit nanti di menu Database
-                };
-                await addDoc(collection(db, "master_jamaah"), userData);
-                alert("Berhasil mendaftar ke Master Database!");
-            } else {
-                return;
-            }
-        }
-
-        // Simpan login ke HP
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        showScanner(userData);
-
-    } catch (e) {
-        alert("Gagal koneksi: " + e.message);
-    }
+// --- INISIALISASI ---
+const initApp = () => {
+    const accounts = getSavedAccounts();
+    const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+    if (currentUser) showDashboard(currentUser);
+    else if (accounts.length === 1) pilihAkun(accounts[0]);
+    else showPageRegistrasi();
 };
+
+initApp();
