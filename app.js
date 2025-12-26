@@ -14,7 +14,7 @@ const dataWilayah = {
 
 let html5QrCode;
 
-// --- 1. LOGIKA MULTI-AKUN ---
+// --- 1. LOGIKA MULTI-AKUN (LOCALSTORAGE) ---
 function getSavedAccounts() {
     return JSON.parse(localStorage.getItem('saved_accounts')) || [];
 }
@@ -34,7 +34,7 @@ window.hapusAkunDariList = (nama) => {
     showPageRegistrasi();
 };
 
-// --- 2. HALAMAN LOGIN ---
+// --- 2. HALAMAN LOGIN & LIST AKUN ---
 window.showPageRegistrasi = () => {
     localStorage.removeItem('currentUser');
     const accounts = getSavedAccounts();
@@ -42,25 +42,25 @@ window.showPageRegistrasi = () => {
     
     let htmlList = "";
     if (accounts.length > 0) {
-        htmlList = `<div class="account-list">
-            <p style="font-size: 12px; color: #0056b3; margin-bottom:10px;">Pilih akun tersimpan:</p>
+        htmlList = `<div class="account-list" style="margin-bottom:15px;">
+            <p style="font-size: 12px; color: #010530; margin-bottom:10px;">Pilih akun tersimpan:</p>
             ${accounts.map(acc => `
-                <div class="account-item">
+                <div class="account-item" style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:10px; border-radius:8px; margin-bottom:5px;">
                     <div onclick='pilihAkun(${JSON.stringify(acc)})' style="flex-grow:1; cursor:pointer;">
                         <b>${acc.nama}</b><br><small>${acc.desa} - ${acc.kelompok}</small>
                     </div>
-                    <button onclick="hapusAkunDariList('${acc.nama}')" class="btn-x">✕</button>
+                    <button onclick="hapusAkunDariList('${acc.nama}')" style="background:none; border:none; color:red; font-weight:bold; cursor:pointer; padding:10px;">✕</button>
                 </div>
             `).join('')}
-            <hr style="margin:15px 0; border: 0; border-top: 1px solid #eee;">
+            <hr style="margin:15px 0;">
         </div>`;
     }
 
     content.innerHTML = `
         <div class="card">
-            <h2 style="color:#0056b3;">LogIn</h2>
+            <h2>LogIn</h2>
             ${htmlList}
-            <p style="font-size: 12px; color: #666;">Masukan data baru:</p>
+            <p style="font-size: 12px; color: #010530;">Masukakan data:</p>
             <select id="reg-desa">
                 <option value="">Pilih Desa</option>
                 ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
@@ -102,6 +102,7 @@ window.pilihAkun = (userData) => {
     showDashboard(userData);
 };
 
+// --- 3. PROSES LOGIN ---
 window.prosesLogin = async () => {
     const namaRaw = document.getElementById('reg-nama').value;
     const nama = namaRaw.trim().toUpperCase();
@@ -130,120 +131,153 @@ window.prosesLogin = async () => {
     } catch (e) { alert("Error: " + e.message); }
 };
 
-// --- 3. DASHBOARD & SCANNER ---
+// --- 4. DASHBOARD (SAPAAN) ---
 window.showDashboard = (userData) => {
     const content = document.getElementById('app-content');
     content.innerHTML = `
         <div class="card animate-in">
             <div style="text-align:center; padding:30px 0;">
-                <h2 style="font-weight: normal; color: #666;">Assalaamualaikum,</h2>
-                <h1 style="color: #0056b3; margin:10px 0; font-size: 2.2em;">${userData.nama}</h1>
+                <h2 style="font-weight: normal; color: #010530;">Assalaamualaikum,</h2>
+                <h1 style="color: #075e54; margin:10px 0; font-size: 2.2em;">${userData.nama}</h1>
                 <p style="color: #888; letter-spacing: 1px;">${userData.desa} - ${userData.kelompok}</p>
             </div>
-            <button onclick='mulaiScanner(${JSON.stringify(userData)})' class="primary-btn" style="padding:25px; font-size:18px; border-radius: 50px;">📸 MULAI SCAN BARCODE</button>
+            
+            <button onclick='mulaiScanner(${JSON.stringify(userData)})' class="primary-btn" 
+                style="padding:25px; font-size:20px; border-radius: 50px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">📸 MULAI SCAN BARCODE</button>
+            
             <p style="text-align:center; margin-top:30px; font-size:11px; color:#ccc;">E-PRESENSI KU v1.0</p>
         </div>
     `;
 };
 
+// --- 5. SCANNER & PROSES ABSEN ---
 window.mulaiScanner = (userData) => {
     const content = document.getElementById('app-content');
-    content.innerHTML = `<div class="card" style="padding:10px;"><h3 style="text-align:center;">Scan Barcode</h3><div id="reader"></div><button onclick='showDashboard(${JSON.stringify(userData)})' class="secondary-btn" style="margin-top:15px;">BATAL</button></div>`;
-    
+    content.innerHTML = `
+        <div class="card" style="padding: 10px;">
+            <h3 style="text-align:center;">Arahkan ke Barcode</h3>
+            <div id="reader"></div>
+            <button onclick='showDashboard(${JSON.stringify(userData)})' class="secondary-btn" style="margin-top:15px;">BATAL</button>
+        </div>
+    `;
+
     html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250, aspectRatio: 1.0 }, async (decodedText) => {
-        await html5QrCode.stop();
-        prosesAbsensi(decodedText, userData);
-    }).catch(err => alert("Kamera Error: " + err));
+    // Pengaturan kamera agar pas di layar HP
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 }, // Ukuran kotak target scan
+        aspectRatio: 1.0 // Membuat tampilan kamera kotak (square) agar fokus
+    };
+
+    html5QrCode.start(
+        { facingMode: "environment" }, 
+        config, 
+        async (decodedText) => {
+            await html5QrCode.stop();
+            prosesAbsensi(decodedText, userData);
+        }
+    ).catch(err => {
+        console.error("Gagal Kamera:", err);
+        alert("Mohon izinkan akses kamera!");
+    });
 };
 
 async function prosesAbsensi(eventID, userData) {
     try {
+        // 1. Bersihkan ID jika itu scan Barcode Izin
         const cleanID = eventID.replace("_IZIN", "");
-        const eventSnap = await getDoc(doc(db, "events", cleanID));
-        if (!eventSnap.exists()) return alert("BARCODE TIDAK BERLAKU");
-
-        const statusAbsen = eventID.includes("_IZIN") ? "izin" : "hadir";
-        const attID = `${cleanID}_${userData.nama.replace(/\s/g, '')}`;
         
+        // 2. Cek apakah Event masih aktif di Firebase
+        const eventRef = doc(db, "events", cleanID);
+        const eventSnap = await getDoc(eventRef);
+
+        if (!eventSnap.exists()) {
+            alert("MAAF, BARCODE SUDAH TIDAK BERLAKU / EVENT SUDAH DITUTUP");
+            return showDashboard(userData); // Kembali ke sapaan
+        }
+
+        // 3. Tentukan status (hadir atau izin)
+        const statusAbsen = eventID.includes("_IZIN") ? "izin" : "hadir";
+
+        // 4. Simpan ke database koleksi 'attendance'
+        const attID = `${cleanID}_${userData.nama.replace(/\s/g, '')}`;
         await setDoc(doc(db, "attendance", attID), {
-            nama: userData.nama, desa: userData.desa, kelompok: userData.kelompok,
-            eventId: cleanID, waktu: serverTimestamp(), status: statusAbsen
+            nama: userData.nama,
+            desa: userData.desa,
+            kelompok: userData.kelompok,
+            eventId: cleanID,
+            waktu: serverTimestamp(),
+            status: statusAbsen
         });
 
+        // 5. Tampilkan Overlay "Lancar Barokah" Full Layar
         const overlay = document.getElementById('success-overlay');
         overlay.innerHTML = "<h1 style='padding:20px; text-align:center;'>Alhamdulillah Jazaa Kumullahu Khoiroo,<br>LANCAR BAROKAH!</h1>";
-        overlay.style.display = 'flex';
+        overlay.style.display = 'flex'; // Mengaktifkan tampilan hijau
 
+        // 6. Tunggu 4 detik, lalu sembunyikan dan kembali ke Dashboard
         setTimeout(() => {
             overlay.style.display = 'none';
-            showDashboard(userData);
+            showDashboard(userData); // Kembali ke halaman "Assalaamualaikum"
         }, 4000);
-    } catch (e) { alert("Error: " + e.message); showDashboard(userData); }
+
+    } catch (e) {
+        console.error("Detail Error:", e);
+        alert("Gagal memproses absensi: " + e.message);
+        showDashboard(userData);
+    }
 }
-
-// --- 4. LOGIKA ADMIN (CUSTOM MODAL) ---
-window.promptAdmin = () => {
-    document.getElementById('menu-dropdown').classList.add('hidden');
-    document.getElementById('admin-modal').classList.remove('hidden');
-    document.getElementById('admin-pass-input').value = "";
-    document.getElementById('admin-pass-input').focus();
-};
-
-window.tutupModalAdmin = () => document.getElementById('admin-modal').classList.add('hidden');
-
-window.cekPasswordAdmin = () => {
-    if (document.getElementById('admin-pass-input').value === "1234") {
-        tutupModalAdmin();
-        bukaAdmin();
-    } else alert("Password Salah!");
-};
-
+// --- 6. LOGIKA ADMIN ---
 window.bukaAdmin = () => {
+    const pass = prompt("Password Admin:");
+    if (pass !== "1234") return alert("Salah!");
     const content = document.getElementById('app-content');
     content.innerHTML = `
         <div class="card" style="max-width:95%">
             <h2>Panel Admin</h2>
-            <div class="admin-actions">
-                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')">EVENT</button>
-                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')">LAPORAN</button>
-                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')">DATABASE</button>
+            <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
+                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white;">EVENT</button>
+                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white;">LAPORAN</button>
+                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')" style="flex:1; padding:10px; border:none; color:white;">DATABASE</button>
             </div>
             <div id="admin-dynamic-content"></div>
-            <button onclick="initApp()" class="secondary-btn" style="margin-top:20px;">KELUAR ADMIN</button>
         </div>`;
     switchAdminTab('ev');
 };
 
 window.switchAdminTab = (tab) => {
+    // Reset semua tombol jadi abu-abu tua
     document.querySelectorAll('.admin-btn').forEach(b => b.style.background = "#666");
+    
     const activeBtn = document.getElementById(`btn-${tab}`);
-    if(activeBtn) activeBtn.style.background = "#007bff";
+    if(activeBtn) {
+        // GANTI DI SINI: Ubah dari #25d366 (hijau) ke biru
+        activeBtn.style.background = "#007bff"; 
+    }
     
     if (tab === 'ev') formBuatEvent();
     else if (tab === 'lp') lihatLaporan();
     else if (tab === 'db') lihatDatabase();
 };
-
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = "Memeriksa...";
     const q = query(collection(db, "events"), where("status", "==", "open"));
     const snap = await getDocs(q);
     if (!snap.empty) {
-        const d = snap.docs[0].data();
-        tampilkanBarcode(snap.docs[0].id, d.nama, d.waktu);
+        tampilkanBarcode(snap.docs[0].id, snap.docs[0].data().nama, snap.docs[0].data().waktu);
     } else {
         container.innerHTML = `<h3>Buat Event</h3><input type="text" id="ev-nama" placeholder="Nama Ngaji"><input type="datetime-local" id="ev-waktu"><button onclick="simpanEvent()" class="primary-btn">Terbitkan</button>`;
     }
 };
 
-window.simpanEvent = async (nama, waktu) => {
-    const n = document.getElementById('ev-nama').value;
-    const w = document.getElementById('ev-waktu').value;
-    if (!n || !w) return alert("Isi data!");
+window.simpanEvent = async () => {
+    const nama = document.getElementById('ev-nama').value;
+    const waktu = document.getElementById('ev-waktu').value;
+    if (!nama || !waktu) return alert("Isi data!");
     const id = "EVT-" + Date.now();
-    await setDoc(doc(db, "events", id), { nama: n, waktu: w, status: "open", createdAt: serverTimestamp() });
-    tampilkanBarcode(id, n, w);
+    await setDoc(doc(db, "events", id), { nama, waktu, status: "open", createdAt: serverTimestamp() });
+    tampilkanBarcode(id, nama, waktu);
 };
 
 function tampilkanBarcode(id, nama, waktu) {
@@ -267,12 +301,30 @@ window.downloadQR = (el, name) => {
 };
 
 window.tutupEvent = async (id) => {
-    if(confirm("Tutup dan Hapus QR?")) { await deleteDoc(doc(db, "events", id)); bukaAdmin(); }
+    if(confirm("Tutup dan Hapus QR?")) {
+        await deleteDoc(doc(db, "events", id));
+        bukaAdmin();
+    }
 };
 
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    container.innerHTML = `<h3>Laporan</h3><div class="filter-box"><select id="f-desa"><option value="">Semua Desa</option>${Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('')}</select><select id="f-kelompok"><option value="">Semua Kelompok</option></select><button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan</button><button onclick="downloadLaporan()" class="secondary-btn">📥 Download Excel</button><button onclick="resetAbsensi()" style="background:red; color:white; width:100%; margin-top:10px; border:none; padding:10px;">🗑️ Reset</button></div><div id="tabel-container" class="table-responsive"></div>`;
+    container.innerHTML = `
+        <h3>Laporan Kehadiran</h3>
+        <div class="filter-box">
+            <select id="f-desa">
+                <option value="">Semua Desa</option>
+                ${Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('')}
+            </select>
+            <select id="f-kelompok">
+                <option value="">Semua Kelompok</option>
+            </select>
+            <button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan</button>
+            <button onclick="downloadLaporan()" class="secondary-btn">📥 Download Excel</button>
+            <button onclick="resetAbsensi()" style="background: #d32f2f; color: white; margin-top: 10px; padding:10px; border:none; width:100%;">🗑️ Reset Riwayat</button>
+        </div>
+        <div id="tabel-container" class="table-responsive"></div>
+    `;
     document.getElementById('f-desa').onchange = (e) => {
         const kel = dataWilayah[e.target.value] || [];
         document.getElementById('f-kelompok').innerHTML = '<option value="">Semua Kelompok</option>' + kel.map(k => `<option value="${k}">${k}</option>`).join('');
@@ -281,34 +333,55 @@ window.lihatLaporan = async () => {
 };
 
 window.renderTabelLaporan = async () => {
-    const fD = document.getElementById('f-desa').value;
-    const fK = document.getElementById('f-kelompok').value;
+    const fDesa = document.getElementById('f-desa').value;
+    const fKel = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
-    tableDiv.innerHTML = "Memuat...";
+    tableDiv.innerHTML = "Memuat data...";
 
-    let qM = collection(db, "master_jamaah");
-    if(fD) qM = query(qM, where("desa", "==", fD));
-    if(fK) qM = query(qM, where("kelompok", "==", fK));
+    let qMaster = collection(db, "master_jamaah");
+    if(fDesa) qMaster = query(qMaster, where("desa", "==", fDesa));
+    if(fKel) qMaster = query(qMaster, where("kelompok", "==", fKel));
     
-    const mSnap = await getDocs(qM);
-    const hSnap = await getDocs(collection(db, "attendance"));
+    const masterSnap = await getDocs(qMaster);
+    const hadirSnap = await getDocs(collection(db, "attendance"));
+    
+    // Buat peta (map) untuk mencocokkan nama dengan statusnya (hadir/izin)
     const statusMap = {};
-    hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
-
-    let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Status</th></tr></thead><tbody>`;
-    mSnap.forEach(doc => {
-        const d = doc.data();
-        const s = statusMap[d.nama];
-        let color = "#ffebee", txt = "❌ ALFA";
-        if(s === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
-        else if(s === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
-        html += `<tr style="background:${color}"><td><b>${d.nama}</b></td><td><small>${d.desa}<br>${d.kelompok}</small></td><td style="text-align:center;"><b>${txt}</b></td></tr>`;
+    hadirSnap.forEach(doc => {
+        const data = doc.data();
+        statusMap[data.nama] = data.status; // status berisi 'hadir' atau 'izin'
     });
+
+    let html = `<table><thead><tr><th>Nama</th><th>Info (Desa/Kel)</th><th>Status</th></tr></thead><tbody>`;
+    
+    masterSnap.forEach(doc => {
+        const d = doc.data();
+        const status = statusMap[d.nama]; // Ambil status dari map
+        
+        let rowColor = "#ffebee"; // Default Merah (ALFA)
+        let statusText = "❌ ALFA";
+
+        if (status === "hadir") {
+            rowColor = "#e8f5e9"; // Hijau (HADIR)
+            statusText = "✅ HADIR";
+        } else if (status === "izin") {
+            rowColor = "#fff9c4"; // Kuning (IZIN)
+            statusText = "🙏🏻 IZIN";
+        }
+        
+        html += `<tr style="background:${rowColor}">
+            <td><b>${d.nama}</b></td>
+            <td><small>${d.desa}<br>${d.kelompok}</small></td>
+            <td style="text-align:center;"><b>${statusText}</b></td>
+        </tr>`;
+    });
+    
     tableDiv.innerHTML = html + `</tbody></table>`;
 };
 
 window.downloadLaporan = () => {
-    const wb = XLSX.utils.table_to_book(document.querySelector("#tabel-container table"));
+    const table = document.querySelector("#tabel-container table");
+    const wb = XLSX.utils.table_to_book(table);
     XLSX.writeFile(wb, "Laporan.xlsx");
 };
 
@@ -316,23 +389,32 @@ window.resetAbsensi = async () => {
     if (confirm("Hapus semua riwayat absen?")) {
         const snap = await getDocs(collection(db, "attendance"));
         await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+        alert("Selesai!");
         renderTabelLaporan();
     }
 };
 
 window.lihatDatabase = async () => {
-    document.getElementById('admin-dynamic-content').innerHTML = `<div class="filter-box"><input type="text" id="cari-nama-db" placeholder="Cari nama..."><button onclick="renderTabelDatabase()" class="primary-btn">Cari</button></div><div id="db-container" class="table-responsive"></div>`;
+    const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = `<div class="filter-box"><input type="text" id="cari-nama-db" placeholder="Cari nama..."><button onclick="renderTabelDatabase()" class="primary-btn">Cari</button></div><div id="db-container" class="table-responsive"></div>`;
     renderTabelDatabase();
 };
 
 window.renderTabelDatabase = async () => {
     const cari = document.getElementById('cari-nama-db').value.toUpperCase();
     const snap = await getDocs(collection(db, "master_jamaah"));
-    let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Aksi</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Nama</th><th>Info (Desa/Kel)</th><th>Aksi</th></tr></thead><tbody>`;
+    
     snap.forEach(ds => {
         const d = ds.data();
         if (d.nama.includes(cari) || !cari) {
-            html += `<tr><td><b>${d.nama}</b></td><td><small>${d.desa}<br>${d.kelompok}</small></td><td><button onclick="hapusJamaah('${ds.id}','${d.nama}')" style="background:red; color:white; border:none; padding:8px; border-radius:5px;">🗑️</button></td></tr>`;
+            html += `<tr>
+                <td><b>${d.nama}</b></td>
+                <td><small>${d.desa}<br>${d.kelompok}</small></td>
+                <td>
+                    <button onclick="hapusJamaah('${ds.id}','${d.nama}')" style="background:red; color:white; border:none; padding:8px; border-radius:5px;">🗑️</button>
+                </td>
+            </tr>`;
         }
     });
     document.getElementById('db-container').innerHTML = html + `</tbody></table>`;
@@ -341,10 +423,11 @@ window.renderTabelDatabase = async () => {
 window.hapusJamaah = async (id, nama) => {
     if (confirm(`Hapus ${nama}?`)) { await deleteDoc(doc(db, "master_jamaah", id)); renderTabelDatabase(); }
 };
-
+// --- MENU TITIK 3 ---
 document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); document.getElementById('menu-dropdown').classList.toggle('hidden'); };
 window.onclick = () => document.getElementById('menu-dropdown').classList.add('hidden');
-
+window.promptAdmin = () => { const p = prompt("Pass:"); if(p==="1234") bukaAdmin(); };
+// --- INISIALISASI ---
 const initApp = () => {
     const accounts = getSavedAccounts();
     const currentUser = JSON.parse(localStorage.getItem('currentUser'));
