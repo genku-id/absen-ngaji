@@ -123,8 +123,8 @@ window.closeEvent = async () => {
         btn.innerText = "TUTUP & HITUNG ALFA";
     }
 };
-
-// --- 4. LAPORAN, FILTER & DOWNLOAD ---
+// --- 4. LAPORAN & FILTER ---
+// Fungsi utama untuk menampilkan dan menyaring laporan
 window.filterLaporan = () => {
     const desa = document.getElementById('f-desa').value;
     const kel = document.getElementById('f-kelompok').value;
@@ -132,24 +132,35 @@ window.filterLaporan = () => {
     
     if(!cont) return;
 
+    // Gunakan onSnapshot agar data otomatis terupdate jika ada yang absen baru
     onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
         cont.innerHTML = "";
         sn.forEach(doc => {
             const r = doc.data();
+            
+            // Logika penyaringan: tampilkan jika filter kosong ATAU data cocok
             const matchDesa = !desa || r.desa === desa;
             const matchKel = !kel || r.kelompok === kel;
             
             if(matchDesa && matchKel) {
                 cont.innerHTML += `
-                    <div class="report-item" style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">
-                        <b>${r.nama}</b> <span style="background: ${r.tipe === 'HADIR' ? '#2ecc71' : '#e74c3c'}; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px;">${r.tipe}</span><br>
-                        <small style="color: #666;">${r.desa} - ${r.kelompok}</small>
+                    <div class="report-item" style="display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; text-align: left;">
+                        <div style="flex: 1;">
+                            <b style="font-size: 14px; display: block;">${r.nama}</b>
+                            <small style="color: #666;">${r.desa} - ${r.kelompok}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="background: ${r.tipe === 'HADIR' ? '#2ecc71' : '#e74c3c'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: bold;">
+                                ${r.tipe}
+                            </span>
+                        </div>
                     </div>`;
             }
         });
     });
 };
 
+// Fungsi Download yang hanya mengambil data sesuai filter yang dipilih
 window.downloadExcel = async () => {
     const desa = document.getElementById('f-desa').value;
     const kel = document.getElementById('f-kelompok').value;
@@ -163,19 +174,16 @@ window.downloadExcel = async () => {
         const matchKel = !kel || r.kelompok === kel;
         
         if(matchDesa && matchKel) {
-            csv += `${r.nama},${r.desa},${r.kelompok},${r.tipe},${r.event}\n`;
+            csv += `"${r.nama}","${r.desa}","${r.kelompok}","${r.tipe}","${r.event}"\n`;
         }
     });
     
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.setAttribute('hidden', '');
-    a.setAttribute('href', url);
-    a.setAttribute('download', `Laporan_${desa||'Semua'}.csv`);
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `Laporan_${desa || 'Semua'}_${Date.now()}.csv`;
+    link.click();
 };
 
 window.resetLaporan = async () => {
