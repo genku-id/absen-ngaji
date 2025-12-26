@@ -136,20 +136,39 @@ if (savedUser) {
 // --- 6. LOGIKA ADMIN ---
 window.bukaAdmin = () => {
     const password = prompt("Masukkan Password Admin:");
-    if (password !== "admin123") return alert("Password Salah!"); // Ganti password sesukamu
+    if (password !== "admin123") return alert("Password Salah!");
 
     const content = document.getElementById('app-content');
     content.innerHTML = `
-        <div class="card admin-card">
+        <div class="card admin-card" style="max-width: 95%;">
             <h2>Panel Admin</h2>
             <div class="admin-actions">
-                <button onclick="formBuatEvent()" class="primary-btn">➕ Buat Event Ngaji Baru</button>
-                <button onclick="lihatLaporan()" class="secondary-btn">📊 Lihat Laporan Kehadiran</button>
-                <button onclick="lihatDatabase()" class="secondary-btn">🗂️ Database Jamaah</button>
+                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')">EVENT</button>
+                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')">LAPORAN</button>
+                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')">DATABASE</button>
             </div>
             <div id="admin-dynamic-content"></div>
         </div>
     `;
+    // Standar awal buka tab Event
+    switchAdminTab('ev');
+};
+
+// Fungsi untuk pindah tab dan ganti warna tombol
+window.switchAdminTab = (tab) => {
+    // Reset semua tombol jadi abu-abu
+    document.querySelectorAll('.admin-btn').forEach(btn => btn.classList.remove('active'));
+    
+    if (tab === 'ev') {
+        document.getElementById('btn-ev').classList.add('active');
+        formBuatEvent();
+    } else if (tab === 'lp') {
+        document.getElementById('btn-lp').classList.add('active');
+        lihatLaporan();
+    } else if (tab === 'db') {
+        document.getElementById('btn-db').classList.add('active');
+        lihatDatabase();
+    }
 };
 
 window.formBuatEvent = () => {
