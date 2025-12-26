@@ -1,5 +1,72 @@
 import { db } from "./firebase-config.js";
 import { doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, serverTimestamp, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+writeBatch, serverTimestamp, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+window.closeEvent = async () => {
+    // Cari tombolnya berdasarkan ID yang ada di HTML
+    const btn = document.getElementById('btn-tutup-event');
+    
+    if(!confirm("Yakin ingin menutup absen? Sistem akan menghitung ALFA untuk 400 jamaah secara otomatis.")) return;
+    
+    // Beri tanda loading agar admin tahu proses sedang berjalan
+    if(btn) {
+        btn.innerText = "⏳ Memproses Data... Mohon Tunggu";
+        btn.disabled = true;
+        btn.style.background = "#bdc3c7";
+    }
+
+    try {
+        // 1. Ambil data event yang sedang aktif
+        const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
+        if (!evSnap.exists()) throw new Error("Tidak ada event aktif.");
+        const cur = evSnap.data();
+
+        // 2. Ambil SEMUA data jamaah (Master) dan data yang SUDAH ABSEN
+        const [masterSn, absenSn] = await Promise.all([
+            getDocs(collection(db, "master_jamaah")),
+            getDocs(query(collection(db, "attendance"), where("event", "==", cur.nama)))
+        ]);
+        
+        // Buat daftar nama yang sudah hadir/izin
+        const sudahAbsen = [];
+        absenSn.forEach(d => sudahAbsen.push(d.data().nama));
+
+        // 3. Mulai proses penulisan massal (Batch)
+        const batch = writeBatch(db);
+        let jumlahAlfa = 0;
+
+        masterSn.forEach(docM => {
+            const dataMaster = docM.data();
+            // Jika nama di master TIDAK ADA di daftar sudah absen
+            if(!sudahAbsen.includes(dataMaster.nama)) {
+                const newRef = doc(collection(db, "attendance"));
+                batch.set(newRef, { 
+                    ...dataMaster, 
+                    tipe: "ALFA", 
+                    event: cur.nama, 
+                    timestamp: serverTimestamp() 
+                });
+                jumlahAlfa++;
+            }
+        });
+
+        // 4. Kirim semua data sekaligus & tutup status event
+        await batch.commit();
+        await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
+        
+        alert(`Berhasil! Absen ditutup dan ${jumlahAlfa} jamaah otomatis ALFA.`);
+        location.reload();
+
+    } catch (e) {
+        console.error("Gagal menutup event:", e);
+        alert("Terjadi kesalahan: " + e.message);
+        if(btn) {
+            btn.innerText = "TUTUP & HITUNG ALFA";
+            btn.disabled = false;
+            btn.style.background = "#ff4757";
+        }
+    }
+};
 
 // FUNGSI LOGIN & LOGOUT
 window.loginAdmin = () => {
