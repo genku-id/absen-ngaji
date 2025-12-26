@@ -246,15 +246,19 @@ window.bukaAdmin = () => {
 };
 
 window.switchAdminTab = (tab) => {
+    // Reset semua tombol jadi abu-abu tua
     document.querySelectorAll('.admin-btn').forEach(b => b.style.background = "#666");
+    
     const activeBtn = document.getElementById(`btn-${tab}`);
-    if(activeBtn) activeBtn.style.background = "#25d366";
+    if(activeBtn) {
+        // GANTI DI SINI: Ubah dari #25d366 (hijau) ke biru
+        activeBtn.style.background = "#007bff"; 
+    }
     
     if (tab === 'ev') formBuatEvent();
     else if (tab === 'lp') lihatLaporan();
     else if (tab === 'db') lihatDatabase();
 };
-
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
     container.innerHTML = "Memeriksa...";
