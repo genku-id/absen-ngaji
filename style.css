@@ -81,3 +81,49 @@ input, select, button {
 .qr-item { margin: 20px 0; padding: 10px; border: 1px dashed #ccc; }
 #qrcode-absen img, #qrcode-izin img { margin: 0 auto; border: 5px solid white; }
 .secondary-btn { background: #666; color: white; border: none; }
+.menu-container {
+    position: relative;
+}
+
+#menu-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0 10px;
+}
+
+#menu-dropdown {
+    position: absolute;
+    right: 0;
+    top: 40px;
+    background: white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    border-radius: 8px;
+    width: 180px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#menu-dropdown button {
+    padding: 12px 15px;
+    border: none;
+    background: none;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    color: #333;
+    width: 100%;
+    margin: 0;
+}
+
+#menu-dropdown button:hover {
+    background-color: #f5f5f5;
+}
+
+.hidden {
+    display: none !important;
+}
