@@ -76,7 +76,38 @@ input, select, button {
 }
 
 .admin-card { max-width: 600px; }
-.admin-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+/* Container Tombol Admin menyamping */
+.admin-actions { 
+    display: flex; 
+    flex-wrap: nowrap; 
+    gap: 5px; 
+    margin-bottom: 20px;
+}
+
+/* Tombol Admin Default (Abu-abu) */
+.admin-btn {
+    flex: 1;
+    background-color: #666; /* Abu-abu */
+    color: white;
+    border: none;
+    padding: 10px 5px;
+    font-size: 11px; /* Ukuran teks lebih kecil agar muat */
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+/* Tombol Saat Aktif (Hijau) */
+.admin-btn.active {
+    background-color: #25d366; /* Hijau */
+}
+
+/* Tabel agar tidak memakan tempat */
+.table-responsive {
+    overflow-x: auto;
+    margin-top: 10px;
+}
 .qr-result { margin-top: 20px; text-align: center; }
 .qr-item { margin: 20px 0; padding: 10px; border: 1px dashed #ccc; }
 #qrcode-absen img, #qrcode-izin img { margin: 0 auto; border: 5px solid white; }
