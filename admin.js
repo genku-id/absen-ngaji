@@ -1,7 +1,7 @@
 import { db } from "./firebase-config.js";
 import { doc, getDoc, setDoc, collection, query, where, getDocs, writeBatch, serverTimestamp, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-writeBatch, serverTimestamp, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+// Sisa kode ke bawah sudah benar...
 window.closeEvent = async () => {
     // Cari tombolnya berdasarkan ID yang ada di HTML
     const btn = document.getElementById('btn-tutup-event');
