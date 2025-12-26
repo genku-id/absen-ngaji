@@ -137,6 +137,75 @@ window.loadReports = () => {
         });
     });
 };
+// admin.js
+
+// --- FUNGSI FILTER LAPORAN ---
+window.filterLaporan = () => {
+    const desa = document.getElementById('f-desa').value;
+    const kel = document.getElementById('f-kelompok').value;
+    
+    // Kita filter dari masterCache yang sudah di-load di DOMContentLoaded
+    onSnapshot(query(collection(db, "attendance"), orderBy("timestamp", "desc")), (sn) => {
+        const cont = document.getElementById('report-list-cont');
+        cont.innerHTML = "";
+        
+        sn.forEach(doc => {
+            const r = doc.data();
+            // Logika Filter
+            const matchDesa = !desa || r.desa === desa;
+            const matchKel = !kel || r.kelompok === kel;
+            
+            if(matchDesa && matchKel) {
+                cont.innerHTML += `<div class="report-item"><b>${r.nama}</b> <span>${r.tipe}</span><br><small>${r.desa} - ${r.kelompok}</small></div>`;
+            }
+        });
+    });
+};
+
+// --- FUNGSI DOWNLOAD EXCEL (SESUAI FILTER) ---
+window.downloadExcel = async () => {
+    const desa = document.getElementById('f-desa').value;
+    const kel = document.getElementById('f-kelompok').value;
+    
+    const sn = await getDocs(query(collection(db, "attendance"), orderBy("timestamp", "desc")));
+    let csv = "Nama,Desa,Kelompok,Status,Event\n";
+    
+    sn.forEach(doc => {
+        const r = doc.data();
+        const matchDesa = !desa || r.desa === desa;
+        const matchKel = !kel || r.kelompok === kel;
+        
+        if(matchDesa && matchKel) {
+            csv += `${r.nama},${r.desa},${r.kelompok},${r.tipe},${r.event}\n`;
+        }
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `Laporan_Absen_${desa||'Semua'}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
+
+// --- FUNGSI RESET (HAPUS SEMUA DATA LAPORAN) ---
+window.resetLaporan = async () => {
+    if(!confirm("PERINGATAN! Ini akan menghapus SEMUA riwayat absen di database. Lanjutkan?")) return;
+    
+    const sn = await getDocs(collection(db, "attendance"));
+    const batch = writeBatch(db);
+    
+    sn.forEach(d => {
+        batch.delete(d.ref);
+    });
+    
+    await batch.commit();
+    alert("Semua riwayat laporan telah dihapus!");
+    location.reload();
+};
 
 // --- 5. LOGIKA UTAMA ---
 window.addEventListener('DOMContentLoaded', async () => {
