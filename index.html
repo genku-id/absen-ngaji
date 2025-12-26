@@ -44,5 +44,17 @@
       .catch(err => console.log("PWA Error", err));
   }
 </script>
+    <div id="admin-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <h3>Akses Admin</h3>
+        <p>Masukkan Password:</p>
+        <input type="password" id="admin-pass-input" placeholder="****">
+        <div class="modal-buttons">
+            <button onclick="tutupModalAdmin()" class="secondary-btn">BATAL</button>
+            <button onclick="cekPasswordAdmin()" class="primary-btn">OKE</button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
