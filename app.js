@@ -135,14 +135,17 @@ window.prosesLogin = async () => {
 window.showDashboard = (userData) => {
     const content = document.getElementById('app-content');
     content.innerHTML = `
-        <div class="card">
-            <div style="text-align:center; padding:20px 0;">
-                <h2>Assalaamualaikum,</h2>
-                <h1 style="color: #075e54; margin:10px 0;">${userData.nama}</h1>
-                <p>${userData.desa} - ${userData.kelompok}</p>
+        <div class="card animate-in">
+            <div style="text-align:center; padding:30px 0;">
+                <h2 style="font-weight: normal; color: #666;">Assalaamualaikum,</h2>
+                <h1 style="color: #075e54; margin:10px 0; font-size: 2.2em;">${userData.nama}</h1>
+                <p style="color: #888; letter-spacing: 1px;">${userData.desa} - ${userData.kelompok}</p>
             </div>
-            <button onclick='mulaiScanner(${JSON.stringify(userData)})' class="primary-btn" style="padding:20px; font-size:18px;">📸 MULAI SCAN</button>
-            <button onclick="showPageRegistrasi()" class="secondary-btn" style="margin-top:20px;">Ganti Akun</button>
+            
+            <button onclick='mulaiScanner(${JSON.stringify(userData)})' class="primary-btn" 
+                style="padding:25px; font-size:20px; border-radius: 50px; box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);">📸 MULAI SCAN BARCODE</button>
+            
+            <p style="text-align:center; margin-top:30px; font-size:11px; color:#ccc;">E-PRESENSI KU v1.0</p>
         </div>
     `;
 };
