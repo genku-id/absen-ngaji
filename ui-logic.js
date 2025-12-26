@@ -13,11 +13,16 @@ window.toggleSidebar = () => {
     document.getElementById('overlay').classList.toggle('active');
 };
 
-window.switchTab = (id) => {
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('tab-' + id).classList.remove('hidden');
-    if(event) event.currentTarget.classList.add('active');
+window.switchTab = (tabName) => {
+    // Sembunyikan semua konten tab
+    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+    // Hapus class active dari semua tombol
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    
+    // Tampilkan tab yang dipilih
+    document.getElementById('tab-' + tabName).classList.remove('hidden');
+    // Beri class active pada tombol yang diklik
+    event.currentTarget.classList.add('active');
 };
 
 window.updateKelompok = (targetId, desa) => {
