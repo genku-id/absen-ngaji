@@ -74,3 +74,10 @@ input, select, button {
     font-size: 3em;
     font-weight: bold;
 }
+
+.admin-card { max-width: 600px; }
+.admin-actions { display: grid; grid-template-columns: 1fr; gap: 10px; }
+.qr-result { margin-top: 20px; text-align: center; }
+.qr-item { margin: 20px 0; padding: 10px; border: 1px dashed #ccc; }
+#qrcode-absen img, #qrcode-izin img { margin: 0 auto; border: 5px solid white; }
+.secondary-btn { background: #666; color: white; border: none; }
