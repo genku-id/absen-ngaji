@@ -55,21 +55,39 @@ window.showPageRegistrasi = () => {
     };
 
     // Fitur Saran Nama tetap sama seperti sebelumnya
-    namaInput.oninput = async () => {
-        if (namaInput.value.length < 2) return;
-        const q = query(collection(db, "users"), 
-                  where("desa", "==", desaSelect.value),
-                  where("kelompok", "==", kelSelect.value));
-        
-        const snap = await getDocs(q);
-        const list = document.getElementById('list-nama');
-        list.innerHTML = "";
-        snap.forEach(doc => {
-            let opt = document.createElement('option');
-            opt.value = doc.data().nama;
-            list.appendChild(opt);
-        });
-    };
+   // Pastikan bagian ini ada di dalam logic input nama
+namaInput.oninput = async () => {
+    const desaVal = desaSelect.value;
+    const kelVal = kelSelect.value;
+    const inputVal = namaInput.value;
+
+    if (inputVal.length >= 2) { // Saran muncul setelah ketik 2 huruf
+        try {
+            // Mencari di database yang Desa dan Kelompoknya cocok
+            const q = query(
+                collection(db, "users"), 
+                where("desa", "==", desaVal),
+                where("kelompok", "==", kelVal)
+            );
+            
+            const snap = await getDocs(q);
+            listNama.innerHTML = ""; // Bersihkan saran lama
+            
+            snap.forEach(doc => {
+                const data = doc.data();
+                // Filter manual agar lebih akurat dengan apa yang diketik
+                if (data.nama.toLowerCase().includes(inputVal.toLowerCase())) {
+                    let opt = document.createElement('option');
+                    opt.value = data.nama; 
+                    listNama.appendChild(opt);
+                }
+            });
+            console.log("Saran nama diperbarui dari database");
+        } catch (error) {
+            console.error("Gagal ambil saran nama:", error);
+        }
+    }
+};
 };
 window.prosesLogin = async () => {
     const nama = document.getElementById('reg-nama').value;
