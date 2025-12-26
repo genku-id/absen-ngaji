@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#075e54">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>E-PRESENSI KU</title>
@@ -33,5 +37,10 @@
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="app.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script>if ('serviceWorker' in navigator) {navigator.serviceWorker.register('sw.js')
+      .then(() => console.log("PWA Active"))
+      .catch(err => console.log("PWA Error", err));
+  }
+</script>
 </body>
 </html>
