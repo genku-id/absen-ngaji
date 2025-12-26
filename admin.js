@@ -4,7 +4,7 @@ import {
     writeBatch, serverTimestamp, onSnapshot, orderBy 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- 1. FUNGSI ADMINISTRASI UTAMA ---
+// --- 1. FUNGSI LOGIN & LOGOUT ---
 window.loginAdmin = () => {
     const pin = prompt("Kode Admin:");
     if(pin === "1234") { 
@@ -21,7 +21,7 @@ window.logout = () => {
     location.reload();
 };
 
-// --- 2. PENGELOLAAN AKUN LOKAL ---
+// --- 2. PENGELOLAAN AKUN LOKAL & PROFIL ---
 window.saveProfile = async () => {
     const n = document.getElementById('p-nama').value.trim();
     const d = document.getElementById('p-desa').value;
@@ -33,6 +33,7 @@ window.saveProfile = async () => {
         const id = "USR-" + Date.now();
         const akun = { nama: n, desa: d, kelompok: k, id: id };
         
+        // Cek di cache master
         const exists = window.masterCache.some(m => m.nama === n && m.kelompok === k);
         if(!exists) {
             await setDoc(doc(db, "master_jamaah", id), { ...akun, status: "Baru" });
@@ -68,12 +69,12 @@ window.hapusAkunLokal = (id) => {
     }
 };
 
-// --- 3. MANAJEMEN EVENT & QR ---
+// --- 3. MANAJEMEN EVENT & QR CODE ---
 window.createNewEvent = async () => {
     const n = document.getElementById('ev-nama').value;
     const t = document.getElementById('ev-tgl').value;
     const j = document.getElementById('ev-jam').value;
-    if(!n || !t || !j) return alert("Lengkapi data!");
+    if(!n || !t || !j) return alert("Lengkapi data acara!");
     
     try {
         await setDoc(doc(db, "settings", "event_aktif"), { 
@@ -100,9 +101,9 @@ const generateAllQR = (eventID) => {
 
 window.closeEvent = async () => {
     const btn = document.getElementById('btn-tutup-event');
-    if(!confirm("Tutup & Hitung ALFA otomatis?")) return;
+    if(!confirm("Tutup & Hitung ALFA otomatis untuk yang belum absen?")) return;
     
-    btn.innerText = "⏳ Memproses 400 Data...";
+    btn.innerText = "⏳ Memproses Data...";
     btn.disabled = true;
 
     try {
@@ -118,7 +119,7 @@ window.closeEvent = async () => {
 
         const batch = writeBatch(db);
         let c = 0;
-        mSn.forEach(docM => {
+        masterSn.forEach(docM => {
             if(!sudah.includes(docM.data().nama)) {
                 batch.set(doc(collection(db, "attendance")), { 
                     ...docM.data(), tipe: "ALFA", event: cur.nama, timestamp: serverTimestamp() 
@@ -129,7 +130,7 @@ window.closeEvent = async () => {
 
         await batch.commit();
         await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
-        alert(`Berhasil! ${c} jamaah ditandai ALFA.`);
+        alert(`Berhasil! Event ditutup dan ${c} orang otomatis ALFA.`);
         location.reload();
     } catch (e) {
         alert("Error: " + e.message);
@@ -138,9 +139,9 @@ window.closeEvent = async () => {
     }
 };
 
-// --- 4. DATABASE MASTER & LAPORAN ---
+// --- 4. DATABASE & LAPORAN ---
 window.hapusMaster = async (id) => {
-    if(confirm("Hapus dari Database Master?")) {
+    if(confirm("Hapus dari Database Master selamanya?")) {
         await deleteDoc(doc(db, "master_jamaah", id));
         location.reload();
     }
@@ -158,10 +159,10 @@ window.loadReports = () => {
     });
 };
 
-// --- 5. LOGIKA HALAMAN UTAMA (SINGLE LISTENER) ---
+// --- 5. LOGIKA HALAMAN UTAMA (GABUNGAN) ---
 window.addEventListener('DOMContentLoaded', async () => {
     try {
-        // Load Master Data
+        // 1. Load Master Data ke Cache
         const mSn = await getDocs(collection(db, "master_jamaah"));
         window.masterCache = [];
         mSn.forEach(doc => window.masterCache.push(doc.data()));
@@ -170,21 +171,28 @@ window.addEventListener('DOMContentLoaded', async () => {
         const aktif = localStorage.getItem('akun_aktif');
         const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
 
-        // Reset Tampilan
+        // Sembunyikan semua card dulu
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
 
+        // 2. Jalankan Logika berdasarkan Role/Status
         if(role === 'admin') {
             document.getElementById('admin-section').classList.remove('hidden');
             const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
+            
             if (evSnap.exists() && evSnap.data().status === "OPEN") {
                 document.getElementById('setup-box').classList.add('hidden');
                 document.getElementById('qr-box').classList.remove('hidden');
-                generateAllQR(evSnap.data().id);
+                // Beri jeda 500ms agar canvas siap di-render
+                setTimeout(() => {
+                    generateAllQR(evSnap.data().id);
+                }, 500);
             }
             window.loadReports();
+
         } else if(aktif) {
             document.getElementById('peserta-section').classList.remove('hidden');
-            window.tampilkanSalam();
+            if(typeof window.tampilkanSalam === 'function') window.tampilkanSalam();
+
         } else if(daftar.length > 0) {
             document.getElementById('pilih-akun-section').classList.remove('hidden');
             const contPilih = document.getElementById('list-akun-pilihan');
@@ -195,16 +203,18 @@ window.addEventListener('DOMContentLoaded', async () => {
                         <button onclick="pilihAkun('${x.id}')" class="btn-pilih-akun">
                             <span>👤</span> ${x.nama}
                         </button>
-                        <button onclick="hapusAkunLokal('${x.id}')" style="width: 50px; height: 50px; background: #ff4757; color: white; border-radius: 10px; border: none; font-weight: bold;">X</button>
+                        <button onclick="hapusAkunLokal('${x.id}')" style="width: 50px; height: 50px; background: #ff4757; color: white; border-radius: 10px; border: none; font-weight: bold; cursor: pointer;">X</button>
                     </div>`;
             });
         } else {
             document.getElementById('modal-tambah').classList.remove('hidden');
         }
-    } catch (e) { console.error("Error Load:", e); }
+    } catch (e) { 
+        console.error("Gagal memuat aplikasi:", e); 
+    }
 });
 
-// Fungsi Pendukung QR
+// --- 6. FUNGSI PENDUKUNG QR ---
 window.downloadQR = (id, file) => {
     const canvas = document.getElementById(id);
     const link = document.createElement('a');
