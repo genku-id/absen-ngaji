@@ -231,7 +231,7 @@ th { background-color: #075e54; color: white; }
 
 /* Success Overlay Full Screen */
 #success-overlay {
-    background: #075e54; /* Warna hijau tua khas ngaji */
+    background-color: #0056b3; /* Ubah dari Hijau ke Biru Tua */
     font-family: 'Comic Sans MS', cursive, sans-serif; /* Supaya lebih ramah */
 }
 #reader {
