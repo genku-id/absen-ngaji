@@ -81,13 +81,14 @@
                 </div>
                 
                 <div id="qr-box" class="hidden">
-                    <div class="card" style="margin-bottom: 15px;">
-                        <h4>BARCODE HADIR</h4>
-                        <div style="display: flex; justify-content: center; padding: 10px; background: white;">
-                            <canvas id="canvas-absen" onclick="showFullQR('canvas-absen','HADIR')"></canvas>
-                        </div>
-                        <button onclick="downloadQR('canvas-absen', 'QR_HADIR')" style="background:#34495e;">💾 Simpan QR Hadir</button>
-                    </div>
+    <div class="card">
+        <h4>BARCODE HADIR</h4>
+        <div style="display: flex; justify-content: center; padding: 10px;">
+            <canvas id="canvas-absen"></canvas> </div>
+        <button onclick="downloadQR('canvas-absen', 'QR_HADIR')">💾 Simpan QR Hadir</button>
+    </div>
+    </div>
+
                     <div class="card" style="margin-bottom: 15px;">
                         <h4>BARCODE IZIN</h4>
                         <div style="display: flex; justify-content: center; padding: 10px; background: white;">
