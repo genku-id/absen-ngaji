@@ -4,7 +4,7 @@ import {
     writeBatch, serverTimestamp, onSnapshot, orderBy 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// --- 1. FUNGSI LOGIN & LOGOUT ---
+// --- 1. LOGIN & LOGOUT ---
 window.loginAdmin = () => {
     const pin = prompt("Kode Admin:");
     if(pin === "1234") { 
@@ -21,34 +21,27 @@ window.logout = () => {
     location.reload();
 };
 
-// --- 2. PENGELOLAAN AKUN LOKAL & PROFIL ---
+// --- 2. AKUN LOKAL & PROFIL ---
 window.saveProfile = async () => {
     const n = document.getElementById('p-nama').value.trim();
     const d = document.getElementById('p-desa').value;
     const k = document.getElementById('p-kelompok').value;
-    
-    if(!n || !d || !k) return alert("Mohon lengkapi Desa, Kelompok, dan Nama!");
+    if(!n || !d || !k) return alert("Lengkapi data!");
     
     try {
         const id = "USR-" + Date.now();
         const akun = { nama: n, desa: d, kelompok: k, id: id };
-        
-        // Cek di cache master
-        const exists = window.masterCache.some(m => m.nama === n && m.kelompok === k);
+        const exists = (window.masterCache || []).some(m => m.nama === n && m.kelompok === k);
         if(!exists) {
             await setDoc(doc(db, "master_jamaah", id), { ...akun, status: "Baru" });
         }
-
         let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
         daftar.push(akun);
         localStorage.setItem('daftar_akun', JSON.stringify(daftar));
         localStorage.setItem('akun_aktif', JSON.stringify(akun));
-
         alert("Profil Berhasil Disimpan!");
         location.reload();
-    } catch (e) {
-        alert("Gagal menyimpan: " + e.message);
-    }
+    } catch (e) { alert("Gagal: " + e.message); }
 };
 
 window.pilihAkun = (id) => {
@@ -61,37 +54,32 @@ window.pilihAkun = (id) => {
 };
 
 window.hapusAkunLokal = (id) => {
-    if(confirm("Hapus akun ini dari daftar di HP ini?")) {
-        let daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
-        daftar = daftar.filter(a => a.id !== id);
-        localStorage.setItem('daftar_akun', JSON.stringify(daftar));
+    if(confirm("Hapus akun dari HP ini?")) {
+        let d = JSON.parse(localStorage.getItem('daftar_akun')) || [];
+        d = d.filter(a => a.id !== id);
+        localStorage.setItem('daftar_akun', JSON.stringify(d));
         location.reload();
     }
 };
 
-// --- 3. MANAJEMEN EVENT & QR CODE ---
+// --- 3. EVENT & QR CODE ---
 window.createNewEvent = async () => {
     const n = document.getElementById('ev-nama').value;
     const t = document.getElementById('ev-tgl').value;
     const j = document.getElementById('ev-jam').value;
-    if(!n || !t || !j) return alert("Lengkapi data acara!");
-    
+    if(!n || !t || !j) return alert("Lengkapi data!");
     try {
         await setDoc(doc(db, "settings", "event_aktif"), { 
-            id: "EVT-" + Date.now(), 
-            status: "OPEN", 
-            nama: n, 
-            tanggal: t, 
-            jam: j 
+            id: "EVT-" + Date.now(), status: "OPEN", nama: n, tanggal: t, jam: j 
         });
         location.reload();
-    } catch (e) { alert("Gagal: " + e.message); }
+    } catch (e) { alert(e.message); }
 };
 
 const generateAllQR = (eventID) => {
     const cAbsen = document.getElementById('canvas-absen');
     const cIzin = document.getElementById('canvas-izin');
-    if (cAbsen && cIzin) {
+    if (typeof QRCode !== 'undefined' && cAbsen && cIzin) {
         cAbsen.title = eventID + "|HADIR";
         cIzin.title = eventID + "|IZIN";
         QRCode.toCanvas(cAbsen, cAbsen.title, { width: 250, margin: 2 });
@@ -101,9 +89,8 @@ const generateAllQR = (eventID) => {
 
 window.closeEvent = async () => {
     const btn = document.getElementById('btn-tutup-event');
-    if(!confirm("Tutup & Hitung ALFA otomatis untuk yang belum absen?")) return;
-    
-    btn.innerText = "⏳ Memproses Data...";
+    if(!confirm("Tutup & Hitung ALFA?")) return;
+    btn.innerText = "⏳ Memproses...";
     btn.disabled = true;
 
     try {
@@ -113,13 +100,13 @@ window.closeEvent = async () => {
             getDocs(collection(db, "master_jamaah")),
             getDocs(query(collection(db, "attendance"), where("event", "==", cur.nama)))
         ]);
-        
         const sudah = [];
         aSn.forEach(d => sudah.push(d.data().nama));
-
         const batch = writeBatch(db);
         let c = 0;
-        masterSn.forEach(docM => {
+        
+        // Perbaikan variabel: mSn.forEach (bukan masterSn)
+        mSn.forEach(docM => {
             if(!sudah.includes(docM.data().nama)) {
                 batch.set(doc(collection(db, "attendance")), { 
                     ...docM.data(), tipe: "ALFA", event: cur.nama, timestamp: serverTimestamp() 
@@ -127,26 +114,18 @@ window.closeEvent = async () => {
                 c++;
             }
         });
-
         await batch.commit();
         await setDoc(doc(db, "settings", "event_aktif"), { status: "CLOSED" });
-        alert(`Berhasil! Event ditutup dan ${c} orang otomatis ALFA.`);
+        alert(`Berhasil! ${c} jamaah ALFA.`);
         location.reload();
     } catch (e) {
-        alert("Error: " + e.message);
+        alert(e.message);
         btn.disabled = false;
         btn.innerText = "TUTUP & HITUNG ALFA";
     }
 };
 
-// --- 4. DATABASE & LAPORAN ---
-window.hapusMaster = async (id) => {
-    if(confirm("Hapus dari Database Master selamanya?")) {
-        await deleteDoc(doc(db, "master_jamaah", id));
-        location.reload();
-    }
-};
-
+// --- 4. LAPORAN & DATABASE ---
 window.loadReports = () => {
     const cont = document.getElementById('report-list-cont');
     if(!cont) return;
@@ -159,10 +138,9 @@ window.loadReports = () => {
     });
 };
 
-// --- 5. LOGIKA HALAMAN UTAMA (GABUNGAN) ---
+// --- 5. LOGIKA UTAMA ---
 window.addEventListener('DOMContentLoaded', async () => {
     try {
-        // 1. Load Master Data ke Cache
         const mSn = await getDocs(collection(db, "master_jamaah"));
         window.masterCache = [];
         mSn.forEach(doc => window.masterCache.push(doc.data()));
@@ -171,50 +149,38 @@ window.addEventListener('DOMContentLoaded', async () => {
         const aktif = localStorage.getItem('akun_aktif');
         const daftar = JSON.parse(localStorage.getItem('daftar_akun')) || [];
 
-        // Sembunyikan semua card dulu
         document.querySelectorAll('.card').forEach(c => c.classList.add('hidden'));
 
-        // 2. Jalankan Logika berdasarkan Role/Status
         if(role === 'admin') {
             document.getElementById('admin-section').classList.remove('hidden');
             const evSnap = await getDoc(doc(db, "settings", "event_aktif"));
-            
             if (evSnap.exists() && evSnap.data().status === "OPEN") {
                 document.getElementById('setup-box').classList.add('hidden');
                 document.getElementById('qr-box').classList.remove('hidden');
-                // Beri jeda 500ms agar canvas siap di-render
-                setTimeout(() => {
-                    generateAllQR(evSnap.data().id);
-                }, 500);
+                setTimeout(() => generateAllQR(evSnap.data().id), 500);
             }
             window.loadReports();
-
         } else if(aktif) {
             document.getElementById('peserta-section').classList.remove('hidden');
-            if(typeof window.tampilkanSalam === 'function') window.tampilkanSalam();
-
+            if(window.tampilkanSalam) window.tampilkanSalam();
         } else if(daftar.length > 0) {
             document.getElementById('pilih-akun-section').classList.remove('hidden');
-            const contPilih = document.getElementById('list-akun-pilihan');
-            contPilih.innerHTML = "";
+            const cp = document.getElementById('list-akun-pilihan');
+            cp.innerHTML = "";
             daftar.forEach(x => {
-                contPilih.innerHTML += `
-                    <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: center;">
-                        <button onclick="pilihAkun('${x.id}')" class="btn-pilih-akun">
-                            <span>👤</span> ${x.nama}
-                        </button>
-                        <button onclick="hapusAkunLokal('${x.id}')" style="width: 50px; height: 50px; background: #ff4757; color: white; border-radius: 10px; border: none; font-weight: bold; cursor: pointer;">X</button>
-                    </div>`;
+                cp.innerHTML += `
+                <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
+                    <button onclick="pilihAkun('${x.id}')" class="btn-pilih-akun"><span>👤</span> ${x.nama}</button>
+                    <button onclick="hapusAkunLokal('${x.id}')" style="width:50px; height:50px; background:#ff4757; color:white; border-radius:10px; border:none; font-weight:bold; cursor:pointer;">X</button>
+                </div>`;
             });
         } else {
             document.getElementById('modal-tambah').classList.remove('hidden');
         }
-    } catch (e) { 
-        console.error("Gagal memuat aplikasi:", e); 
-    }
+    } catch (e) { console.error(e); }
 });
 
-// --- 6. FUNGSI PENDUKUNG QR ---
+// --- 6. QR SUPPORT ---
 window.downloadQR = (id, file) => {
     const canvas = document.getElementById(id);
     const link = document.createElement('a');
