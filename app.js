@@ -1,5 +1,5 @@
 import { db } from './firebase-config.js';
-import { collection, getDocs, query, where, addDoc, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { collection, getDocs, query, where, addDoc, doc, setDoc, serverTimestamp, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const dataWilayah = {
     "WATES": ["KREMBANGAN", "BOJONG", "GIRIPENI 1", "GIRIPENI 2", "HARGOWILIS", "TRIHARJO"],
@@ -337,4 +337,47 @@ window.downloadLaporan = () => {
     const table = document.querySelector("#tabel-container table");
     const wb = XLSX.utils.table_to_book(table);
     XLSX.writeFile(wb, "Laporan_Presensi_Ngaji.xlsx");
+};
+window.lihatDatabase = async () => {
+    const container = document.getElementById('admin-dynamic-content');
+    container.innerHTML = `
+        <div class="filter-box">
+            <input type="text" id="cari-nama-db" placeholder="Cari nama jamaah...">
+            <button onclick="renderTabelDatabase()" class="primary-btn">Cari</button>
+        </div>
+        <div id="db-container" class="table-responsive"></div>
+    `;
+    renderTabelDatabase();
+};
+
+window.renderTabelDatabase = async () => {
+    const container = document.getElementById('db-container');
+    const cari = document.getElementById('cari-nama-db').value.toUpperCase();
+    const snap = await getDocs(collection(db, "master_jamaah"));
+    
+    let html = `<table><thead><tr><th>Nama</th><th>Desa/Kel</th><th>Aksi</th></tr></thead><tbody>`;
+    
+    snap.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.nama.includes(cari) || cari === "") {
+            html += `
+                <tr>
+                    <td>${d.nama}</td>
+                    <td>${d.desa}<br><small>${d.kelompok}</small></td>
+                    <td>
+                        <button onclick="hapusJamaah('${docSnap.id}', '${d.nama}')" style="background:red; color:white; padding:5px; border:none; border-radius:3px;">Hapus</button>
+                    </td>
+                </tr>`;
+        }
+    });
+    html += `</tbody></table>`;
+    container.innerHTML = html;
+};
+
+window.hapusJamaah = async (id, nama) => {
+    if (confirm(`Yakin ingin menghapus ${nama} dari database?`)) {
+        await deleteDoc(doc(db, "master_jamaah", id));
+        alert("Terhapus!");
+        renderTabelDatabase();
+    }
 };
