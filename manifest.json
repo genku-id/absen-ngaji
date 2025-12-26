@@ -4,14 +4,15 @@
   "description": "Aplikasi Presensi Ngaji Berbasis QR Code",
   "start_url": "index.html",
   "display": "standalone",
-  "background_color": "#075e54",
+  "background_color": "#ffffff",
   "theme_color": "#075e54",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/1160/1160358.png",
+      "src": "logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
