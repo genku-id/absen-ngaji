@@ -262,3 +262,13 @@ html, body {
 header {
     padding-top: env(safe-area-inset-top); /* Menyesuaikan poni HP modern */
 }
+/* Menghilangkan seleksi biru saat tombol diklik di HP */
+* {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Mengatur area aman untuk HP berponi (Notch) */
+body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
