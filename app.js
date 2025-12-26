@@ -153,13 +153,33 @@ window.showDashboard = (userData) => {
 // --- 5. SCANNER & PROSES ABSEN ---
 window.mulaiScanner = (userData) => {
     const content = document.getElementById('app-content');
-    content.innerHTML = `<div class="card"><h3>Silakan Scan...</h3><div id="reader"></div><button onclick='showDashboard(${JSON.stringify(userData)})' class="secondary-btn">Batal</button></div>`;
-    
+    content.innerHTML = `
+        <div class="card" style="padding: 10px;">
+            <h3 style="text-align:center;">Arahkan ke Barcode</h3>
+            <div id="reader"></div>
+            <button onclick='showDashboard(${JSON.stringify(userData)})' class="secondary-btn" style="margin-top:15px;">BATAL</button>
+        </div>
+    `;
+
     html5QrCode = new Html5Qrcode("reader");
-    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (decodedText) => {
-        await html5QrCode.stop();
-        prosesAbsensi(decodedText, userData);
-    }).catch(err => alert("Kamera error: " + err));
+    // Pengaturan kamera agar pas di layar HP
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 }, // Ukuran kotak target scan
+        aspectRatio: 1.0 // Membuat tampilan kamera kotak (square) agar fokus
+    };
+
+    html5QrCode.start(
+        { facingMode: "environment" }, 
+        config, 
+        async (decodedText) => {
+            await html5QrCode.stop();
+            prosesAbsensi(decodedText, userData);
+        }
+    ).catch(err => {
+        console.error("Gagal Kamera:", err);
+        alert("Mohon izinkan akses kamera!");
+    });
 };
 
 async function prosesAbsensi(eventID, userData) {
