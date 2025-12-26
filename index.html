@@ -2,99 +2,34 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-Absen v7.2 Fixed</title>
-    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absensi Ngaji</title>
     <link rel="stylesheet" href="style.css">
-    
-    <script src="https://cdn.jsdelivr.net/npm/html5-qrcode/html5-qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
-
-    <script type="module" src="./firebase-config.js"></script>
-    <script type="module" src="./ui-logic.js"></script>
-    <script type="module" src="./scanner.js"></script>
-    <script type="module" src="./admin-main.js"></script>
-    <script type="module" src="./admin-event.js"></script>
-    <script type="module" src="./admin-laporan.js"></script>
-    <script type="module" src="./admin-database.js"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
-    <div class="navbar">
-        <div id="btn-menu" style="cursor:pointer; font-size:24px; padding: 5px;">☰</div>
-        <div style="font-weight:bold; flex:1; text-align:center;">E-PRESENSI GENKU</div>
-        <div style="width:40px"></div> 
-    </div>
 
-    <div class="sidebar-overlay" id="overlay"></div>
-    <div class="sidebar" id="sidebar">
-        <h3 style="margin-top:60px; padding-left:20px;">MENU</h3>
-        <button id="btn-logout" style="background:#7f8c8d; margin-bottom: 20px; width:90%; margin-left:5%;">👤 GANTI AKUN</button>
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size: 12px; color: #7f8c8d; margin-left: 20px;">KHUSUS PENGURUS:</p>
-        <button style="background:#2980b9; width:90%; margin-left:5%;" id="btn-login-admin">🔐 MASUK ADMIN</button>
-    </div>
-
-    <div class="container">
-        <div id="modal-tambah" class="card hidden">
-            <h3>REGISTRASI</h3>
-            <select id="p-desa">
-                <option value="">-- Pilih Desa --</option>
-                <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
-            </select>
-            <select id="p-kelompok"><option value="">-- Pilih Kelompok --</option></select>
-            <input id="p-nama" placeholder="Ketik Nama Anda..." autocomplete="off">
-            <button id="btn-save-profile">SIMPAN PROFIL</button>
-        </div>
-
-        <div id="pilih-akun-section" class="card hidden">
-            <h3>PILIH NAMA</h3>
-            <div id="list-akun-pilihan"></div>
-            <button id="btn-add-new" style="margin-top:20px; background:#666">TAMBAH NAMA BARU</button>
-        </div>
-
-        <div id="admin-section" class="card hidden">
-            <div class="tab-menu">
-                <button class="tab-btn active" id="tab-btn-event">EVENT</button>
-                <button class="tab-btn" id="tab-btn-laporan">LAPORAN</button>
-                <button class="tab-btn" id="tab-btn-master">DATABASE</button>
+    <header>
+        <div class="logo">Absensi Ngaji</div>
+        <div class="menu-container">
+            <button id="menu-btn">⋮</button>
+            <div id="menu-dropdown" class="hidden">
+                <button onclick="showPage('registrasi')">Ganti Akun/Nama</button>
+                <button onclick="promptAdmin()">Menu Admin</button>
             </div>
-
-            <div id="tab-event" class="tab-content">
-                <div id="setup-box">
-                    <input id="ev-nama" placeholder="Nama Acara">
-                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
-                        <input id="ev-tgl" type="date"><input id="ev-jam" type="time">
-                    </div>
-                    <button id="btn-create-event">AKTIFKAN QR SEKARANG</button>
-                </div>
-                
-                <div id="qr-box" class="hidden">
-                    <div class="card">
-                        <h4>BARCODE HADIR</h4>
-                        <div style="display: flex; justify-content: center;"><canvas id="canvas-absen"></canvas></div>
-                        <button id="btn-dl-hadir">💾 Simpan QR Hadir</button>
-                    </div>
-                    <div class="card">
-                        <h4>BARCODE IZIN</h4>
-                        <div style="display: flex; justify-content: center;"><canvas id="canvas-izin"></canvas></div>
-                        <button id="btn-dl-izin" style="background:#34495e;">💾 Simpan QR Izin</button>
-                    </div>
-                    <button class="btn-danger" id="btn-tutup-event" style="margin-top:20px; height: 55px; font-weight: bold;">TUTUP & HITUNG ALFA</button>
-                </div>
-            </div>
-
-            <div id="tab-laporan" class="tab-content hidden">
-    <div style="margin-bottom:10px; display:flex; gap:5px;">
-        <select id="f-desa" onchange="window.filterLaporan()">
-            <option value="">Semua Desa</option>
-            <option>WATES</option><option>SAMIGALUH</option> </select>
-        <select id="f-kelompok" onchange="window.filterLaporan()">
-            <option value="">Semua Kelompok</option>
-        </select>
-    </div>
-    </div>
         </div>
+    </header>
+
+    <main id="app-content">
+        <div id="loading">Memuat aplikasi...</div>
+    </main>
+
+    <div id="success-overlay" class="hidden">
+        <h1>Lancar Barokah!</h1>
     </div>
+
+    <script type="module" src="firebase-config.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
 </html>
