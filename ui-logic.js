@@ -52,3 +52,15 @@ window.tampilkanSalam = () => {
         infoPeserta.innerHTML = `Assalaamualaikum,<br><span style="color: #27ae60;">${akunAktif.nama}</span>`;
     }
 };
+// ui-logic.js
+
+// Pastikan WILAYAH sudah ada di atas
+window.updateFilterKelompok = (desa) => {
+    const el = document.getElementById('f-kelompok');
+    el.innerHTML = '<option value="">-- Semua Kelompok --</option>';
+    if(WILAYAH[desa]) {
+        WILAYAH[desa].forEach(k => {
+            el.innerHTML += `<option value="${k}">${k}</option>`;
+        });
+    }
+};
