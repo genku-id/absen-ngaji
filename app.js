@@ -293,7 +293,7 @@ window.renderTabelLaporan = async () => {
     const fDesa = document.getElementById('f-desa').value;
     const fKel = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
-    tableDiv.innerHTML = "Memuat...";
+    tableDiv.innerHTML = "Memuat data...";
 
     let qMaster = collection(db, "master_jamaah");
     if(fDesa) qMaster = query(qMaster, where("desa", "==", fDesa));
@@ -301,14 +301,38 @@ window.renderTabelLaporan = async () => {
     
     const masterSnap = await getDocs(qMaster);
     const hadirSnap = await getDocs(collection(db, "attendance"));
-    const hadirNames = hadirSnap.docs.map(d => d.data().nama);
+    
+    // Buat peta (map) untuk mencocokkan nama dengan statusnya (hadir/izin)
+    const statusMap = {};
+    hadirSnap.forEach(doc => {
+        const data = doc.data();
+        statusMap[data.nama] = data.status; // status berisi 'hadir' atau 'izin'
+    });
 
-    let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Nama</th><th>Info (Desa/Kel)</th><th>Status</th></tr></thead><tbody>`;
+    
     masterSnap.forEach(doc => {
         const d = doc.data();
-        const isHadir = hadirNames.includes(d.nama);
-        html += `<tr style="background:${isHadir?'#e8f5e9':'#ffebee'}"><td>${d.nama}</td><td>${isHadir?'✅':'❌'}</td></tr>`;
+        const status = statusMap[d.nama]; // Ambil status dari map
+        
+        let rowColor = "#ffebee"; // Default Merah (ALFA)
+        let statusText = "❌ ALFA";
+
+        if (status === "hadir") {
+            rowColor = "#e8f5e9"; // Hijau (HADIR)
+            statusText = "✅ HADIR";
+        } else if (status === "izin") {
+            rowColor = "#fff9c4"; // Kuning (IZIN)
+            statusText = "🙏🏻 IZIN";
+        }
+        
+        html += `<tr style="background:${rowColor}">
+            <td><b>${d.nama}</b></td>
+            <td><small>${d.desa}<br>${d.kelompok}</small></td>
+            <td style="text-align:center;"><b>${statusText}</b></td>
+        </tr>`;
     });
+    
     tableDiv.innerHTML = html + `</tbody></table>`;
 };
 
@@ -336,11 +360,18 @@ window.lihatDatabase = async () => {
 window.renderTabelDatabase = async () => {
     const cari = document.getElementById('cari-nama-db').value.toUpperCase();
     const snap = await getDocs(collection(db, "master_jamaah"));
-    let html = `<table><thead><tr><th>Nama</th><th>Aksi</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Nama</th><th>Info (Desa/Kel)</th><th>Aksi</th></tr></thead><tbody>`;
+    
     snap.forEach(ds => {
         const d = ds.data();
         if (d.nama.includes(cari) || !cari) {
-            html += `<tr><td>${d.nama}<br><small>${d.desa}</small></td><td><button onclick="hapusJamaah('${ds.id}','${d.nama}')" style="background:red; color:white; border:none; padding:5px;">🗑️</button></td></tr>`;
+            html += `<tr>
+                <td><b>${d.nama}</b></td>
+                <td><small>${d.desa}<br>${d.kelompok}</small></td>
+                <td>
+                    <button onclick="hapusJamaah('${ds.id}','${d.nama}')" style="background:red; color:white; border:none; padding:8px; border-radius:5px;">🗑️</button>
+                </td>
+            </tr>`;
         }
     });
     document.getElementById('db-container').innerHTML = html + `</tbody></table>`;
@@ -349,12 +380,10 @@ window.renderTabelDatabase = async () => {
 window.hapusJamaah = async (id, nama) => {
     if (confirm(`Hapus ${nama}?`)) { await deleteDoc(doc(db, "master_jamaah", id)); renderTabelDatabase(); }
 };
-
 // --- MENU TITIK 3 ---
 document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); document.getElementById('menu-dropdown').classList.toggle('hidden'); };
 window.onclick = () => document.getElementById('menu-dropdown').classList.add('hidden');
 window.promptAdmin = () => { const p = prompt("Pass:"); if(p==="1234") bukaAdmin(); };
-
 // --- INISIALISASI ---
 const initApp = () => {
     const accounts = getSavedAccounts();
