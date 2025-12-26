@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>E-Absen v7.2 Modular</title>
+    <title>E-Absen v7.2 Fixed</title>
     
     <link rel="stylesheet" href="style.css">
     
@@ -14,7 +14,6 @@
     <script type="module" src="./firebase-config.js"></script>
     <script type="module" src="./ui-logic.js"></script>
     <script type="module" src="./scanner.js"></script>
-    
     <script type="module" src="./admin-main.js"></script>
     <script type="module" src="./admin-event.js"></script>
     <script type="module" src="./admin-laporan.js"></script>
@@ -22,120 +21,77 @@
 </head>
 <body>
     <div class="navbar">
-        <div onclick="toggleSidebar()" style="cursor:pointer; font-size:24px; padding: 5px;">☰</div>
+        <div id="btn-menu" style="cursor:pointer; font-size:24px; padding: 5px;">☰</div>
         <div style="font-weight:bold; flex:1; text-align:center;">E-PRESENSI GENKU</div>
         <div style="width:40px"></div> 
     </div>
 
-    <div class="sidebar-overlay" id="overlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar-overlay" id="overlay"></div>
     <div class="sidebar" id="sidebar">
-        <h3 style="margin-top:60px">MENU</h3>
-        <button onclick="logout()" style="background:#7f8c8d; margin-bottom: 20px;">👤 GANTI AKUN</button>
+        <h3 style="margin-top:60px; padding-left:20px;">MENU</h3>
+        <button id="btn-logout" style="background:#7f8c8d; margin-bottom: 20px; width:90%; margin-left:5%;">👤 GANTI AKUN</button>
         <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        <p style="font-size: 12px; color: #7f8c8d; margin-left: 10px;">KHUSUS PENGURUS:</p>
-        <button style="background:#2980b9" onclick="loginAdmin()">🔐 MASUK ADMIN</button>
+        <p style="font-size: 12px; color: #7f8c8d; margin-left: 20px;">KHUSUS PENGURUS:</p>
+        <button style="background:#2980b9; width:90%; margin-left:5%;" id="btn-login-admin">🔐 MASUK ADMIN</button>
     </div>
 
     <div class="container">
         <div id="modal-tambah" class="card hidden">
             <h3>REGISTRASI</h3>
-            <select id="p-desa" onchange="updateKelompok('p-kelompok', this.value)">
+            <select id="p-desa">
                 <option value="">-- Pilih Desa --</option>
                 <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
             </select>
             <select id="p-kelompok"><option value="">-- Pilih Kelompok --</option></select>
-            <div style="position:relative">
-                <input id="p-nama" placeholder="Ketik Nama Anda..." oninput="handleNameInput(this.value)" autocomplete="off">
-                <div id="suggestion-box" class="suggestion-box hidden"></div>
-            </div>
-            <button onclick="saveProfile()">SIMPAN PROFIL</button>
+            <input id="p-nama" placeholder="Ketik Nama Anda..." autocomplete="off">
+            <button id="btn-save-profile">SIMPAN PROFIL</button>
         </div>
 
         <div id="pilih-akun-section" class="card hidden">
             <h3>PILIH NAMA</h3>
             <div id="list-akun-pilihan"></div>
-            <button onclick="document.getElementById('modal-tambah').classList.remove('hidden'); document.getElementById('pilih-akun-section').classList.add('hidden');" style="margin-top:20px; background:#666">TAMBAH NAMA BARU</button>
-        </div>
-
-        <div id="peserta-section" class="card hidden">
-            <div id="display-nama" style="margin-bottom: 20px; font-weight: bold; font-size: 1.2em;"></div>
-            <div id="reader"></div>
-            <button onclick="startScanner()" style="margin-top:15px">MULAI SCAN</button>
+            <button id="btn-add-new" style="margin-top:20px; background:#666">TAMBAH NAMA BARU</button>
         </div>
 
         <div id="admin-section" class="card hidden">
             <div class="tab-menu">
-                <button class="tab-btn active" onclick="switchTab('event')">EVENT</button>
-                <button class="tab-btn" onclick="switchTab('laporan')">LAPORAN</button>
-                <button class="tab-btn" onclick="switchTab('master')">DATABASE</button>
+                <button class="tab-btn active" id="tab-btn-event">EVENT</button>
+                <button class="tab-btn" id="tab-btn-laporan">LAPORAN</button>
+                <button class="tab-btn" id="tab-btn-master">DATABASE</button>
             </div>
 
             <div id="tab-event" class="tab-content">
-    <div id="setup-box">
-        <input id="ev-nama" placeholder="Nama Acara">
-        <div style="display:flex; gap:5px; margin-bottom:10px;">
-            <input id="ev-tgl" type="date">
-            <input id="ev-jam" type="time">
-        </div>
-        <button onclick="createNewEvent()">AKTIFKAN QR SEKARANG</button>
-    </div>
-    
-    <div id="qr-box" class="hidden">
-        <div class="card" style="margin-bottom:15px;">
-            <h4>BARCODE HADIR</h4>
-            <div style="display:flex; justify-content:center; padding:10px; background:white;">
-                <canvas id="canvas-absen"></canvas>
+                <div id="setup-box">
+                    <input id="ev-nama" placeholder="Nama Acara">
+                    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+                        <input id="ev-tgl" type="date"><input id="ev-jam" type="time">
+                    </div>
+                    <button id="btn-create-event">AKTIFKAN QR SEKARANG</button>
+                </div>
+                
+                <div id="qr-box" class="hidden">
+                    <div class="card">
+                        <h4>BARCODE HADIR</h4>
+                        <div style="display: flex; justify-content: center;"><canvas id="canvas-absen"></canvas></div>
+                        <button id="btn-dl-hadir">💾 Simpan QR Hadir</button>
+                    </div>
+                    <div class="card">
+                        <h4>BARCODE IZIN</h4>
+                        <div style="display: flex; justify-content: center;"><canvas id="canvas-izin"></canvas></div>
+                        <button id="btn-dl-izin" style="background:#34495e;">💾 Simpan QR Izin</button>
+                    </div>
+                    <button class="btn-danger" id="btn-tutup-event" style="margin-top:20px; height: 55px; font-weight: bold;">TUTUP & HITUNG ALFA</button>
+                </div>
             </div>
-            <button onclick="downloadQR('canvas-absen', 'QR_HADIR')">💾 Simpan QR Hadir</button>
-        </div>
-
-        <div class="card" style="margin-bottom:15px;">
-            <h4>BARCODE IZIN</h4>
-            <div style="display:flex; justify-content:center; padding:10px; background:white;">
-                <canvas id="canvas-izin"></canvas>
-            </div>
-            <button onclick="downloadQR('canvas-izin', 'QR_IZIN')" style="background:#34495e;">💾 Simpan QR Izin</button>
-        </div>
-        <button class="btn-danger" id="btn-tutup-event" onclick="closeEvent()" style="margin-top:20px; height:55px; font-weight:bold;">TUTUP & HITUNG ALFA</button>
-    </div>
-</div>
-
 
             <div id="tab-laporan" class="tab-content hidden">
                 <div style="display: flex; gap: 5px; margin-bottom: 15px;">
-                    <button onclick="downloadExcel()" style="background:#27ae60; flex:1;">💾 DOWNLOAD</button>
-                    <button class="btn-danger" onclick="resetLaporan()" style="flex:1;">🗑️ RESET</button>
-                </div>
-                <div class="card" style="padding:15px; text-align:left; background: #f9f9f9; border: 1px solid #eee;">
-                    <label style="font-size:12px; font-weight:bold;">Filter Desa:</label>
-                    <select id="f-desa" onchange="updateFilterKelompok(this.value); filterLaporan();">
-                        <option value="">-- Semua Desa --</option>
-                        <option>SAMIGALUH</option><option>PENGASIH</option><option>WATES</option><option>LENDAH</option><option>TEMON</option>
-                    </select>
-                    <label style="font-size:12px; font-weight:bold; margin-top: 10px; display: block;">Filter Kelompok:</label>
-                    <select id="f-kelompok" onchange="filterLaporan()">
-                        <option value="">-- Semua Kelompok --</option>
-                    </select>
+                    <button id="btn-dl-excel" style="background:#27ae60; flex:1;">💾 DOWNLOAD</button>
+                    <button class="btn-danger" id="btn-reset-laporan" style="flex:1;">🗑️ RESET</button>
                 </div>
                 <div id="report-list-cont" style="margin-top: 15px;"></div>
             </div>
-
-            <div id="tab-master" class="tab-content hidden">
-                <input id="m-search" placeholder="Cari nama jamaah..." oninput="searchMaster()">
-                <div id="master-list-cont" style="max-height: 300px; overflow-y: auto;"></div>
-                <hr>
-                <textarea id="m-names" placeholder="Tempel daftar nama (1 baris 1 nama)..." rows="4"></textarea>
-                <button onclick="importMaster()">MULAI IMPOR</button>
-            </div>
         </div>
-    </div>
-
-    <div id="full-qr-modal" class="full-modal hidden">
-        <h2 id="full-title"></h2>
-        <div style="background: white; padding: 20px; border-radius: 15px; display: flex; justify-content: center;">
-            <canvas id="full-canvas"></canvas>
-        </div>
-        <button onclick="document.getElementById('full-qr-modal').classList.add('hidden')" style="width:200px; margin-top:30px; background:#333">TUTUP</button>
     </div>
 </body>
 </html>
