@@ -547,6 +547,7 @@ window.bukaModalStatistik = async () => {
         <div style="margin-top: 15px; display:flex; gap:10px; width:100%;">
             <button onclick="downloadStatistikGambar(event)" style="flex:1; background:#28a745; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD</button>
             <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="flex:1; background:#666; color:white; border:none; padding:10px; border-radius:8px;">TUTUP</button>
+            <button onclick="resetAbsensiGass('statistik')" style="flex:1; background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">🗑️ RESET & SELESAI</button>
         </div>
     </div>`;
     document.body.appendChild(modal);
@@ -574,14 +575,32 @@ window.downloadStatistikGambar = (e) => {
     });
 };
 
-window.resetAbsensiDariStatistik = async () => {
-    if (confirm("Hapus semua riwayat dan kembali ke menu Event?")) {
-        const snap = await getDocs(collection(db, "attendance"));
-        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-        const modal = document.getElementById('modal-stat');
-        if(modal) document.body.removeChild(modal);
-        alert("Berhasil direset!");
-        bukaAdmin();
+window.resetAbsensiGass = async (asal) => {
+    const pesan = asal === 'statistik' 
+        ? "Laporan sudah didownload? Riwayat akan dihapus dan kembali ke menu Admin." 
+        : "Hapus semua riwayat absen sekarang?";
+
+    if (confirm(pesan)) {
+        try {
+            const snap = await getDocs(collection(db, "attendance"));
+            if (snap.empty && asal === 'luar') return alert("Riwayat sudah kosong.");
+            
+            await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+            
+            // Jika dipanggil dari dalam statistik, tutup modalnya
+            const modal = document.getElementById('modal-stat');
+            if(modal) document.body.removeChild(modal);
+            
+            alert("Data Berhasil Dibersihkan!");
+            
+            if(asal === 'statistik') {
+                bukaPanelAdmin(); // Kembali ke menu utama admin
+            } else {
+                renderTabelLaporan(); // Segarkan tabel laporan saja
+            }
+        } catch (e) {
+            alert("Gagal: " + e.message);
+        }
     }
 };
 
