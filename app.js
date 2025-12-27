@@ -222,24 +222,55 @@ async function prosesAbsensi(eventID, userData) {
             eventId: cleanID, waktu: serverTimestamp(), status: statusAbsen
         });
 
-        const overlay = document.getElementById('success-overlay');
-        overlay.innerHTML = `
-            <div class="celebration-container">
-                <div class="particles"></div>
-                
-                <img src="https://cdn-icons-png.flaticon.com/512/3505/3505294.png" class="rebana-left">
-                <img src="https://cdn-icons-png.flaticon.com/512/3505/3505294.png" class="rebana-right">
-
-                <div class="text-wrapper">
-                    <h2 class="arabic-font">Alhamdulillah Jazaa Kumullahu Khoiroo</h2>
-                    <h1 class="barokah-font">LANCAR BAROKAH!</h1>
-                </div>
-            </div>
-            
-            <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
-        `;
+        async function prosesAbsensi(eventID, userData) {
+    try {
         
+        const overlay = document.getElementById('success-overlay');
         overlay.style.display = 'flex';
+        
+        overlay.innerHTML = `
+            <div class="celebration-wrap">
+                <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
+                <div class="text-main">LANCAR<br>BAROKAH!</div>
+            </div>
+        `;
+        // Fungsi membuat percikan percikan (Burst Effect)
+        for (let i = 0; i < 50; i++) {
+            createParticle(overlay);
+        }
+
+        setTimeout(() => {
+            overlay.style.display = 'none';
+            showDashboard(userData);
+        }, 3500);
+
+    } catch (e) { console.error(e); }
+}
+
+function createParticle(parent) {
+    const p = document.createElement('div');
+    p.classList.add('particle');
+    
+    // Warna percikan campuran putih dan biru muda agar kontras
+    const colors = ['#ffffff', '#8ab4f8', '#e8f0fe', '#ffd700'];
+    p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+    
+    // Posisi awal di tengah
+    p.style.left = '50%';
+    p.style.top = '50%';
+    
+    // Arah ledakan acak (x dan y)
+    const x = (Math.random() - 0.5) * 400;
+    const y = (Math.random() - 0.5) * 400;
+    p.style.setProperty('--x', `${x}px`);
+    p.style.setProperty('--y', `${y}px`);
+    
+    // Durasi acak agar efek lebih alami
+    p.style.animation = `particle-fly ${0.5 + Math.random()}s ease-out forwards`;
+    
+    parent.appendChild(p);
+    setTimeout(() => p.remove(), 2000);
+}
         // Putar Suara
         const sound = document.getElementById('success-sound');
         if(sound) sound.play().catch(e => console.log("Audio block oleh browser"));
