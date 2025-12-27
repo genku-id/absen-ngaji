@@ -79,16 +79,16 @@ window.showPageRegistrasi = () => {
             </div>
             
             <div style="margin: 15px 0; text-align: left; color: #010530;">
-            <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">Jenis Kelamin:</p>
-            <div style="display: flex; gap: 20px; align-items: center;">
-            <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px;">
-            <input type="radio" name="reg-gender" value="PUTRA" style="margin-right: 8px; width: 18px; height: 18px;"> Putra
-            </label>
-            <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px;">
-            <input type="radio" name="reg-gender" value="PUTRI" style="margin-right: 8px; width: 18px; height: 18px;"> Putri
-        </label>
-    </div>
-</div>
+                <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">Jenis Kelamin:</p>
+                <div style="display: flex; gap: 20px; align-items: center;">
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px;">
+                        <input type="radio" name="reg-gender" value="PUTRA" style="margin-right: 8px; width: 18px; height: 18px;"> Putra
+                    </label>
+                    <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px;">
+                        <input type="radio" name="reg-gender" value="PUTRI" style="margin-right: 8px; width: 18px; height: 18px;"> Putri
+                    </label>
+                </div>
+            </div>
             <button id="btn-login" class="primary-btn">MASUK</button>
         </div>
     `;
@@ -141,16 +141,13 @@ window.prosesLogin = async () => {
     const nama = namaRaw.trim().toUpperCase();
     const desa = document.getElementById('reg-desa').value;
     const kelompok = document.getElementById('reg-kelompok').value;
-    
-    // Ambil radio button yang dipilih
     const genderRad = document.querySelector('input[name="reg-gender"]:checked');
 
-    // VALIDASI: Pastikan semua diisi termasuk Jenis Kelamin
     if (!nama || !desa || !kelompok || !genderRad) {
         return alert("⚠️ DATA BELUM LENGKAP!\nMohon isi nama dan pilih Jenis Kelamin (Putra/Putri).");
     }
 
-    const gender = genderRad.value; // Hasilnya "PUTRA" atau "PUTRI"
+    const gender = genderRad.value;
 
     try {
         const q = query(collection(db, "master_jamaah"), 
@@ -161,7 +158,6 @@ window.prosesLogin = async () => {
         let userData;
 
         if (!snap.empty) {
-            // Jika sudah ada di DB, ambil data aslinya
             const dbData = snap.docs[0].data();
             userData = { 
                 nama: dbData.nama, 
@@ -170,7 +166,6 @@ window.prosesLogin = async () => {
                 gender: dbData.gender || gender 
             };
         } else {
-            // Jika pendaftaran baru
             if (confirm(`Daftarkan "${nama}" sebagai ${gender}?`)) {
                 userData = { nama, desa, kelompok, gender: gender };
                 await addDoc(collection(db, "master_jamaah"), userData);
@@ -229,52 +224,42 @@ async function prosesAbsensi(eventID, userData) {
             <div class="celebration-wrap">
                 <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
                 <div class="text-main">LANCAR<br>BAROKAH!</div>
+                <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
             </div>
         `;
-        // Fungsi membuat percikan percikan (Burst Effect)
+
         for (let i = 0; i < 50; i++) {
             createParticle(overlay);
         }
 
+        const sound = document.getElementById('success-sound');
+        if(sound) sound.play().catch(e => console.log("Audio blocked"));
+
         setTimeout(() => {
             overlay.style.display = 'none';
             showDashboard(userData);
-        }, 3500);
+        }, 4000);
 
-    } catch (e) { console.error(e); }
+    } catch (e) { 
+        alert("Gagal: " + e.message); 
+        showDashboard(userData);
+    }
 }
 
 function createParticle(parent) {
     const p = document.createElement('div');
     p.classList.add('particle');
-    
-    // Warna percikan campuran putih dan biru muda agar kontras
     const colors = ['#ffffff', '#8ab4f8', '#e8f0fe', '#ffd700'];
     p.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-    
-    // Posisi awal di tengah
     p.style.left = '50%';
     p.style.top = '50%';
-    
-    // Arah ledakan acak (x dan y)
     const x = (Math.random() - 0.5) * 400;
     const y = (Math.random() - 0.5) * 400;
     p.style.setProperty('--x', `${x}px`);
     p.style.setProperty('--y', `${y}px`);
-    
-    // Durasi acak agar efek lebih alami
     p.style.animation = `particle-fly ${0.5 + Math.random()}s ease-out forwards`;
-    
     parent.appendChild(p);
     setTimeout(() => p.remove(), 2000);
-}
-        // Putar Suara
-        const sound = document.getElementById('success-sound');
-        if(sound) sound.play().catch(e => console.log("Audio block oleh browser"));
-
-        setTimeout(() => { overlay.style.display = 'none'; showDashboard(userData); }, 5000);
-
-    } catch (e) { alert("Gagal: " + e.message); showDashboard(userData); }
 }
 
 // --- 4. PANEL ADMIN ---
@@ -334,36 +319,20 @@ function tampilkanBarcode(id, nama, waktu) {
         <div style="text-align:center; width:100%; display:flex; flex-direction:column; align-items:center;">
             <h4 style="margin-bottom:5px;">${nama}</h4>
             <p style="font-size:12px; margin-bottom:20px;">${waktu.replace('T',' ')}</p>
-            
             <div class="qr-item" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:25px;">
                 <p style="font-size:14px; margin-bottom:10px;"><b>Barcode Absensi</b></p>
                 <div id="qrcode-absen" style="background:white; padding:10px; border-radius:8px; display:flex; justify-content:center;"></div>
                 <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn" style="margin-top:10px; width:200px;">🖼️ Preview Barcode</button>
             </div>
-
             <div class="qr-item" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:25px;">
                 <p style="font-size:14px; margin-bottom:10px;"><b>Barcode Izin</b></p>
                 <div id="qrcode-izin" style="background:white; padding:10px; border-radius:8px; display:flex; justify-content:center;"></div>
                 <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn" style="margin-top:10px; width:200px;">🖼️ Preview Barcode Izin</button>
             </div>
-
             <button onclick="tutupEvent('${id}')" style="background:#d32f2f; color:white; width:90%; max-width:300px; padding:15px; margin-top:10px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
         </div>`;
-
-    // Render QR Code dengan ukuran yang sedikit lebih kecil agar tidak 'overflow' di HP kecil
-    new QRCode(document.getElementById("qrcode-absen"), {
-        text: id,
-        width: 180,
-        height: 180,
-        correctLevel: QRCode.CorrectLevel.H
-    });
-    
-    new QRCode(document.getElementById("qrcode-izin"), {
-        text: id + "_IZIN",
-        width: 180,
-        height: 180,
-        correctLevel: QRCode.CorrectLevel.H
-    });
+    new QRCode(document.getElementById("qrcode-absen"), { text: id, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
+    new QRCode(document.getElementById("qrcode-izin"), { text: id + "_IZIN", width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
 }
 
 window.downloadQR = (el, name) => {
@@ -371,7 +340,6 @@ window.downloadQR = (el, name) => {
     const canvas = container.querySelector("canvas");
     if (!canvas) return alert("Belum siap.");
     const dataUrl = canvas.toDataURL("image/png");
-
     const overlay = document.createElement('div');
     overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20000; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;";
     overlay.innerHTML = `
@@ -407,7 +375,6 @@ window.lihatLaporan = async () => {
             </div>
         </div>
         <div id="tabel-container"></div>`;
-    
     document.getElementById('f-desa').onchange = (e) => {
         const kel = dataWilayah[e.target.value] || [];
         document.getElementById('f-kelompok').innerHTML = '<option value="">Semua Kelompok</option>' + kel.map(k => `<option value="${k}">${k}</option>`).join('');
@@ -420,23 +387,18 @@ window.renderTabelLaporan = async () => {
     const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     tableDiv.innerHTML = "Memuat...";
-
     try {
         const hSnap = await getDocs(collection(db, "attendance"));
         if (hSnap.empty) { tableDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Riwayat kosong.</p>"; return; }
-
         const qEvent = query(collection(db, "events"), where("status", "==", "open"));
         const evSnap = await getDocs(qEvent);
         const isEventRunning = !evSnap.empty;
-
         let qM = collection(db, "master_jamaah");
         if(fD) qM = query(qM, where("desa", "==", fD));
         if(fK) qM = query(qM, where("kelompok", "==", fK));
         const mSnap = await getDocs(qM);
-
         const statusMap = {};
         hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
-
         let listJamaah = [];
         mSnap.forEach(doc => { listJamaah.push(doc.data()); });
         listJamaah.sort((a, b) => {
@@ -444,9 +406,7 @@ window.renderTabelLaporan = async () => {
             if (a.kelompok !== b.kelompok) return a.kelompok.localeCompare(b.kelompok);
             return a.nama.localeCompare(b.nama);
         });
-
         window.currentListData = listJamaah;
-
         let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Status</th></tr></thead><tbody>`;
         let adaData = false;
         listJamaah.forEach(d => {
@@ -469,29 +429,18 @@ window.downloadLaporan = () => {
     XLSX.writeFile(wb, "Laporan_Absensi.xlsx");
 };
 
-// --- 6. MODAL STATISTIK & RESET ---
 window.bukaModalStatistik = async () => {
-    if (!window.currentListData || window.currentListData.length === 0) {
-        return alert("Tidak ada data. Silakan tampilkan laporan terlebih dahulu.");
-    }
-
+    if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan laporan dulu.");
     const hSnap = await getDocs(collection(db, "attendance"));
     const statusMap = {};
     hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
-
-    // Struktur data: rekap[Desa][Kelompok]
     let rekap = {};
     let grandTotal = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
-
     window.currentListData.forEach(d => {
         const s = statusMap[d.nama];
         const g = (d.gender || "PUTRA").toUpperCase(); 
-
         if (!rekap[d.desa]) rekap[d.desa] = {};
-        if (!rekap[d.desa][d.kelompok]) {
-            rekap[d.desa][d.kelompok] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
-        }
-
+        if (!rekap[d.desa][d.kelompok]) rekap[d.desa][d.kelompok] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
         let target = rekap[d.desa][d.kelompok];
         if (g.includes("PUTRA") || g === "L") {
             target.tl++; grandTotal.tl++;
@@ -505,17 +454,12 @@ window.bukaModalStatistik = async () => {
             else { target.ap++; grandTotal.ap++; }
         }
     });
-
     const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
     let barisHtml = "";
-
-    // Looping per Desa untuk membuat Baris Rekap Desa dan Baris Kelompok
     for (let desa in rekap) {
         const kelompokDiDesa = rekap[desa];
         const daftarKelompok = Object.keys(kelompokDiDesa);
         const jmlKelompok = daftarKelompok.length;
-
-        // Hitung Subtotal Per Desa
         let subDesa = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
         daftarKelompok.forEach(k => {
             const r = kelompokDiDesa[k];
@@ -524,70 +468,48 @@ window.bukaModalStatistik = async () => {
             subDesa.il += r.il; subDesa.ip += r.ip;
             subDesa.al += r.al; subDesa.ap += r.ap;
         });
-
         const dTotalT = subDesa.tl + subDesa.tp;
         const dTotalH = subDesa.hl + subDesa.hp;
         const dPersen = dTotalT > 0 ? Math.round((dTotalH / dTotalT) * 100) : 0;
-
-        // 1. BARIS REKAP DESA (Header Desa)
-        barisHtml += `
-            <tr style="background:#f9f9f9; font-weight:bold;">
-                <td style="border: 1px solid #000; text-align:left; padding:5px;">${desa}</td>
-                <td style="border: 1px solid #000;">${desa}</td>
-                <td style="border: 1px solid #000;">${dPersen}%</td>
-                <td style="border: 1px solid #000;">${dTotalT}</td>
-                <td style="border: 1px solid #000;">${dTotalH}</td>
-                <td style="border: 1px solid #000;">${subDesa.il + subDesa.ip}</td>
-                <td style="border: 1px solid #000;">${subDesa.al + subDesa.ap}</td>
-                <td style="border: 1px solid #000;">${subDesa.hl}</td>
-                <td style="border: 1px solid #000;">${subDesa.il}</td>
-                <td style="border: 1px solid #000;">${subDesa.al}</td>
-                <td style="border: 1px solid #000;">${subDesa.hp}</td>
-                <td style="border: 1px solid #000;">${subDesa.ip}</td>
-                <td style="border: 1px solid #000;">${subDesa.ap}</td>
-            </tr>`;
-
-        // 2. BARIS KELOMPOK (Detail di bawah desa)
+        barisHtml += `<tr style="background:#f9f9f9; font-weight:bold;">
+            <td style="border: 1px solid #000; text-align:left; padding:5px;">${desa}</td>
+            <td style="border: 1px solid #000;">${desa}</td>
+            <td style="border: 1px solid #000;">${dPersen}%</td>
+            <td style="border: 1px solid #000;">${dTotalT}</td>
+            <td style="border: 1px solid #000;">${dTotalH}</td>
+            <td style="border: 1px solid #000;">${subDesa.il + subDesa.ip}</td>
+            <td style="border: 1px solid #000;">${subDesa.al + subDesa.ap}</td>
+            <td style="border: 1px solid #000;">${subDesa.hl}</td><td style="border: 1px solid #000;">${subDesa.il}</td><td style="border: 1px solid #000;">${subDesa.al}</td>
+            <td style="border: 1px solid #000;">${subDesa.hp}</td><td style="border: 1px solid #000;">${subDesa.ip}</td><td style="border: 1px solid #000;">${subDesa.ap}</td>
+        </tr>`;
         daftarKelompok.forEach((kel, index) => {
             const r = kelompokDiDesa[kel];
             const kTotalT = r.tl + r.tp;
             const kTotalH = r.hl + r.hp;
             const kPersen = kTotalT > 0 ? Math.round((kTotalH / kTotalT) * 100) : 0;
-
-            barisHtml += `
-                <tr>
-                    ${index === 0 ? `<td rowspan="${jmlKelompok}" style="border: 1px solid #000; font-weight:bold; vertical-align:middle; background:#fff;">${desa}</td>` : ''}
-                    <td style="border: 1px solid #000; text-align:left; padding-left:5px;">${kel}</td>
-                    <td style="border: 1px solid #000;">${kPersen}%</td>
-                    <td style="border: 1px solid #000;">${kTotalT}</td>
-                    <td style="border: 1px solid #000;">${kTotalH}</td>
-                    <td style="border: 1px solid #000;">${r.il + r.ip}</td>
-                    <td style="border: 1px solid #000;">${r.al + r.ap}</td>
-                    <td style="border: 1px solid #000;">${r.hl}</td>
-                    <td style="border: 1px solid #000;">${r.il}</td>
-                    <td style="border: 1px solid #000;">${r.al}</td>
-                    <td style="border: 1px solid #000;">${r.hp}</td>
-                    <td style="border: 1px solid #000;">${r.ip}</td>
-                    <td style="border: 1px solid #000;">${r.ap}</td>
-                </tr>`;
+            barisHtml += `<tr>
+                ${index === 0 ? `<td rowspan="${jmlKelompok}" style="border: 1px solid #000; font-weight:bold; vertical-align:middle; background:#fff;">${desa}</td>` : ''}
+                <td style="border: 1px solid #000; text-align:left; padding-left:5px;">${kel}</td>
+                <td style="border: 1px solid #000;">${kPersen}%</td>
+                <td style="border: 1px solid #000;">${kTotalT}</td>
+                <td style="border: 1px solid #000;">${kTotalH}</td>
+                <td style="border: 1px solid #000;">${r.il + r.ip}</td>
+                <td style="border: 1px solid #000;">${r.al + r.ap}</td>
+                <td style="border: 1px solid #000;">${r.hl}</td><td style="border: 1px solid #000;">${r.il}</td><td style="border: 1px solid #000;">${r.al}</td>
+                <td style="border: 1px solid #000;">${r.hp}</td><td style="border: 1px solid #000;">${r.ip}</td><td style="border: 1px solid #000;">${r.ap}</td>
+            </tr>`;
         });
     }
-
-    // Hitung Grand Total (Total Daerah)
     const gT = grandTotal.tl + grandTotal.tp;
     const gH = grandTotal.hl + grandTotal.hp;
     const gPersen = gT > 0 ? Math.round((gH / gT) * 100) : 0;
-
     const modal = document.createElement('div');
     modal.id = "modal-stat";
     modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto;";
-
     modal.innerHTML = `
     <div style="background:white; color:black; padding:15px; border-radius:10px; width:95%; max-width:850px; box-sizing:border-box; display:flex; flex-direction:column; max-height:90vh;">
-        
         <h3 style="text-align:center; margin:0; font-size:14px;">HASIL REKAP KEHADIRAN</h3>
         <h4 style="text-align:center; margin:5px 0 15px 0; font-size:12px;">${filterDesa} - ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</h4>
-        
         <div id="capture-area" style="background:white; overflow-x:auto; width:100%; border: 1px solid #ccc; -webkit-overflow-scrolling: touch;">
             <table style="min-width:700px; width:100%; border-collapse:collapse; font-size:11px; text-align:center; border: 1.5px solid #000; table-layout: fixed;">
                 <thead>
@@ -615,62 +537,43 @@ window.bukaModalStatistik = async () => {
                         <td style="border: 1px solid #000;">${gH}</td>
                         <td style="border: 1px solid #000;">${grandTotal.il + grandTotal.ip}</td>
                         <td style="border: 1px solid #000;">${grandTotal.al + grandTotal.ap}</td>
-                        <td style="border: 1px solid #000;">${grandTotal.hl}</td>
-                        <td style="border: 1px solid #000;">${grandTotal.il}</td>
-                        <td style="border: 1px solid #000;">${grandTotal.al}</td>
-                        <td style="border: 1px solid #000;">${grandTotal.hp}</td>
-                        <td style="border: 1px solid #000;">${grandTotal.ip}</td>
-                        <td style="border: 1px solid #000;">${grandTotal.ap}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.hl}</td><td style="border: 1px solid #000;">${grandTotal.il}</td><td style="border: 1px solid #000;">${grandTotal.al}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.hp}</td><td style="border: 1px solid #000;">${grandTotal.ip}</td><td style="border: 1px solid #000;">${grandTotal.ap}</td>
                     </tr>
                     ${barisHtml}
                 </tbody>
             </table>
         </div>
-
         <div style="margin-top: 15px; display:flex; gap:10px; width:100%;">
-            <button onclick="downloadStatistikGambar()" style="flex:1; background:#28a745; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD</button>
+            <button onclick="downloadStatistikGambar(event)" style="flex:1; background:#28a745; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD</button>
             <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="flex:1; background:#666; color:white; border:none; padding:10px; border-radius:8px;">TUTUP</button>
         </div>
-    </div>
-`;
+    </div>`;
     document.body.appendChild(modal);
 };
 
-window.downloadStatistikGambar = () => {
+window.downloadStatistikGambar = (e) => {
     const area = document.getElementById('capture-area');
-    const table = area.querySelector('table'); // Ambil elemen tabel di dalamnya
-    const btnDownload = event.target;
-    
+    const table = area.querySelector('table');
+    const btnDownload = e.target;
     btnDownload.innerText = "⏳ Memproses...";
     btnDownload.disabled = true;
-
-    // Trik: Gunakan lebar asli tabel (scrollWidth) agar tidak terpotong
     html2canvas(table, {
-        scale: 2, // Hasil tajam
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        width: table.scrollWidth, // PENTING: Pakai lebar total tabel
-        height: table.scrollHeight, // PENTING: Pakai tinggi total tabel
-        windowWidth: table.scrollWidth, // Pastikan viewport capture seluas tabel
-        onclone: (clonedDoc) => {
-            // Opsional: Pastikan di dokumen kloningan tabelnya tidak tersembunyi
-            const clonedTable = clonedDoc.querySelector('table');
-            clonedTable.style.width = table.scrollWidth + 'px';
-        }
+        scale: 2, useCORS: true, backgroundColor: "#ffffff",
+        width: table.scrollWidth, height: table.scrollHeight, windowWidth: table.scrollWidth
     }).then(canvas => {
         const link = document.createElement('a');
         link.download = `Rekap_Kehadiran_Lengkap.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
-        
         btnDownload.innerText = "📸 DOWNLOAD GAMBAR";
         btnDownload.disabled = false;
     }).catch(err => {
         alert("Gagal: " + err);
-        btnDownload.innerText = "📸 DOWNLOAD GAMBAR";
         btnDownload.disabled = false;
     });
 };
+
 window.resetAbsensiDariStatistik = async () => {
     if (confirm("Hapus semua riwayat dan kembali ke menu Event?")) {
         const snap = await getDocs(collection(db, "attendance"));
@@ -678,7 +581,7 @@ window.resetAbsensiDariStatistik = async () => {
         const modal = document.getElementById('modal-stat');
         if(modal) document.body.removeChild(modal);
         alert("Berhasil direset!");
-        bukaPanelAdmin();
+        bukaAdmin();
     }
 };
 
