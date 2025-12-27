@@ -465,6 +465,8 @@ window.renderTabelLaporan = async () => {
         // Gunakan listJamaah (yang sudah disortir) untuk looping, bukan mSnap lagi
         listJamaah.forEach(d => {
             const s = statusMap[d.nama];
+// ... di dalam renderTabelLaporan setelah listJamaah disortir ...
+window.currentListData = listJamaah; // Simpan ke variabel global agar bisa dibaca fungsi statistik
 
             // LOGIKA SEMBUNYI TETAP BERTAHAN
             if (isEventRunning && !s) return;
@@ -493,6 +495,108 @@ window.downloadLaporan = () => {
     const wb = XLSX.utils.table_to_book(table);
     XLSX.writeFile(wb, "Laporan.xlsx");
 };
+window.bukaModalStatistik = async () => {
+    // Ambil data yang sedang tampil di layar (sudah terfilter)
+    // Kita asumsikan listJamaah adalah variabel global atau diambil dari render terakhir
+    if (!window.currentListData || window.currentListData.length === 0) {
+        return alert("Tidak ada data untuk statistik. Silakan tampilkan laporan dulu.");
+    }
+
+    // Ambil status kehadiran dari database saat ini
+    const hSnap = await getDocs(collection(db, "attendance"));
+    const statusMap = {};
+    hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
+
+    let rekap = {};
+    let total = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+
+    // Proses Hitung berdasarkan data yang ada di layar
+    window.currentListData.forEach(d => {
+        const key = `${d.desa} - ${d.kelompok}`;
+        const s = statusMap[d.nama];
+        const g = d.gender; // Membaca L atau P
+
+        if (!rekap[key]) rekap[key] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+
+        if (g === 'L') {
+            rekap[key].tl++; total.tl++;
+            if (s === 'hadir') { rekap[key].hl++; total.hl++; }
+            else if (s === 'izin') { rekap[key].il++; total.il++; }
+            else { rekap[key].al++; total.al++; }
+        } else {
+            rekap[key].tp++; total.tp++;
+            if (s === 'hadir') { rekap[key].hp++; total.hp++; }
+            else if (s === 'izin') { rekap[key].ip++; total.ip++; }
+            else { rekap[key].ap++; total.ap++; }
+        }
+    });
+
+    // Ambil info filter untuk Judul
+    const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
+
+    // Bangun HTML Tabel Rekap
+    let barisHtml = "";
+    for (let k in rekap) {
+        const r = rekap[k];
+        barisHtml += `<tr>
+            <td style="text-align:left; padding-left:5px;">${k}</td>
+            <td>${r.tl}</td><td>${r.tp}</td><td>${r.hl}</td><td>${r.hp}</td>
+            <td>${r.il}</td><td>${r.ip}</td><td>${r.al}</td><td>${r.ap}</td>
+        </tr>`;
+    }
+
+    // Buat Overlay Modal
+    const modal = document.createElement('div');
+    modal.id = "modal-stat";
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; box-sizing:border-box; color:white;";
+    
+    modal.innerHTML = `
+        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:8px; width:100%; max-width:500px;">
+            <h3 style="text-align:center; margin:0 0 10px 0; font-size:16px;">STATISTIK KELOMPOK - ${filterDesa}</h3>
+            <table style="width:100%; border-collapse:collapse; font-size:11px; text-align:center;" border="1">
+                <thead>
+                    <tr style="background:#f0f0f0;">
+                        <th rowspan="2">DESA-KEL</th>
+                        <th colspan="2">TARGET</th><th colspan="2">HADIR</th><th colspan="2">IZIN</th><th colspan="2">ALFA</th>
+                    </tr>
+                    <tr style="background:#f0f0f0;">
+                        <th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${barisHtml}
+                    <tr style="background:#e3f2fd; font-weight:bold;">
+                        <td>TOTAL</td>
+                        <td>${total.tl}</td><td>${total.tp}</td><td>${total.hl}</td><td>${total.hp}</td>
+                        <td>${total.il}</td><td>${total.ip}</td><td>${total.al}</td><td>${total.ap}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p style="font-size:9px; text-align:right; margin-top:5px;">Dicetak: ${new Date().toLocaleString('id-ID')}</p>
+        </div>
+        
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px; width:100%; max-width:500px;">
+            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">📸 Download Gambar (PNG)</button>
+            <button onclick="resetAbsensiDariStatistik()" style="background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px;">🗑️ Reset Data & Selesai</button>
+            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:8px; border-radius:8px;">Batal / Tutup</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+window.resetAbsensiDariStatistik = async () => {
+    if (confirm("Hapus semua riwayat dan kembali ke menu Event?")) {
+        const snap = await getDocs(collection(db, "attendance"));
+        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+        
+        // Hapus modal
+        const modal = document.getElementById('modal-stat');
+        if(modal) document.body.removeChild(modal);
+        
+        // Balik ke tampilan buat event
+        alert("Data berhasil direset!");
+        bukaPanelAdmin(); // Asumsi ini fungsi untuk kembali ke menu utama admin
+    }
+};
 
 window.resetAbsensi = async () => {
     if (confirm("Hapus semua riwayat absen? Tabel laporan akan disembunyikan kembali.")) {
@@ -503,6 +607,15 @@ window.resetAbsensi = async () => {
         renderTabelLaporan();
         alert("Riwayat berhasil dibersihkan!");
     }
+};
+window.downloadStatistikGambar = () => {
+    const area = document.getElementById('capture-area');
+    html2canvas(area).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'Statistik_Kehadiran.png';
+        link.href = canvas.toDataURL();
+        link.click();
+    });
 };
 
 window.lihatDatabase = async () => {
