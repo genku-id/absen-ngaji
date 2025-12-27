@@ -70,12 +70,11 @@ window.showPageRegistrasi = () => {
                 <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." autocomplete="off" disabled>
                 <div id="suggestion-box" class="suggestion-container hidden"></div>
             </div>
-    <div style="margin-top: 10px; text-align: left; color: #010530; font-size: 13px;">
-    <p style="margin-bottom: 5px;">Jenis Kelamin:</p>
-    <label><input type="radio" name="reg-gender" value="PUTRA" checked> Putra</label>
-    <label style="margin-left: 15px;"><input type="radio" name="reg-gender" value="PUTRI"> Putri</label>
-</div>
-
+            <div style="margin-top: 10px; text-align: left; color: #010530; font-size: 13px;">
+                <p style="margin-bottom: 5px;">Jenis Kelamin:</p>
+                <label><input type="radio" name="reg-gender" value="PUTRA" checked> Putra</label>
+                <label style="margin-left: 15px;"><input type="radio" name="reg-gender" value="PUTRI"> Putri</label>
+            </div>
             <button id="btn-login" class="primary-btn">MASUK</button>
         </div>
     `;
@@ -128,7 +127,6 @@ window.prosesLogin = async () => {
     const nama = namaRaw.trim().toUpperCase();
     const desa = document.getElementById('reg-desa').value;
     const kelompok = document.getElementById('reg-kelompok').value;
-    // Ambil nilai gender dari radio button
     const gender = document.querySelector('input[name="reg-gender"]:checked').value;
 
     if (!nama || !desa || !kelompok) return alert("Lengkapi data!");
@@ -142,16 +140,9 @@ window.prosesLogin = async () => {
         let userData;
 
         if (!snap.empty) {
-            // Jika sudah ada, ambil data yang ada (termasuk gender dari DB)
             const dbData = snap.docs[0].data();
-            userData = { 
-                nama: dbData.nama, 
-                desa, 
-                kelompok, 
-                gender: dbData.gender || gender // Gunakan dari DB, jika kosong pakai input baru
-            };
+            userData = { nama: dbData.nama, desa, kelompok, gender: dbData.gender || gender };
         } else {
-            // Jika BELUM ADA, daftar baru dengan gender yang dipilih
             if (confirm(`Nama "${nama}" belum terdaftar. Daftarkan sebagai ${gender}?`)) {
                 userData = { nama, desa, kelompok, gender: gender };
                 await addDoc(collection(db, "master_jamaah"), userData);
@@ -379,72 +370,6 @@ window.downloadLaporan = () => {
 
 // --- 6. MODAL STATISTIK & RESET ---
 window.bukaModalStatistik = async () => {
-    // 1. Validasi data di layar
-    if (!window.currentListData || window.currentListData.length === 0) {
-        return alert("Tidak ada data untuk statistik. Silakan tampilkan laporan dulu.");
-    }
-
-    // 2. Ambil data kehadiran terbaru dari database
-    const hSnap = await getDocs(collection(db, "attendance"));
-    const statusMap = {};
-    hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
-
-    let rekap = {};
-    let total = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
-
-    // 3. Proses Hitung Berdasarkan Data di Layar (Filter Aktif)
-    window.currentListData.forEach(d => {
-        const key = `${d.desa} - ${d.kelompok}`;
-        const s = statusMap[d.nama];
-        
-        // Logika Gender: Cek apakah mengandung kata "PUTRA" atau "L"
-        const g = (d.gender || "PUTRA").toUpperCase(); 
-
-        if (!rekap[key]) rekap[key] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
-
-        if (g.includes("PUTRA") || g === "L") {
-            // Kategori PUTRA (PA)
-            rekap[key].tl++; total.tl++;
-            if (s === 'hadir') { rekap[key].hl++; total.hl++; }
-            else if (s === 'izin') { rekap[key].il++; total.il++; }
-            else { rekap[key].al++; total.al++; }
-        } else {
-            // Kategori PUTRI (PI)
-            rekap[key].tp++; total.tp++;
-            if (s === 'hadir') { rekap[key].hp++; total.hp++; }
-            else if (s === 'izin') { rekap[key].ip++; total.ip++; }
-            else { rekap[key].ap++; total.ap++; }
-        }
-    });
-
-    // 4. Siapkan Judul berdasarkan Filter
-    const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
-
-    // 5. Susun Baris Tabel
-    let barisHtml = "";
-    for (let k in rekap) {
-        const r = rekap[k];
-        barisHtml += `
-            <tr>
-                <td style="text-align:left; padding-left:5px;">${k}</td>
-                <td>${r.tl}</td><td>${r.tp}</td>
-                <td>${r.hl}</td><td>${r.hp}</td>
-                <td>${r.il}</td><td>${r.ip}</td>
-                <td>${r.al}</td><td>${r.ap}</td>
-            </tr>`;
-    }
-
-    // 6. Buat Overlay Modal
-    const modal = document.createElement('div');
-    modal.id = "modal-stat";
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; box-sizing:border-box;";
-    
-    modal.innerHTML = `
-        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:10px; width:100%; max-width:550px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            <h3 style="text-align:center; margin:0 0 10px 0; font-size:16px; color:#007bff;">HASIL REKAPITULASI - ${filterDesa}</h3>
-            <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center; border:1px solid #ccc;">
-                <thead>
-window.bukaModalStatistik = async () => {
     if (!window.currentListData || window.currentListData.length === 0) {
         return alert("Tidak ada data. Silakan tampilkan laporan terlebih dahulu.");
     }
@@ -492,7 +417,6 @@ window.bukaModalStatistik = async () => {
 
     const modal = document.createElement('div');
     modal.id = "modal-stat";
-    // Perbaikan: Pakai flex-start agar konten yang panjang bisa diskrol dari paling atas
     modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto; -webkit-overflow-scrolling:touch;";
     
     modal.innerHTML = `
@@ -523,7 +447,6 @@ window.bukaModalStatistik = async () => {
     document.body.appendChild(modal);
 };
 
-// Fungsi Download Gambar agar Gambar tersimpan ke Galeri HP
 window.downloadStatistikGambar = () => {
     const area = document.getElementById('capture-area');
     const btnDownload = event.target;
@@ -531,7 +454,7 @@ window.downloadStatistikGambar = () => {
     btnDownload.disabled = true;
 
     html2canvas(area, {
-        scale: 2, // Biar hasil gambar tajam/tidak pecah
+        scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff"
     }).then(canvas => {
@@ -539,11 +462,10 @@ window.downloadStatistikGambar = () => {
         link.download = `Rekap_${new Date().getTime()}.png`;
         link.href = canvas.toDataURL("image/png");
         link.click();
-        
         btnDownload.innerText = "📥 DOWNLOAD GAMBAR";
         btnDownload.disabled = false;
     }).catch(err => {
-        alert("Gagal mendownload gambar: " + err);
+        alert("Gagal: " + err);
         btnDownload.disabled = false;
     });
 };
