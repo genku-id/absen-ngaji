@@ -287,12 +287,12 @@ function tampilkanBarcode(id, nama, waktu) {
             <div class="qr-item">
                 <p><b>Barcode Absensi</b></p>
                 <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div><br>
-                <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn">📥 Download Absen</button>
+                <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn">🖼️ Preview Barcode</button>
             </div>
             <div class="qr-item">
                 <p><b>Barcode Izin</b></p>
                 <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div><br>
-                <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn">📥 Download Izin</button>
+                <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn">🖼️ Preview Barcode</button>
             </div>
             <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
         </div>`;
