@@ -310,57 +310,35 @@ function tampilkanBarcode(id, nama, waktu) {
     });
 }
 
-function tampilkanBarcode(id, nama, waktu) {
-    document.getElementById('admin-dynamic-content').innerHTML = `
-        <div style="text-align:center;">
-            <h4>${nama}</h4><p>${waktu.replace('T',' ')}</p>
-            <div class="qr-item">
-                <p><b>Barcode Absensi</b></p>
-                <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div><br>
-                <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn">📥 Download Absen</button>
-            </div>
-            <div class="qr-item">
-                <p><b>Barcode Izin</b></p>
-                <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div><br>
-                <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn">📥 Download Izin</button>
-            </div>
-            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
-        </div>`;
-
-    // Render QR Code
-    new QRCode(document.getElementById("qrcode-absen"), {
-        text: id,
-        width: 200,
-        height: 200
-    });
-    new QRCode(document.getElementById("qrcode-izin"), {
-        text: id + "_IZIN",
-        width: 200,
-        height: 200
-    });
-}
-
 window.downloadQR = (el, name) => {
-    // Mencari elemen gambar (img) atau canvas di dalam container QR
     const container = document.getElementById(el);
     const img = container.querySelector("img");
     const canvas = container.querySelector("canvas");
+    let dataUrl = "";
 
-    const link = document.createElement("a");
-    link.download = name + ".png";
-
-    if (img && img.src && img.src !== "") {
-        // Jika QRCode.js merender sebagai <img>
-        link.href = img.src;
+    // Ambil data gambar
+    if (img && img.src && img.src.startsWith("data:image")) {
+        dataUrl = img.src;
     } else if (canvas) {
-        // Jika QRCode.js merender sebagai <canvas>
-        link.href = canvas.toDataURL("image/png");
-    } else {
-        return alert("Gambar belum siap, silakan tunggu sebentar atau coba lagi.");
+        dataUrl = canvas.toDataURL("image/png");
     }
 
-    link.click();
+    if (!dataUrl) return alert("Gambar belum siap.");
+    // Tampilkan Overlay Gambar agar bisa di-Klik Tahan (Save Image)
+    const overlay = document.createElement('div');
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif; padding:20px; box-sizing:border-box; text-align:center;";
+    overlay.innerHTML = `
+        <p style="margin-bottom:15px;"><b>SIAP DISIMPAN</b><br>Tekan lama pada gambar di bawah,<br>lalu pilih <b>"Simpan Gambar"</b> atau <b>"Download Gambar"</b></p>
+        <img src="${dataUrl}" style="width:100%; max-width:300px; border:10px solid white; margin-bottom:20px;">
+        <button id="close-qr-preview" style="padding:12px 25px; background:#007bff; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">KEMBALI KE PANEL</button>
+    `;
+    document.body.appendChild(overlay);
+    // Fungsi untuk menutup preview
+    document.getElementById('close-qr-preview').onclick = () => {
+        document.body.removeChild(overlay);
+    };
 };
+
 window.tutupEvent = async (id) => {
     if(confirm("Tutup dan Hapus QR?")) {
         await deleteDoc(doc(db, "events", id));
