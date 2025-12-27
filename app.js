@@ -444,49 +444,107 @@ window.bukaModalStatistik = async () => {
             <h3 style="text-align:center; margin:0 0 10px 0; font-size:16px; color:#007bff;">HASIL REKAPITULASI - ${filterDesa}</h3>
             <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center; border:1px solid #ccc;">
                 <thead>
-                    <tr style="background:#f8f9fa;">
-                        <th rowspan="2">DESA - KELOMPOK</th>
-                        <th colspan="2">TARGET</th>
-                        <th colspan="2">HADIR</th>
-                        <th colspan="2">IZIN</th>
-                        <th colspan="2">ALFA</th>
-                    </tr>
-                    <tr style="background:#f8f9fa;">
-                        <th>PA</th><th>PI</th>
-                        <th>PA</th><th>PI</th>
-                        <th>PA</th><th>PI</th>
-                        <th>PA</th><th>PI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${barisHtml}
-                    <tr style="background:#e3f2fd; font-weight:bold;">
-                        <td>TOTAL</td>
-                        <td>${total.tl}</td><td>${total.tp}</td>
-                        <td>${total.hl}</td><td>${total.hp}</td>
-                        <td>${total.il}</td><td>${total.ip}</td>
-                        <td>${total.al}</td><td>${total.ap}</td>
-                    </tr>
-                </tbody>
+window.bukaModalStatistik = async () => {
+    if (!window.currentListData || window.currentListData.length === 0) {
+        return alert("Tidak ada data. Silakan tampilkan laporan terlebih dahulu.");
+    }
+
+    const hSnap = await getDocs(collection(db, "attendance"));
+    const statusMap = {};
+    hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
+
+    let rekap = {};
+    let total = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+
+    window.currentListData.forEach(d => {
+        const key = `${d.desa} - ${d.kelompok}`;
+        const s = statusMap[d.nama];
+        const g = (d.gender || "PUTRA").toUpperCase(); 
+
+        if (!rekap[key]) rekap[key] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+
+        if (g.includes("PUTRA") || g === "L") {
+            rekap[key].tl++; total.tl++;
+            if (s === 'hadir') { rekap[key].hl++; total.hl++; }
+            else if (s === 'izin') { rekap[key].il++; total.il++; }
+            else { rekap[key].al++; total.al++; }
+        } else {
+            rekap[key].tp++; total.tp++;
+            if (s === 'hadir') { rekap[key].hp++; total.hp++; }
+            else if (s === 'izin') { rekap[key].ip++; total.ip++; }
+            else { rekap[key].ap++; total.ap++; }
+        }
+    });
+
+    const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
+    let barisHtml = "";
+    for (let k in rekap) {
+        const r = rekap[k];
+        barisHtml += `
+            <tr>
+                <td style="text-align:left; padding:5px;">${k}</td>
+                <td>${r.tl}</td><td>${r.tp}</td>
+                <td>${r.hl}</td><td>${r.hp}</td>
+                <td>${r.il}</td><td>${r.ip}</td>
+                <td>${r.al}</td><td>${r.ap}</td>
+            </tr>`;
+    }
+
+    const modal = document.createElement('div');
+    modal.id = "modal-stat";
+    // Perbaikan: Pakai flex-start agar konten yang panjang bisa diskrol dari paling atas
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto; -webkit-overflow-scrolling:touch;";
+    
+    modal.innerHTML = `
+        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:10px; width:100%; max-width:600px; box-sizing:border-box;">
+            <h3 style="text-align:center; margin:0 0 10px 0; font-size:14px; color:#007bff;">REKAPITULASI - ${filterDesa}</h3>
+            <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center;">
+                <tr style="background:#eee;">
+                    <th rowspan="2">KELOMPOK</th><th colspan="2">TARGET</th><th colspan="2">HADIR</th><th colspan="2">IZIN</th><th colspan="2">ALFA</th>
+                </tr>
+                <tr style="background:#eee;">
+                    <th>PA</th><th>PI</th><th>PA</th><th>PI</th><th>PA</th><th>PI</th><th>PA</th><th>PI</th>
+                </tr>
+                ${barisHtml}
+                <tr style="background:#e3f2fd; font-weight:bold;">
+                    <td>TOTAL</td>
+                    <td>${total.tl}</td><td>${total.tp}</td><td>${total.hl}</td><td>${total.hp}</td><td>${total.il}</td><td>${total.ip}</td><td>${total.al}</td><td>${total.ap}</td>
+                </tr>
             </table>
-            <p style="font-size:9px; text-align:right; margin-top:8px; color:#666;">Dicetak: ${new Date().toLocaleString('id-ID')}</p>
+            <p style="font-size:8px; text-align:right; margin-top:5px; color:#999;">Update: ${new Date().toLocaleString('id-ID')}</p>
         </div>
         
-        <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px; width:100%; max-width:550px;">
-            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📥 SIMPAN GAMBAR (PNG)</button>
-            <button onclick="resetAbsensiDariStatistik()" style="background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer;">🗑️ RESET DATA & KELUAR</button>
-            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:8px; border-radius:8px; cursor:pointer;">KEMBALI KE LAPORAN</button>
+        <div style="margin: 20px 0; display:flex; flex-direction:column; gap:10px; width:100%; max-width:600px; padding-bottom:30px;">
+            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold; font-size:16px;">📥 DOWNLOAD GAMBAR</button>
+            <button onclick="resetAbsensiDariStatistik()" style="background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px;">🗑️ RESET DATA & KELUAR</button>
+            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:10px; border-radius:8px;">TUTUP</button>
         </div>
     `;
     document.body.appendChild(modal);
 };
 
+// Fungsi Download Gambar agar Gambar tersimpan ke Galeri HP
 window.downloadStatistikGambar = () => {
     const area = document.getElementById('capture-area');
-    html2canvas(area).then(canvas => {
+    const btnDownload = event.target;
+    btnDownload.innerText = "⏳ Memproses...";
+    btnDownload.disabled = true;
+
+    html2canvas(area, {
+        scale: 2, // Biar hasil gambar tajam/tidak pecah
+        useCORS: true,
+        backgroundColor: "#ffffff"
+    }).then(canvas => {
         const link = document.createElement('a');
-        link.download = 'Rekap_Statistik.png';
-        link.href = canvas.toDataURL(); link.click();
+        link.download = `Rekap_${new Date().getTime()}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        
+        btnDownload.innerText = "📥 DOWNLOAD GAMBAR";
+        btnDownload.disabled = false;
+    }).catch(err => {
+        alert("Gagal mendownload gambar: " + err);
+        btnDownload.disabled = false;
     });
 };
 
