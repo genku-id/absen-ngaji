@@ -13,6 +13,86 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Import Font Islami untuk Animasi */
+        @import url('https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,700;1,700&display=swap');
+
+        /* Pastikan Overlay Sukses Kamu Mendukung Animasi */
+        #success-overlay {
+            display: none; /* Awalnya sembunyi */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 100000;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #075e54 0%, #128c7e 100%); /* Warna Hijau Islami */
+            overflow: hidden;
+        }
+
+        .celebration-container {
+            text-align: center;
+            color: white;
+            z-index: 2;
+        }
+
+        .arabic-font {
+            font-family: 'Almendra', serif;
+            font-size: 1.8em;
+            color: #ffd700; /* Emas */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .barokah-font {
+            font-family: 'Almendra', serif;
+            font-size: 2.8em;
+            animation: pulse 1s infinite alternate;
+        }
+
+        /* Animasi Rebana */
+        .rebana-left {
+            position: absolute;
+            left: -150px; bottom: 30px;
+            width: 150px;
+            animation: rebanaInLeft 1.2s forwards ease-out;
+        }
+
+        .rebana-right {
+            position: absolute;
+            right: -150px; top: 30px;
+            width: 150px;
+            animation: rebanaInRight 1.2s forwards ease-out;
+        }
+
+        @keyframes rebanaInLeft {
+            to { left: -20px; transform: rotate(15deg); }
+        }
+
+        @keyframes rebanaInRight {
+            to { right: -20px; transform: rotate(-15deg); }
+        }
+
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        /* Efek Percikan/Sparkles */
+        .sparkle {
+            position: absolute;
+            width: 5px; height: 5px;
+            background: gold;
+            border-radius: 50%;
+            animation: fly 3s infinite linear;
+            opacity: 0;
+        }
+
+        @keyframes fly {
+            0% { transform: translateY(100vh) scale(0); opacity: 1; }
+            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
+        }
+    </style>
 </head>
 <body>
 
