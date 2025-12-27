@@ -423,47 +423,94 @@ window.bukaModalStatistik = async () => {
             else { rekap[key].ap++; total.ap++; }
         }
     });
-
     const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
+    
+    // Header Tabel Statis sesuai gambar
     let barisHtml = "";
     for (let k in rekap) {
         const r = rekap[k];
+        const tTotal = r.tl + r.tp;
+        const hTotal = r.hl + r.hp;
+        const iTotal = r.il + r.ip;
+        const aTotal = r.al + r.ap;
+        const persen = tTotal > 0 ? Math.round((hTotal / tTotal) * 100) : 0;
+
         barisHtml += `
             <tr>
-                <td style="text-align:left; padding:5px;">${k}</td>
-                <td>${r.tl}</td><td>${r.tp}</td>
-                <td>${r.hl}</td><td>${r.hp}</td>
-                <td>${r.il}</td><td>${r.ip}</td>
-                <td>${r.al}</td><td>${r.ap}</td>
+                <td style="text-align:left; padding:5px; border: 1px solid #000;">${k}</td>
+                <td style="border: 1px solid #000;">${persen}%</td>
+                <td style="border: 1px solid #000;">${tTotal}</td>
+                <td style="border: 1px solid #000;">${hTotal}</td>
+                <td style="border: 1px solid #000;">${iTotal}</td>
+                <td style="border: 1px solid #000;">${aTotal}</td>
+                <td style="border: 1px solid #000;">${r.hl}</td>
+                <td style="border: 1px solid #000;">${r.il}</td>
+                <td style="border: 1px solid #000;">${r.al}</td>
+                <td style="border: 1px solid #000;">${r.hp}</td>
+                <td style="border: 1px solid #000;">${r.ip}</td>
+                <td style="border: 1px solid #000;">${r.ap}</td>
             </tr>`;
     }
+    // Baris Total Akhir
+    const grandT = total.tl + total.tp;
+    const grandH = total.hl + total.hp;
+    const grandI = total.il + total.ip;
+    const grandA = total.al + total.ap;
+    const grandPersen = grandT > 0 ? Math.round((grandH / grandT) * 100) : 0;
 
     const modal = document.createElement('div');
     modal.id = "modal-stat";
     modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto; -webkit-overflow-scrolling:touch;";
     
     modal.innerHTML = `
-        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:10px; width:100%; max-width:600px; box-sizing:border-box;">
-            <h3 style="text-align:center; margin:0 0 10px 0; font-size:14px; color:#007bff;">REKAPITULASI - ${filterDesa}</h3>
-            <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center;">
-                <tr style="background:#eee;">
-                    <th rowspan="2">KELOMPOK</th><th colspan="2">TARGET</th><th colspan="2">HADIR</th><th colspan="2">IZIN</th><th colspan="2">ALFA</th>
-                </tr>
-                <tr style="background:#eee;">
-                    <th>PA</th><th>PI</th><th>PA</th><th>PI</th><th>PA</th><th>PI</th><th>PA</th><th>PI</th>
-                </tr>
-                ${barisHtml}
-                <tr style="background:#e3f2fd; font-weight:bold;">
-                    <td>TOTAL</td>
-                    <td>${total.tl}</td><td>${total.tp}</td><td>${total.hl}</td><td>${total.hp}</td><td>${total.il}</td><td>${total.ip}</td><td>${total.al}</td><td>${total.ap}</td>
-                </tr>
+        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:5px; width:100%; max-width:800px; box-sizing:border-box; font-family: Arial, sans-serif;">
+            <h3 style="text-align:center; margin:0 0 5px 0; font-size:14px;">HASIL REKAP KEHADIRAN</h3>
+            <h4 style="text-align:center; margin:0 0 10px 0; font-size:12px;">${filterDesa} - ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</h4>
+            
+            <table style="width:100%; border-collapse:collapse; font-size:10px; text-align:center; border: 1px solid #000;">
+                <thead>
+                    <tr style="background:#fff;">
+                        <th rowspan="2" style="border: 1px solid #000; padding:5px;">DESA / KELOMPOK</th>
+                        <th rowspan="2" style="border: 1px solid #000;">%</th>
+                        <th colspan="4" style="border: 1px solid #000;">TOTAL</th>
+                        <th colspan="3" style="border: 1px solid #000;">PUTRA</th>
+                        <th colspan="3" style="border: 1px solid #000;">PUTRI</th>
+                    </tr>
+                    <tr style="background:#fff;">
+                        <th style="border: 1px solid #000;">T</th>
+                        <th style="border: 1px solid #000;">H</th>
+                        <th style="border: 1px solid #000;">I</th>
+                        <th style="border: 1px solid #000;">A</th>
+                        <th style="border: 1px solid #000;">H</th>
+                        <th style="border: 1px solid #000;">I</th>
+                        <th style="border: 1px solid #000;">A</th>
+                        <th style="border: 1px solid #000;">H</th>
+                        <th style="border: 1px solid #000;">I</th>
+                        <th style="border: 1px solid #000;">A</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style="background:#f2f2f2; font-weight:bold;">
+                        <td style="border: 1px solid #000; padding:5px; text-align:left;">TOTAL DAERAH</td>
+                        <td style="border: 1px solid #000;">${grandPersen}%</td>
+                        <td style="border: 1px solid #000;">${grandT}</td>
+                        <td style="border: 1px solid #000;">${grandH}</td>
+                        <td style="border: 1px solid #000;">${grandI}</td>
+                        <td style="border: 1px solid #000;">${grandA}</td>
+                        <td style="border: 1px solid #000;">${total.hl}</td>
+                        <td style="border: 1px solid #000;">${total.il}</td>
+                        <td style="border: 1px solid #000;">${total.al}</td>
+                        <td style="border: 1px solid #000;">${total.hp}</td>
+                        <td style="border: 1px solid #000;">${total.ip}</td>
+                        <td style="border: 1px solid #000;">${total.ap}</td>
+                    </tr>
+                    ${barisHtml}
+                </tbody>
             </table>
-            <p style="font-size:8px; text-align:right; margin-top:5px; color:#999;">Update: ${new Date().toLocaleString('id-ID')}</p>
         </div>
         
         <div style="margin: 20px 0; display:flex; flex-direction:column; gap:10px; width:100%; max-width:600px; padding-bottom:30px;">
-            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold; font-size:16px;">📥 DOWNLOAD GAMBAR</button>
-            <button onclick="resetAbsensiDariStatistik()" style="background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px;">🗑️ RESET DATA & KELUAR</button>
+            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold;">📥 DOWNLOAD GAMBAR</button>
             <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:10px; border-radius:8px;">TUTUP</button>
         </div>
     `;
