@@ -503,18 +503,20 @@ window.bukaModalStatistik = async () => {
     const modal = document.createElement('div');
     modal.id = "modal-stat";
     modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto;";
-    
+
     modal.innerHTML = `
-        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:5px; width:100%; max-width:850px; box-sizing:border-box; font-family: sans-serif;">
-            <h3 style="text-align:center; margin:0; font-size:14px;">HASIL REKAP KEHADIRAN</h3>
-            <h4 style="text-align:center; margin:5px 0 15px 0; font-size:12px;">${filterDesa} - ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</h4>
-            
-            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; border: 1.5px solid #000;">
+    <div style="background:white; color:black; padding:15px; border-radius:10px; width:95%; max-width:850px; box-sizing:border-box; display:flex; flex-direction:column; max-height:90vh;">
+        
+        <h3 style="text-align:center; margin:0; font-size:14px;">HASIL REKAP KEHADIRAN</h3>
+        <h4 style="text-align:center; margin:5px 0 15px 0; font-size:12px;">${filterDesa} - ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</h4>
+        
+        <div id="capture-area" style="background:white; overflow-x:auto; width:100%; border: 1px solid #ccc; -webkit-overflow-scrolling: touch;">
+            <table style="min-width:700px; width:100%; border-collapse:collapse; font-size:11px; text-align:center; border: 1.5px solid #000; table-layout: fixed;">
                 <thead>
                     <tr style="background:#fff;">
-                        <th style="border: 1px solid #000; padding:5px;">DESA</th>
-                        <th style="border: 1px solid #000; padding:5px;">KELOMPOK</th>
-                        <th style="border: 1px solid #000;">%</th>
+                        <th style="border: 1px solid #000; padding:5px; width:80px;">DESA</th>
+                        <th style="border: 1px solid #000; padding:5px; width:100px;">KELOMPOK</th>
+                        <th style="border: 1px solid #000; width:40px;">%</th>
                         <th colspan="4" style="border: 1px solid #000;">TOTAL</th>
                         <th colspan="3" style="border: 1px solid #000;">PUTRA</th>
                         <th colspan="3" style="border: 1px solid #000;">PUTRI</th>
@@ -526,6 +528,8 @@ window.bukaModalStatistik = async () => {
                         <th style="border: 1px solid #000;">H</th><th style="border: 1px solid #000;">I</th><th style="border: 1px solid #000;">A</th>
                         <th style="border: 1px solid #000;">H</th><th style="border: 1px solid #000;">I</th><th style="border: 1px solid #000;">A</th>
                     </tr>
+                </thead>
+                <tbody>
                     <tr style="background:#f2f2f2; font-weight:bold;">
                         <td colspan="2" style="border: 1px solid #000; padding:8px; text-align:left;">TOTAL DAERAH</td>
                         <td style="border: 1px solid #000;">${gPersen}%</td>
@@ -540,17 +544,17 @@ window.bukaModalStatistik = async () => {
                         <td style="border: 1px solid #000;">${grandTotal.ip}</td>
                         <td style="border: 1px solid #000;">${grandTotal.ap}</td>
                     </tr>
-                </thead>
-                <tbody>
                     ${barisHtml}
                 </tbody>
             </table>
         </div>
-        <div style="margin: 20px 0; display:flex; flex-direction:column; gap:10px; width:100%; max-width:600px; padding-bottom:30px;">
-            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD GAMBAR</button>
-            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:10px; border-radius:8px;">TUTUP</button>
+
+        <div style="margin-top: 15px; display:flex; gap:10px; width:100%;">
+            <button onclick="downloadStatistikGambar()" style="flex:1; background:#28a745; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD</button>
+            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="flex:1; background:#666; color:white; border:none; padding:10px; border-radius:8px;">TUTUP</button>
         </div>
-    `;
+    </div>
+`;
     document.body.appendChild(modal);
 };
 
