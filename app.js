@@ -221,9 +221,6 @@ async function prosesAbsensi(eventID, userData) {
             nama: userData.nama, desa: userData.desa, kelompok: userData.kelompok,
             eventId: cleanID, waktu: serverTimestamp(), status: statusAbsen
         });
-
-        async function prosesAbsensi(eventID, userData) {
-    try {
         
         const overlay = document.getElementById('success-overlay');
         overlay.style.display = 'flex';
