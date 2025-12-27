@@ -415,50 +415,64 @@ window.lihatLaporan = async () => {
 };
 
 window.renderTabelLaporan = async () => {
-    const fDesa = document.getElementById('f-desa').value;
-    const fKel = document.getElementById('f-kelompok').value;
+    const fD = document.getElementById('f-desa').value;
+    const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     tableDiv.innerHTML = "Memuat data...";
 
-    let qMaster = collection(db, "master_jamaah");
-    if(fDesa) qMaster = query(qMaster, where("desa", "==", fDesa));
-    if(fKel) qMaster = query(qMaster, where("kelompok", "==", fKel));
-    
-    const masterSnap = await getDocs(qMaster);
-    const hadirSnap = await getDocs(collection(db, "attendance"));
-    
-    // Buat peta (map) untuk mencocokkan nama dengan statusnya (hadir/izin)
-    const statusMap = {};
-    hadirSnap.forEach(doc => {
-        const data = doc.data();
-        statusMap[data.nama] = data.status; // status berisi 'hadir' atau 'izin'
-    });
-
-    let html = `<table><thead><tr><th>Nama</th><th>Info (Desa/Kel)</th><th>Status</th></tr></thead><tbody>`;
-    
-    masterSnap.forEach(doc => {
-        const d = doc.data();
-        const status = statusMap[d.nama]; // Ambil status dari map
+    try {
+        // 1. Cek apakah ada data scan di database (Attendance)
+        const hSnap = await getDocs(collection(db, "attendance"));
         
-        let rowColor = "#ffebee"; // Default Merah (ALFA)
-        let statusText = "❌ ALFA";
-
-        if (status === "hadir") {
-            rowColor = "#e8f5e9"; // Hijau (HADIR)
-            statusText = "✅ HADIR";
-        } else if (status === "izin") {
-            rowColor = "#fff9c4"; // Kuning (IZIN)
-            statusText = "🙏🏻 IZIN";
+        // JIKA TIDAK ADA DATA SCAN (KOSONG/SETELAH RESET), SEMBUNYIKAN TABEL
+        if (hSnap.empty) {
+            tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:#999;'>Riwayat kosong. Silakan buat event dan lakukan scan.</p>";
+            return;
         }
-        
-        html += `<tr style="background:${rowColor}">
-            <td><b>${d.nama}</b></td>
-            <td><small>${d.desa}<br>${d.kelompok}</small></td>
-            <td style="text-align:center;"><b>${statusText}</b></td>
-        </tr>`;
-    });
-    
-    tableDiv.innerHTML = html + `</tbody></table>`;
+
+        // 2. Cek apakah ada event yang sedang "open"
+        const qEvent = query(collection(db, "events"), where("status", "==", "open"));
+        const evSnap = await getDocs(qEvent);
+        const isEventRunning = !evSnap.empty;
+
+        // 3. Ambil data Master Jamaah (untuk filter)
+        let qM = collection(db, "master_jamaah");
+        if(fD) qM = query(qM, where("desa", "==", fD));
+        if(fK) qM = query(qM, where("kelompok", "==", fK));
+        const mSnap = await getDocs(qM);
+
+        // Map status kehadiran
+        const statusMap = {};
+        hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
+
+        let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Status</th></tr></thead><tbody>`;
+        let adaBarisDibuat = false;
+
+        mSnap.forEach(doc => {
+            const d = doc.data();
+            const s = statusMap[d.nama];
+
+            // LOGIKA SEMBUNYI:
+            // Jika Event JALAN, lompati yang belum scan (Alfa)
+            if (isEventRunning && !s) return;
+
+            adaBarisDibuat = true;
+            let color = "#ffebee", txt = "❌ ALFA";
+            if(s === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
+            else if(s === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+
+            html += `<tr style="background:${color}">
+                <td><b>${d.nama}</b></td>
+                <td><small>${d.desa}<br>${d.kelompok}</small></td>
+                <td style="text-align:center;"><b>${txt}</b></td>
+            </tr>`;
+        });
+
+        tableDiv.innerHTML = adaBarisDibuat ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px; color:#999;'>Belum ada data scan yang cocok.</p>";
+
+    } catch (e) {
+        tableDiv.innerHTML = "Error: " + e.message;
+    }
 };
 
 window.downloadLaporan = () => {
@@ -468,11 +482,13 @@ window.downloadLaporan = () => {
 };
 
 window.resetAbsensi = async () => {
-    if (confirm("Hapus semua riwayat absen?")) {
+    if (confirm("Hapus semua riwayat absen? Tabel laporan akan disembunyikan kembali.")) {
         const snap = await getDocs(collection(db, "attendance"));
+        // Hapus semua data attendance satu per satu
         await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-        alert("Selesai!");
+        // Refresh tabel (akan masuk ke kondisi hSnap.empty dan sembunyi)
         renderTabelLaporan();
+        alert("Riwayat berhasil dibersihkan!");
     }
 };
 
