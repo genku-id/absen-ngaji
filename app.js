@@ -360,8 +360,12 @@ window.downloadLaporan = () => {
 
 // --- 6. MODAL STATISTIK & RESET ---
 window.bukaModalStatistik = async () => {
-    if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan laporan dulu.");
+    // 1. Validasi data di layar
+    if (!window.currentListData || window.currentListData.length === 0) {
+        return alert("Tidak ada data untuk statistik. Silakan tampilkan laporan dulu.");
+    }
 
+    // 2. Ambil data kehadiran terbaru dari database
     const hSnap = await getDocs(collection(db, "attendance"));
     const statusMap = {};
     hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
@@ -369,18 +373,24 @@ window.bukaModalStatistik = async () => {
     let rekap = {};
     let total = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
 
+    // 3. Proses Hitung Berdasarkan Data di Layar (Filter Aktif)
     window.currentListData.forEach(d => {
         const key = `${d.desa} - ${d.kelompok}`;
         const s = statusMap[d.nama];
-        const g = d.gender || "L"; 
+        
+        // Logika Gender: Cek apakah mengandung kata "PUTRA" atau "L"
+        const g = (d.gender || "PUTRA").toUpperCase(); 
 
         if (!rekap[key]) rekap[key] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
-        if (g === 'L') {
+
+        if (g.includes("PUTRA") || g === "L") {
+            // Kategori PUTRA (PA)
             rekap[key].tl++; total.tl++;
             if (s === 'hadir') { rekap[key].hl++; total.hl++; }
             else if (s === 'izin') { rekap[key].il++; total.il++; }
             else { rekap[key].al++; total.al++; }
         } else {
+            // Kategori PUTRI (PI)
             rekap[key].tp++; total.tp++;
             if (s === 'hadir') { rekap[key].hp++; total.hp++; }
             else if (s === 'izin') { rekap[key].ip++; total.ip++; }
@@ -388,31 +398,67 @@ window.bukaModalStatistik = async () => {
         }
     });
 
+    // 4. Siapkan Judul berdasarkan Filter
     const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
+
+    // 5. Susun Baris Tabel
     let barisHtml = "";
     for (let k in rekap) {
         const r = rekap[k];
-        barisHtml += `<tr><td style="text-align:left;">${k}</td><td>${r.tl}</td><td>${r.tp}</td><td>${r.hl}</td><td>${r.hp}</td><td>${r.il}</td><td>${r.ip}</td><td>${r.al}</td><td>${r.ap}</td></tr>`;
+        barisHtml += `
+            <tr>
+                <td style="text-align:left; padding-left:5px;">${k}</td>
+                <td>${r.tl}</td><td>${r.tp}</td>
+                <td>${r.hl}</td><td>${r.hp}</td>
+                <td>${r.il}</td><td>${r.ip}</td>
+                <td>${r.al}</td><td>${r.ap}</td>
+            </tr>`;
     }
 
+    // 6. Buat Overlay Modal
     const modal = document.createElement('div');
     modal.id = "modal-stat";
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; overflow-y:auto;";
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:10px; box-sizing:border-box;";
+    
     modal.innerHTML = `
-        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:8px; width:100%; max-width:500px;">
-            <h3 style="text-align:center; font-size:14px; margin-bottom:10px;">REKAPITULASI - ${filterDesa}</h3>
-            <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center;">
-                <tr style="background:#eee;"><th rowspan="2">KELOMPOK</th><th colspan="2">TARGET</th><th colspan="2">HADIR</th><th colspan="2">IZIN</th><th colspan="2">ALFA</th></tr>
-                <tr style="background:#eee;"><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th></tr>
-                ${barisHtml}
-                <tr style="background:#e3f2fd; font-weight:bold;"><td>TOTAL</td><td>${total.tl}</td><td>${total.tp}</td><td>${total.hl}</td><td>${total.hp}</td><td>${total.il}</td><td>${total.ip}</td><td>${total.al}</td><td>${total.ap}</td></tr>
+        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:10px; width:100%; max-width:550px; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+            <h3 style="text-align:center; margin:0 0 10px 0; font-size:16px; color:#007bff;">HASIL REKAPITULASI - ${filterDesa}</h3>
+            <table border="1" style="width:100%; border-collapse:collapse; font-size:10px; text-align:center; border:1px solid #ccc;">
+                <thead>
+                    <tr style="background:#f8f9fa;">
+                        <th rowspan="2">DESA - KELOMPOK</th>
+                        <th colspan="2">TARGET</th>
+                        <th colspan="2">HADIR</th>
+                        <th colspan="2">IZIN</th>
+                        <th colspan="2">ALFA</th>
+                    </tr>
+                    <tr style="background:#f8f9fa;">
+                        <th>PA</th><th>PI</th>
+                        <th>PA</th><th>PI</th>
+                        <th>PA</th><th>PI</th>
+                        <th>PA</th><th>PI</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${barisHtml}
+                    <tr style="background:#e3f2fd; font-weight:bold;">
+                        <td>TOTAL</td>
+                        <td>${total.tl}</td><td>${total.tp}</td>
+                        <td>${total.hl}</td><td>${total.hp}</td>
+                        <td>${total.il}</td><td>${total.ip}</td>
+                        <td>${total.al}</td><td>${total.ap}</td>
+                    </tr>
+                </tbody>
             </table>
+            <p style="font-size:9px; text-align:right; margin-top:8px; color:#666;">Dicetak: ${new Date().toLocaleString('id-ID')}</p>
         </div>
-        <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px; width:100%; max-width:500px;">
-            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:12px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD GAMBAR</button>
-            <button onclick="resetAbsensiDariStatistik()" style="background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px;">🗑️ RESET & SELESAI</button>
-            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="color:white; background:none; border:none;">Tutup</button>
-        </div>`;
+        
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px; width:100%; max-width:550px;">
+            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">📥 SIMPAN GAMBAR (PNG)</button>
+            <button onclick="resetAbsensiDariStatistik()" style="background:#d32f2f; color:white; padding:12px; border:none; border-radius:8px; cursor:pointer;">🗑️ RESET DATA & KELUAR</button>
+            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:8px; border-radius:8px; cursor:pointer;">KEMBALI KE LAPORAN</button>
+        </div>
+    `;
     document.body.appendChild(modal);
 };
 
