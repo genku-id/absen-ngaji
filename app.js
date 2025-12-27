@@ -70,6 +70,13 @@ window.showPageRegistrasi = () => {
                 <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." autocomplete="off" disabled>
                 <div id="suggestion-box" class="suggestion-container hidden"></div>
             </div>
+            // Tambahkan ini di dalam innerHTML showPageRegistrasi, di bawah input reg-nama
+<div style="margin-top: 10px; text-align: left; color: #010530; font-size: 13px;">
+    <p style="margin-bottom: 5px;">Jenis Kelamin:</p>
+    <label><input type="radio" name="reg-gender" value="PUTRA" checked> Putra</label>
+    <label style="margin-left: 15px;"><input type="radio" name="reg-gender" value="PUTRI"> Putri</label>
+</div>
+
             <button id="btn-login" class="primary-btn">MASUK</button>
         </div>
     `;
@@ -122,19 +129,32 @@ window.prosesLogin = async () => {
     const nama = namaRaw.trim().toUpperCase();
     const desa = document.getElementById('reg-desa').value;
     const kelompok = document.getElementById('reg-kelompok').value;
+    // Ambil nilai gender dari radio button
+    const gender = document.querySelector('input[name="reg-gender"]:checked').value;
 
     if (!nama || !desa || !kelompok) return alert("Lengkapi data!");
 
     try {
-        const q = query(collection(db, "master_jamaah"), where("desa", "==", desa), where("kelompok", "==", kelompok), where("nama", "==", nama));
+        const q = query(collection(db, "master_jamaah"), 
+                  where("desa", "==", desa), 
+                  where("kelompok", "==", kelompok), 
+                  where("nama", "==", nama));
         const snap = await getDocs(q);
         let userData;
 
         if (!snap.empty) {
-            userData = { nama: snap.docs[0].data().nama, desa, kelompok };
+            // Jika sudah ada, ambil data yang ada (termasuk gender dari DB)
+            const dbData = snap.docs[0].data();
+            userData = { 
+                nama: dbData.nama, 
+                desa, 
+                kelompok, 
+                gender: dbData.gender || gender // Gunakan dari DB, jika kosong pakai input baru
+            };
         } else {
-            if (confirm(`Nama "${nama}" belum terdaftar. Daftarkan baru?`)) {
-                userData = { nama, desa, kelompok, gender: "L" }; // Default L jika baru
+            // Jika BELUM ADA, daftar baru dengan gender yang dipilih
+            if (confirm(`Nama "${nama}" belum terdaftar. Daftarkan sebagai ${gender}?`)) {
+                userData = { nama, desa, kelompok, gender: gender };
                 await addDoc(collection(db, "master_jamaah"), userData);
             } else return;
         }
