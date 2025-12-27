@@ -15,83 +15,69 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         /* Import Font Islami untuk Animasi */
-        @import url('https://fonts.googleapis.com/css2?family=Almendra:ital,wght@0,700;1,700&display=swap');
+        /* Import Font Modern & Menyenangkan */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap');
 
-        /* Pastikan Overlay Sukses Kamu Mendukung Animasi */
-        #success-overlay {
-            display: none; /* Awalnya sembunyi */
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 100000;
-            justify-content: center;
-            align-items: center;
-            background: linear-gradient(135deg, #075e54 0%, #128c7e 100%); /* Warna Hijau Islami */
-            overflow: hidden;
-        }
+#success-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 100000;
+    justify-content: center;
+    align-items: center;
+    background: radial-gradient(circle, #1a73e8 0%, #0d47a1 100%); 
+    overflow: hidden;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
 
-        .celebration-container {
-            text-align: center;
-            color: white;
-            z-index: 2;
-        }
+.celebration-wrap {
+    text-align: center;
+    color: white;
+    z-index: 10;
+    padding: 20px;
+}
 
-        .arabic-font {
-            font-family: 'Almendra', serif;
-            font-size: 1.8em;
-            color: #ffd700; /* Emas */
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-            margin-bottom: 10px;
-        }
+.text-top {
+    font-size: 1.2rem;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeInUp 0.5s forwards 0.2s;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
 
-        .barokah-font {
-            font-family: 'Almendra', serif;
-            font-size: 2.8em;
-            animation: pulse 1s infinite alternate;
-        }
+.text-main {
+    font-size: 3rem;
+    font-weight: 800;
+    line-height: 1.1;
+    opacity: 0;
+    transform: scale(0.5);
+    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.4s;
+}
 
-        /* Animasi Rebana */
-        .rebana-left {
-            position: absolute;
-            left: -150px; bottom: 30px;
-            width: 150px;
-            animation: rebanaInLeft 1.2s forwards ease-out;
-        }
+/* Efek Percikan (Burst) ala WA */
+.particle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    pointer-events: none;
+}
 
-        .rebana-right {
-            position: absolute;
-            right: -150px; top: 30px;
-            width: 150px;
-            animation: rebanaInRight 1.2s forwards ease-out;
-        }
+@keyframes fadeInUp {
+    to { opacity: 1; transform: translateY(0); }
+}
 
-        @keyframes rebanaInLeft {
-            to { left: -20px; transform: rotate(15deg); }
-        }
+@keyframes popIn {
+    to { opacity: 1; transform: scale(1); }
+}
 
-        @keyframes rebanaInRight {
-            to { right: -20px; transform: rotate(-15deg); }
-        }
-
-        @keyframes pulse {
-            from { transform: scale(1); }
-            to { transform: scale(1.1); }
-        }
-
-        /* Efek Percikan/Sparkles */
-        .sparkle {
-            position: absolute;
-            width: 5px; height: 5px;
-            background: gold;
-            border-radius: 50%;
-            animation: fly 3s infinite linear;
-            opacity: 0;
-        }
-
-        @keyframes fly {
-            0% { transform: translateY(100vh) scale(0); opacity: 1; }
-            100% { transform: translateY(-10vh) scale(1.5); opacity: 0; }
-        }
+@keyframes particle-fly {
+    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+    100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; }
+}
     </style>
 </head>
 <body>
