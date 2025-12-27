@@ -75,7 +75,7 @@ window.showPageRegistrasi = () => {
             <p style="font-size: 13px; margin-bottom: 8px; font-weight: bold;">Jenis Kelamin:</p>
             <div style="display: flex; gap: 20px; align-items: center;">
             <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px;">
-            <input type="radio" name="reg-gender" value="PUTRA" checked style="margin-right: 8px; width: 18px; height: 18px;"> Putra
+            <input type="radio" name="reg-gender" value="PUTRA" style="margin-right: 8px; width: 18px; height: 18px;"> Putra
             </label>
             <label style="display: flex; align-items: center; cursor: pointer; font-size: 14px;">
             <input type="radio" name="reg-gender" value="PUTRI" style="margin-right: 8px; width: 18px; height: 18px;"> Putri
@@ -134,9 +134,16 @@ window.prosesLogin = async () => {
     const nama = namaRaw.trim().toUpperCase();
     const desa = document.getElementById('reg-desa').value;
     const kelompok = document.getElementById('reg-kelompok').value;
-    const gender = document.querySelector('input[name="reg-gender"]:checked').value;
+    
+    // Ambil radio button yang dipilih
+    const genderRad = document.querySelector('input[name="reg-gender"]:checked');
 
-    if (!nama || !desa || !kelompok) return alert("Lengkapi data!");
+    // VALIDASI: Pastikan semua diisi termasuk Jenis Kelamin
+    if (!nama || !desa || !kelompok || !genderRad) {
+        return alert("⚠️ DATA BELUM LENGKAP!\nMohon isi nama dan pilih Jenis Kelamin (Putra/Putri).");
+    }
+
+    const gender = genderRad.value; // Hasilnya "PUTRA" atau "PUTRI"
 
     try {
         const q = query(collection(db, "master_jamaah"), 
@@ -147,10 +154,17 @@ window.prosesLogin = async () => {
         let userData;
 
         if (!snap.empty) {
+            // Jika sudah ada di DB, ambil data aslinya
             const dbData = snap.docs[0].data();
-            userData = { nama: dbData.nama, desa, kelompok, gender: dbData.gender || gender };
+            userData = { 
+                nama: dbData.nama, 
+                desa, 
+                kelompok, 
+                gender: dbData.gender || gender 
+            };
         } else {
-            if (confirm(`Nama "${nama}" belum terdaftar. Daftarkan sebagai ${gender}?`)) {
+            // Jika pendaftaran baru
+            if (confirm(`Daftarkan "${nama}" sebagai ${gender}?`)) {
                 userData = { nama, desa, kelompok, gender: gender };
                 await addDoc(collection(db, "master_jamaah"), userData);
             } else return;
@@ -159,7 +173,9 @@ window.prosesLogin = async () => {
         saveAccount(userData);
         localStorage.setItem('currentUser', JSON.stringify(userData));
         showDashboard(userData);
-    } catch (e) { alert("Error: " + e.message); }
+    } catch (e) { 
+        alert("Error: " + e.message); 
+    }
 };
 
 // --- 3. DASHBOARD & SCANNER ---
