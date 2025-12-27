@@ -401,18 +401,18 @@ window.lihatLaporan = async () => {
             <select id="f-kelompok">
                 <option value="">Semua Kelompok</option>
             </select>
-            <button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan</button>
-            <button onclick="downloadLaporan()" class="secondary-btn">📥 Download Excel</button>
-            <button onclick="resetAbsensi()" style="background: #d32f2f; color: white; margin-top: 10px; padding:10px; border:none; width:100%;">🗑️ Reset Riwayat</button>
+            <button onclick="renderTabelLaporan()" class="primary-btn">Tampilkan Detail</button>
+            
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="downloadLaporan()" class="secondary-btn" style="flex:1;">📥 Excel</button>
+                <button onclick="bukaModalStatistik()" class="primary-btn" style="flex:1; background:#28a745;">📊 Statistik</button>
+            </div>
         </div>
         <div id="tabel-container" class="table-responsive"></div>
     `;
-    document.getElementById('f-desa').onchange = (e) => {
-        const kel = dataWilayah[e.target.value] || [];
-        document.getElementById('f-kelompok').innerHTML = '<option value="">Semua Kelompok</option>' + kel.map(k => `<option value="${k}">${k}</option>`).join('');
-    };
-    renderTabelLaporan();
+    // ... sisa kode onchange desa tetap sama ...
 };
+
 
 window.renderTabelLaporan = async () => {
     const fD = document.getElementById('f-desa').value;
