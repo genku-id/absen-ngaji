@@ -66,8 +66,11 @@ window.showPageRegistrasi = () => {
                 ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
             </select>
             <select id="reg-kelompok" disabled><option value="">Pilih Kelompok</option></select>
-            <input type="text" id="reg-nama" placeholder="Ketik Nama..." list="list-nama" disabled>
-            <datalist id="list-nama"></datalist>
+            <div style="position: relative; width: 100%;">
+    <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." autocomplete="off" disabled>
+    <div id="suggestion-box" class="suggestion-container hidden"></div>
+</div>
+
             <button id="btn-login" class="primary-btn">MASUK</button>
         </div>
     `;
@@ -83,18 +86,40 @@ window.showPageRegistrasi = () => {
     };
     kelSel.onchange = () => { namaInp.disabled = false; };
     namaInp.oninput = async () => {
-        if (namaInp.value.length < 2) return;
-        const q = query(collection(db, "master_jamaah"), where("desa", "==", desaSel.value), where("kelompok", "==", kelSel.value));
-        const snap = await getDocs(q);
-        const list = document.getElementById('list-nama');
-        list.innerHTML = "";
-        snap.forEach(d => {
-            let opt = document.createElement('option');
-            opt.value = d.data().nama;
-            list.appendChild(opt);
-        });
-    };
+    const val = namaInp.value.toUpperCase();
+    const suggestBox = document.getElementById('suggestion-box');
+    
+    if (val.length < 1) {
+        suggestBox.classList.add('hidden');
+        return;
+    }
+
+    const q = query(collection(db, "master_jamaah"), 
+              where("desa", "==", desaSel.value), 
+              where("kelompok", "==", kelSel.value));
+    
+    const snap = await getDocs(q);
+    let matches = [];
+    snap.forEach(d => {
+        const namaDB = d.data().nama;
+        if (namaDB.includes(val)) matches.push(namaDB);
+    });
+
+    if (matches.length > 0) {
+        suggestBox.innerHTML = matches.map(name => 
+            `<div class="suggest-item" onclick="pilihSaranNama('${name}')">${name}</div>`
+        ).join('');
+        suggestBox.classList.remove('hidden');
+    } else {
+        suggestBox.classList.add('hidden');
+    }
+};
+
     document.getElementById('btn-login').onclick = prosesLogin;
+};
+window.pilihSaranNama = (nama) => {
+    document.getElementById('reg-nama').value = nama;
+    document.getElementById('suggestion-box').classList.add('hidden');
 };
 
 window.pilihAkun = (userData) => {
