@@ -316,7 +316,7 @@ window.downloadQR = (el, name) => {
     const canvas = container.querySelector("canvas");
     let dataUrl = "";
 
-    // Ambil data gambar
+    // Ambil data gambar dari img atau canvas
     if (img && img.src && img.src.startsWith("data:image")) {
         dataUrl = img.src;
     } else if (canvas) {
@@ -324,21 +324,39 @@ window.downloadQR = (el, name) => {
     }
 
     if (!dataUrl) return alert("Gambar belum siap.");
-    // Tampilkan Overlay Gambar agar bisa di-Klik Tahan (Save Image)
+
+    // Buat Overlay Preview
     const overlay = document.createElement('div');
-    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:20000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif; padding:20px; box-sizing:border-box; text-align:center;";
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:20000; display:flex; flex-direction:column; align-items:center; justify-content:center; color:white; font-family:sans-serif; padding:20px; box-sizing:border-box; text-align:center;";
+    
     overlay.innerHTML = `
-        <p style="margin-bottom:15px;"><b>SIAP DISIMPAN</b><br>Tekan lama pada gambar di bawah,<br>lalu pilih <b>"Simpan Gambar"</b> atau <b>"Download Gambar"</b></p>
-        <img src="${dataUrl}" style="width:100%; max-width:300px; border:10px solid white; margin-bottom:20px;">
-        <button id="close-qr-preview" style="padding:12px 25px; background:#007bff; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">KEMBALI KE PANEL</button>
+        <div style="background:white; padding:20px; border-radius:15px; width:100%; max-width:320px;">
+            <p style="color:#333; margin-bottom:15px; font-size:14px;"><b>PREVIEW BARCODE</b><br><small>Klik tombol di bawah atau tekan lama gambar</small></p>
+            <img src="${dataUrl}" style="width:100%; border:1px solid #eee; margin-bottom:20px;">
+            
+            <button id="btn-do-download" style="width:100%; padding:15px; background:#007bff; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:10px;">📥 DOWNLOAD IMAGE</button>
+            
+            <button id="close-qr-preview" style="width:100%; padding:10px; background:none; color:#666; border:none; font-size:13px; cursor:pointer;">Tutup & Kembali</button>
+        </div>
     `;
+
     document.body.appendChild(overlay);
+
+    // FUNGSI TOMBOL DOWNLOAD (Shortcut)
+    document.getElementById('btn-do-download').onclick = () => {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = name + ".png";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Fungsi untuk menutup preview
     document.getElementById('close-qr-preview').onclick = () => {
         document.body.removeChild(overlay);
     };
 };
-
 window.tutupEvent = async (id) => {
     if(confirm("Tutup dan Hapus QR?")) {
         await deleteDoc(doc(db, "events", id));
