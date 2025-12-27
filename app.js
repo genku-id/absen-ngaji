@@ -11,14 +11,12 @@ const dataWilayah = {
     "LENDAH": ["BONOSORO", "BUMIREJO", "CARIKAN", "NGENTAKREJO", "TUKSONO", "SRIKAYANGAN"],
     "SAMIGALUH": ["PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO"]
 };
-
 let html5QrCode;
 
 // --- 1. LOGIKA MULTI-AKUN ---
 function getSavedAccounts() {
     return JSON.parse(localStorage.getItem('saved_accounts')) || [];
 }
-
 function saveAccount(userData) {
     let accounts = getSavedAccounts();
     const exists = accounts.find(a => a.nama === userData.nama && a.desa === userData.desa);
@@ -27,7 +25,6 @@ function saveAccount(userData) {
         localStorage.setItem('saved_accounts', JSON.stringify(accounts));
     }
 }
-
 window.hapusAkunDariList = (nama) => {
     let accounts = getSavedAccounts().filter(a => a.nama !== nama);
     localStorage.setItem('saved_accounts', JSON.stringify(accounts));
@@ -39,20 +36,30 @@ window.showPageRegistrasi = () => {
     localStorage.removeItem('currentUser');
     const accounts = getSavedAccounts();
     const content = document.getElementById('app-content');
-    
     let htmlList = "";
     if (accounts.length > 0) {
-        htmlList = `<div class="account-list" style="margin-bottom:15px;">
-            <p style="font-size: 12px; color: #010530; margin-bottom:10px;">Pilih akun tersimpan:</p>
+        htmlList = `
+        <div class="account-list" style="margin-bottom:20px;">
+            <p style="font-size: 13px; color: #666; margin-bottom:12px; font-weight: bold;">Masuk dengan akun yang sudah ada:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
             ${accounts.map(acc => `
-                <div class="account-item" style="display:flex; justify-content:space-between; align-items:center; background:#f0f0f0; padding:10px; border-radius:8px; margin-bottom:5px;">
+                <div class="account-card" style="display:flex; justify-content:space-between; align-items:center; background: #ffffff; border: 1px solid #e0e0e0; padding: 12px 15px; border-radius: 12px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: 0.3s;">
                     <div onclick='pilihAkun(${JSON.stringify(acc)})' style="flex-grow:1; cursor:pointer;">
-                        <b>${acc.nama}</b><br><small>${acc.desa} - ${acc.kelompok}</small>
+                        <div style="font-size: 15px; font-weight: bold; color: #010530; margin-bottom: 2px;">${acc.nama}</div>
+                        <div style="font-size: 11px; color: #007bff; text-transform: uppercase; letter-spacing: 0.5px;">${acc.desa} • ${acc.kelompok}</div>
                     </div>
-                    <button onclick="hapusAkunDariList('${acc.nama}')" style="background:none; border:none; color:red; font-weight:bold; cursor:pointer; padding:10px;">✕</button>
+                    <button onclick="hapusAkunDariList('${acc.nama}')" 
+                        style="background: #fff5f5; border: none; color: #ff4d4d; width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; margin-left: 10px;">
+                        ✕
+                    </button>
                 </div>
             `).join('')}
-            <hr style="margin:15px 0;">
+            </div>
+            <div style="display: flex; align-items: center; margin: 20px 0;">
+                <div style="flex: 1; height: 1px; background: #eee;"></div>
+                <span style="padding: 0 10px; font-size: 11px; color: #bbb; text-transform: uppercase;">atau daftar baru</span>
+                <div style="flex: 1; height: 1px; background: #eee;"></div>
+            </div>
         </div>`;
     }
 
