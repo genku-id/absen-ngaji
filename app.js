@@ -424,9 +424,9 @@ window.renderTabelLaporan = async () => {
         // 1. Cek apakah ada data scan di database (Attendance)
         const hSnap = await getDocs(collection(db, "attendance"));
         
-        // JIKA TIDAK ADA DATA SCAN (KOSONG/SETELAH RESET), SEMBUNYIKAN TABEL
+        // JIKA TIDAK ADA DATA SCAN, SEMBUNYIKAN TABEL
         if (hSnap.empty) {
-            tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:#999;'>Riwayat kosong. Silakan buat event dan lakukan scan.</p>";
+            tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:#999;'>Riwayat kosong..</p>";
             return;
         }
 
@@ -435,7 +435,7 @@ window.renderTabelLaporan = async () => {
         const evSnap = await getDocs(qEvent);
         const isEventRunning = !evSnap.empty;
 
-        // 3. Ambil data Master Jamaah (untuk filter)
+        // 3. Ambil data Master Jamaah
         let qM = collection(db, "master_jamaah");
         if(fD) qM = query(qM, where("desa", "==", fD));
         if(fK) qM = query(qM, where("kelompok", "==", fK));
@@ -445,15 +445,28 @@ window.renderTabelLaporan = async () => {
         const statusMap = {};
         hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
 
+        // --- BAGIAN BARU: PROSES SORTIR ---
+        let listJamaah = [];
+        mSnap.forEach(doc => {
+            listJamaah.push(doc.data());
+        });
+
+        // Sortir: Desa -> Kelompok -> Nama
+        listJamaah.sort((a, b) => {
+            if (a.desa !== b.desa) return a.desa.localeCompare(b.desa);
+            if (a.kelompok !== b.kelompok) return a.kelompok.localeCompare(b.kelompok);
+            return a.nama.localeCompare(b.nama);
+        });
+        // --- AKHIR BAGIAN SORTIR ---
+
         let html = `<table><thead><tr><th>Nama</th><th>Info</th><th>Status</th></tr></thead><tbody>`;
         let adaBarisDibuat = false;
 
-        mSnap.forEach(doc => {
-            const d = doc.data();
+        // Gunakan listJamaah (yang sudah disortir) untuk looping, bukan mSnap lagi
+        listJamaah.forEach(d => {
             const s = statusMap[d.nama];
 
-            // LOGIKA SEMBUNYI:
-            // Jika Event JALAN, lompati yang belum scan (Alfa)
+            // LOGIKA SEMBUNYI TETAP BERTAHAN
             if (isEventRunning && !s) return;
 
             adaBarisDibuat = true;
