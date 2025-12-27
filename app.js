@@ -70,8 +70,7 @@ window.showPageRegistrasi = () => {
                 <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." autocomplete="off" disabled>
                 <div id="suggestion-box" class="suggestion-container hidden"></div>
             </div>
-            // Tambahkan ini di dalam innerHTML showPageRegistrasi, di bawah input reg-nama
-<div style="margin-top: 10px; text-align: left; color: #010530; font-size: 13px;">
+    <div style="margin-top: 10px; text-align: left; color: #010530; font-size: 13px;">
     <p style="margin-bottom: 5px;">Jenis Kelamin:</p>
     <label><input type="radio" name="reg-gender" value="PUTRA" checked> Putra</label>
     <label style="margin-left: 15px;"><input type="radio" name="reg-gender" value="PUTRI"> Putri</label>
