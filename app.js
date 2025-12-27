@@ -401,116 +401,153 @@ window.bukaModalStatistik = async () => {
     const statusMap = {};
     hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
 
+    // Struktur data: rekap[Desa][Kelompok]
     let rekap = {};
-    let total = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+    let grandTotal = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
 
     window.currentListData.forEach(d => {
-        const key = `${d.desa} - ${d.kelompok}`;
         const s = statusMap[d.nama];
         const g = (d.gender || "PUTRA").toUpperCase(); 
 
-        if (!rekap[key]) rekap[key] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+        if (!rekap[d.desa]) rekap[d.desa] = {};
+        if (!rekap[d.desa][d.kelompok]) {
+            rekap[d.desa][d.kelompok] = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+        }
 
+        let target = rekap[d.desa][d.kelompok];
         if (g.includes("PUTRA") || g === "L") {
-            rekap[key].tl++; total.tl++;
-            if (s === 'hadir') { rekap[key].hl++; total.hl++; }
-            else if (s === 'izin') { rekap[key].il++; total.il++; }
-            else { rekap[key].al++; total.al++; }
+            target.tl++; grandTotal.tl++;
+            if (s === 'hadir') { target.hl++; grandTotal.hl++; }
+            else if (s === 'izin') { target.il++; grandTotal.il++; }
+            else { target.al++; grandTotal.al++; }
         } else {
-            rekap[key].tp++; total.tp++;
-            if (s === 'hadir') { rekap[key].hp++; total.hp++; }
-            else if (s === 'izin') { rekap[key].ip++; total.ip++; }
-            else { rekap[key].ap++; total.ap++; }
+            target.tp++; grandTotal.tp++;
+            if (s === 'hadir') { target.hp++; grandTotal.hp++; }
+            else if (s === 'izin') { target.ip++; grandTotal.ip++; }
+            else { target.ap++; grandTotal.ap++; }
         }
     });
-    const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
-    
-    // Header Tabel Statis sesuai gambar
-    let barisHtml = "";
-    for (let k in rekap) {
-        const r = rekap[k];
-        const tTotal = r.tl + r.tp;
-        const hTotal = r.hl + r.hp;
-        const iTotal = r.il + r.ip;
-        const aTotal = r.al + r.ap;
-        const persen = tTotal > 0 ? Math.round((hTotal / tTotal) * 100) : 0;
 
+    const filterDesa = document.getElementById('f-desa').value || "SEMUA DESA";
+    let barisHtml = "";
+
+    // Looping per Desa untuk membuat Baris Rekap Desa dan Baris Kelompok
+    for (let desa in rekap) {
+        const kelompokDiDesa = rekap[desa];
+        const daftarKelompok = Object.keys(kelompokDiDesa);
+        const jmlKelompok = daftarKelompok.length;
+
+        // Hitung Subtotal Per Desa
+        let subDesa = { tl:0, tp:0, hl:0, hp:0, il:0, ip:0, al:0, ap:0 };
+        daftarKelompok.forEach(k => {
+            const r = kelompokDiDesa[k];
+            subDesa.tl += r.tl; subDesa.tp += r.tp;
+            subDesa.hl += r.hl; subDesa.hp += r.hp;
+            subDesa.il += r.il; subDesa.ip += r.ip;
+            subDesa.al += r.al; subDesa.ap += r.ap;
+        });
+
+        const dTotalT = subDesa.tl + subDesa.tp;
+        const dTotalH = subDesa.hl + subDesa.hp;
+        const dPersen = dTotalT > 0 ? Math.round((dTotalH / dTotalT) * 100) : 0;
+
+        // 1. BARIS REKAP DESA (Header Desa)
         barisHtml += `
-            <tr>
-                <td style="text-align:left; padding:5px; border: 1px solid #000;">${k}</td>
-                <td style="border: 1px solid #000;">${persen}%</td>
-                <td style="border: 1px solid #000;">${tTotal}</td>
-                <td style="border: 1px solid #000;">${hTotal}</td>
-                <td style="border: 1px solid #000;">${iTotal}</td>
-                <td style="border: 1px solid #000;">${aTotal}</td>
-                <td style="border: 1px solid #000;">${r.hl}</td>
-                <td style="border: 1px solid #000;">${r.il}</td>
-                <td style="border: 1px solid #000;">${r.al}</td>
-                <td style="border: 1px solid #000;">${r.hp}</td>
-                <td style="border: 1px solid #000;">${r.ip}</td>
-                <td style="border: 1px solid #000;">${r.ap}</td>
+            <tr style="background:#f9f9f9; font-weight:bold;">
+                <td style="border: 1px solid #000; text-align:left; padding:5px;">${desa}</td>
+                <td style="border: 1px solid #000;">${desa}</td>
+                <td style="border: 1px solid #000;">${dPersen}%</td>
+                <td style="border: 1px solid #000;">${dTotalT}</td>
+                <td style="border: 1px solid #000;">${dTotalH}</td>
+                <td style="border: 1px solid #000;">${subDesa.il + subDesa.ip}</td>
+                <td style="border: 1px solid #000;">${subDesa.al + subDesa.ap}</td>
+                <td style="border: 1px solid #000;">${subDesa.hl}</td>
+                <td style="border: 1px solid #000;">${subDesa.il}</td>
+                <td style="border: 1px solid #000;">${subDesa.al}</td>
+                <td style="border: 1px solid #000;">${subDesa.hp}</td>
+                <td style="border: 1px solid #000;">${subDesa.ip}</td>
+                <td style="border: 1px solid #000;">${subDesa.ap}</td>
             </tr>`;
+
+        // 2. BARIS KELOMPOK (Detail di bawah desa)
+        daftarKelompok.forEach((kel, index) => {
+            const r = kelompokDiDesa[kel];
+            const kTotalT = r.tl + r.tp;
+            const kTotalH = r.hl + r.hp;
+            const kPersen = kTotalT > 0 ? Math.round((kTotalH / kTotalT) * 100) : 0;
+
+            barisHtml += `
+                <tr>
+                    ${index === 0 ? `<td rowspan="${jmlKelompok}" style="border: 1px solid #000; font-weight:bold; vertical-align:middle; background:#fff;">${desa}</td>` : ''}
+                    <td style="border: 1px solid #000; text-align:left; padding-left:5px;">${kel}</td>
+                    <td style="border: 1px solid #000;">${kPersen}%</td>
+                    <td style="border: 1px solid #000;">${kTotalT}</td>
+                    <td style="border: 1px solid #000;">${kTotalH}</td>
+                    <td style="border: 1px solid #000;">${r.il + r.ip}</td>
+                    <td style="border: 1px solid #000;">${r.al + r.ap}</td>
+                    <td style="border: 1px solid #000;">${r.hl}</td>
+                    <td style="border: 1px solid #000;">${r.il}</td>
+                    <td style="border: 1px solid #000;">${r.al}</td>
+                    <td style="border: 1px solid #000;">${r.hp}</td>
+                    <td style="border: 1px solid #000;">${r.ip}</td>
+                    <td style="border: 1px solid #000;">${r.ap}</td>
+                </tr>`;
+        });
     }
-    // Baris Total Akhir
-    const grandT = total.tl + total.tp;
-    const grandH = total.hl + total.hp;
-    const grandI = total.il + total.ip;
-    const grandA = total.al + total.ap;
-    const grandPersen = grandT > 0 ? Math.round((grandH / grandT) * 100) : 0;
+
+    // Hitung Grand Total (Total Daerah)
+    const gT = grandTotal.tl + grandTotal.tp;
+    const gH = grandTotal.hl + grandTotal.hp;
+    const gPersen = gT > 0 ? Math.round((gH / gT) * 100) : 0;
 
     const modal = document.createElement('div');
     modal.id = "modal-stat";
-    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto; -webkit-overflow-scrolling:touch;";
+    modal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding:20px 10px; overflow-y:auto;";
     
     modal.innerHTML = `
-        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:5px; width:100%; max-width:800px; box-sizing:border-box; font-family: Arial, sans-serif;">
-            <h3 style="text-align:center; margin:0 0 5px 0; font-size:14px;">HASIL REKAP KEHADIRAN</h3>
-            <h4 style="text-align:center; margin:0 0 10px 0; font-size:12px;">${filterDesa} - ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</h4>
+        <div id="capture-area" style="background:white; color:black; padding:15px; border-radius:5px; width:100%; max-width:850px; box-sizing:border-box; font-family: sans-serif;">
+            <h3 style="text-align:center; margin:0; font-size:14px;">HASIL REKAP KEHADIRAN</h3>
+            <h4 style="text-align:center; margin:5px 0 15px 0; font-size:12px;">${filterDesa} - ${new Date().toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'})}</h4>
             
-            <table style="width:100%; border-collapse:collapse; font-size:10px; text-align:center; border: 1px solid #000;">
+            <table style="width:100%; border-collapse:collapse; font-size:9px; text-align:center; border: 1.5px solid #000;">
                 <thead>
                     <tr style="background:#fff;">
-                        <th rowspan="2" style="border: 1px solid #000; padding:5px;">DESA / KELOMPOK</th>
-                        <th rowspan="2" style="border: 1px solid #000;">%</th>
+                        <th style="border: 1px solid #000; padding:5px;">DESA</th>
+                        <th style="border: 1px solid #000; padding:5px;">KELOMPOK</th>
+                        <th style="border: 1px solid #000;">%</th>
                         <th colspan="4" style="border: 1px solid #000;">TOTAL</th>
                         <th colspan="3" style="border: 1px solid #000;">PUTRA</th>
                         <th colspan="3" style="border: 1px solid #000;">PUTRI</th>
                     </tr>
                     <tr style="background:#fff;">
-                        <th style="border: 1px solid #000;">T</th>
-                        <th style="border: 1px solid #000;">H</th>
-                        <th style="border: 1px solid #000;">I</th>
-                        <th style="border: 1px solid #000;">A</th>
-                        <th style="border: 1px solid #000;">H</th>
-                        <th style="border: 1px solid #000;">I</th>
-                        <th style="border: 1px solid #000;">A</th>
-                        <th style="border: 1px solid #000;">H</th>
-                        <th style="border: 1px solid #000;">I</th>
-                        <th style="border: 1px solid #000;">A</th>
+                        <th colspan="2" style="border: 1px solid #000;"></th>
+                        <th style="border: 1px solid #000;"></th>
+                        <th style="border: 1px solid #000;">T</th><th style="border: 1px solid #000;">H</th><th style="border: 1px solid #000;">I</th><th style="border: 1px solid #000;">A</th>
+                        <th style="border: 1px solid #000;">H</th><th style="border: 1px solid #000;">I</th><th style="border: 1px solid #000;">A</th>
+                        <th style="border: 1px solid #000;">H</th><th style="border: 1px solid #000;">I</th><th style="border: 1px solid #000;">A</th>
+                    </tr>
+                    <tr style="background:#f2f2f2; font-weight:bold;">
+                        <td colspan="2" style="border: 1px solid #000; padding:8px; text-align:left;">TOTAL DAERAH</td>
+                        <td style="border: 1px solid #000;">${gPersen}%</td>
+                        <td style="border: 1px solid #000;">${gT}</td>
+                        <td style="border: 1px solid #000;">${gH}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.il + grandTotal.ip}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.al + grandTotal.ap}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.hl}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.il}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.al}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.hp}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.ip}</td>
+                        <td style="border: 1px solid #000;">${grandTotal.ap}</td>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr style="background:#f2f2f2; font-weight:bold;">
-                        <td style="border: 1px solid #000; padding:5px; text-align:left;">TOTAL DAERAH</td>
-                        <td style="border: 1px solid #000;">${grandPersen}%</td>
-                        <td style="border: 1px solid #000;">${grandT}</td>
-                        <td style="border: 1px solid #000;">${grandH}</td>
-                        <td style="border: 1px solid #000;">${grandI}</td>
-                        <td style="border: 1px solid #000;">${grandA}</td>
-                        <td style="border: 1px solid #000;">${total.hl}</td>
-                        <td style="border: 1px solid #000;">${total.il}</td>
-                        <td style="border: 1px solid #000;">${total.al}</td>
-                        <td style="border: 1px solid #000;">${total.hp}</td>
-                        <td style="border: 1px solid #000;">${total.ip}</td>
-                        <td style="border: 1px solid #000;">${total.ap}</td>
-                    </tr>
                     ${barisHtml}
                 </tbody>
             </table>
         </div>
-        
         <div style="margin: 20px 0; display:flex; flex-direction:column; gap:10px; width:100%; max-width:600px; padding-bottom:30px;">
-            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold;">📥 DOWNLOAD GAMBAR</button>
+            <button onclick="downloadStatistikGambar()" style="background:#28a745; color:white; padding:15px; border:none; border-radius:8px; font-weight:bold;">📸 DOWNLOAD GAMBAR</button>
             <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" style="background:none; color:white; border:1px solid white; padding:10px; border-radius:8px;">TUTUP</button>
         </div>
     `;
