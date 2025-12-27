@@ -253,16 +253,39 @@ window.simpanEvent = async () => {
 
 function tampilkanBarcode(id, nama, waktu) {
     document.getElementById('admin-dynamic-content').innerHTML = `
-        <div style="text-align:center;">
-            <h4>${nama}</h4>
-            <div id="qrcode-absen" style="margin:10px auto;"></div>
-            <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn">🖼️ Preview Barcode</button>
-            <div id="qrcode-izin" style="margin:20px auto;"></div>
-            <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn">🖼️ Preview Barcode Izin</button>
-            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px;">TUTUP EVENT</button>
+        <div style="text-align:center; width:100%; display:flex; flex-direction:column; align-items:center;">
+            <h4 style="margin-bottom:5px;">${nama}</h4>
+            <p style="font-size:12px; margin-bottom:20px;">${waktu.replace('T',' ')}</p>
+            
+            <div class="qr-item" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:25px;">
+                <p style="font-size:14px; margin-bottom:10px;"><b>Barcode Absensi</b></p>
+                <div id="qrcode-absen" style="background:white; padding:10px; border-radius:8px; display:flex; justify-content:center;"></div>
+                <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn" style="margin-top:10px; width:200px;">🖼️ Preview Barcode</button>
+            </div>
+
+            <div class="qr-item" style="width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:25px;">
+                <p style="font-size:14px; margin-bottom:10px;"><b>Barcode Izin</b></p>
+                <div id="qrcode-izin" style="background:white; padding:10px; border-radius:8px; display:flex; justify-content:center;"></div>
+                <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn" style="margin-top:10px; width:200px;">🖼️ Preview Barcode Izin</button>
+            </div>
+
+            <button onclick="tutupEvent('${id}')" style="background:#d32f2f; color:white; width:90%; max-width:300px; padding:15px; margin-top:10px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
         </div>`;
-    new QRCode(document.getElementById("qrcode-absen"), { text: id, width: 200, height: 200 });
-    new QRCode(document.getElementById("qrcode-izin"), { text: id + "_IZIN", width: 200, height: 200 });
+
+    // Render QR Code dengan ukuran yang sedikit lebih kecil agar tidak 'overflow' di HP kecil
+    new QRCode(document.getElementById("qrcode-absen"), {
+        text: id,
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.H
+    });
+    
+    new QRCode(document.getElementById("qrcode-izin"), {
+        text: id + "_IZIN",
+        width: 180,
+        height: 180,
+        correctLevel: QRCode.CorrectLevel.H
+    });
 }
 
 window.downloadQR = (el, name) => {
