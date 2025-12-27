@@ -310,6 +310,36 @@ function tampilkanBarcode(id, nama, waktu) {
     });
 }
 
+function tampilkanBarcode(id, nama, waktu) {
+    document.getElementById('admin-dynamic-content').innerHTML = `
+        <div style="text-align:center;">
+            <h4>${nama}</h4><p>${waktu.replace('T',' ')}</p>
+            <div class="qr-item">
+                <p><b>Barcode Absensi</b></p>
+                <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div><br>
+                <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn">📥 Download Absen</button>
+            </div>
+            <div class="qr-item">
+                <p><b>Barcode Izin</b></p>
+                <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div><br>
+                <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn">📥 Download Izin</button>
+            </div>
+            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
+        </div>`;
+
+    // Render QR Code
+    new QRCode(document.getElementById("qrcode-absen"), {
+        text: id,
+        width: 200,
+        height: 200
+    });
+    new QRCode(document.getElementById("qrcode-izin"), {
+        text: id + "_IZIN",
+        width: 200,
+        height: 200
+    });
+}
+
 window.downloadQR = (el, name) => {
     // Mencari elemen gambar (img) atau canvas di dalam container QR
     const container = document.getElementById(el);
