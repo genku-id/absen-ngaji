@@ -185,7 +185,7 @@ window.showDashboard = (userData) => {
         <div class="card animate-in">
             <div style="text-align:center; padding:30px 0;">
                 <h2 style="font-weight: normal; color: #010530;">Assalaamualaikum,</h2>
-                <h1 style="color: #075e54; margin:10px 0; font-size: 2.2em;">${userData.nama}</h1>
+                <h1 style="color: #010530; margin:10px 0; font-size: 2.2em;">${userData.nama}</h1>
                 <p style="color: #888; letter-spacing: 1px;">${userData.desa} - ${userData.kelompok}</p>
             </div>
             <button onclick='mulaiScanner(${JSON.stringify(userData)})' class="primary-btn" style="padding:25px; font-size:20px; border-radius: 50px;">📸 MULAI SCAN BARCODE</button>
