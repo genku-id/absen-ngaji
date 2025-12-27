@@ -284,22 +284,53 @@ function tampilkanBarcode(id, nama, waktu) {
     document.getElementById('admin-dynamic-content').innerHTML = `
         <div style="text-align:center;">
             <h4>${nama}</h4><p>${waktu.replace('T',' ')}</p>
-            <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div><br>
-            <button onclick="downloadQR('qrcode-absen','Absen')" class="secondary-btn">Download Absen</button>
-            <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div><br>
-            <button onclick="downloadQR('qrcode-izin','Izin')" class="secondary-btn">Download Izin</button>
-            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px;">TUTUP EVENT</button>
+            <div class="qr-item">
+                <p><b>Barcode Absensi</b></p>
+                <div id="qrcode-absen" style="margin:10px auto; display:inline-block;"></div><br>
+                <button onclick="downloadQR('qrcode-absen','Absen_${nama}')" class="secondary-btn">📥 Download Absen</button>
+            </div>
+            <div class="qr-item">
+                <p><b>Barcode Izin</b></p>
+                <div id="qrcode-izin" style="margin:10px auto; display:inline-block;"></div><br>
+                <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn">📥 Download Izin</button>
+            </div>
+            <button onclick="tutupEvent('${id}')" style="background:red; color:white; width:100%; padding:15px; margin-top:20px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
         </div>`;
-    new QRCode(document.getElementById("qrcode-absen"), id);
-    new QRCode(document.getElementById("qrcode-izin"), id + "_IZIN");
+
+    // Render QR Code
+    new QRCode(document.getElementById("qrcode-absen"), {
+        text: id,
+        width: 200,
+        height: 200
+    });
+    new QRCode(document.getElementById("qrcode-izin"), {
+        text: id + "_IZIN",
+        width: 200,
+        height: 200
+    });
 }
 
 window.downloadQR = (el, name) => {
-    const img = document.getElementById(el).querySelector("img");
-    const a = document.createElement("a");
-    a.href = img.src; a.download = name + ".png"; a.click();
-};
+    // Mencari elemen gambar (img) atau canvas di dalam container QR
+    const container = document.getElementById(el);
+    const img = container.querySelector("img");
+    const canvas = container.querySelector("canvas");
 
+    const link = document.createElement("a");
+    link.download = name + ".png";
+
+    if (img && img.src && img.src !== "") {
+        // Jika QRCode.js merender sebagai <img>
+        link.href = img.src;
+    } else if (canvas) {
+        // Jika QRCode.js merender sebagai <canvas>
+        link.href = canvas.toDataURL("image/png");
+    } else {
+        return alert("Gambar belum siap, silakan tunggu sebentar atau coba lagi.");
+    }
+
+    link.click();
+};
 window.tutupEvent = async (id) => {
     if(confirm("Tutup dan Hapus QR?")) {
         await deleteDoc(doc(db, "events", id));
