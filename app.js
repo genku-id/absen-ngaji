@@ -223,9 +223,29 @@ async function prosesAbsensi(eventID, userData) {
         });
 
         const overlay = document.getElementById('success-overlay');
-        overlay.innerHTML = "<h1 style='padding:20px; text-align:center;'>Alhamdulillah Jazaa Kumullahu Khoiroo,<br>LANCAR BAROKAH!</h1>";
+        overlay.innerHTML = `
+            <div class="celebration-container">
+                <div class="particles"></div>
+                
+                <img src="https://cdn-icons-png.flaticon.com/512/3505/3505294.png" class="rebana-left">
+                <img src="https://cdn-icons-png.flaticon.com/512/3505/3505294.png" class="rebana-right">
+
+                <div class="text-wrapper">
+                    <h2 class="arabic-font">Alhamdulillah Jazaa Kumullahu Khoiroo</h2>
+                    <h1 class="barokah-font">LANCAR BAROKAH!</h1>
+                </div>
+            </div>
+            
+            <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
+        `;
+        
         overlay.style.display = 'flex';
-        setTimeout(() => { overlay.style.display = 'none'; showDashboard(userData); }, 4000);
+        // Putar Suara
+        const sound = document.getElementById('success-sound');
+        if(sound) sound.play().catch(e => console.log("Audio block oleh browser"));
+
+        setTimeout(() => { overlay.style.display = 'none'; showDashboard(userData); }, 5000);
+
     } catch (e) { alert("Gagal: " + e.message); showDashboard(userData); }
 }
 
