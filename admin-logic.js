@@ -17,7 +17,7 @@ window.updateTeksTombolAdmin = () => {
     const kelompokTerpilih = selKelompok.value;
 
     // KOSONGKAN & RESET KELOMPOK
-    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Kosongkan jika Desa) --</option>';
+    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
 
     if (desaTerpilih === "") {
         // Mode ADMIN DAERAH
