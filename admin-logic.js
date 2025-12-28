@@ -155,7 +155,7 @@ window.renderTabelLaporan = async () => {
     const tableDiv = document.getElementById('tabel-container');
     tableDiv.innerHTML = "Memuat data...";
     try {
-        // 1. Cek apakah ada event yang sedang OPEN di wilayah ini
+        // 1. Cek status event
         const qEvent = query(
             collection(db, "events"), 
             where("status", "==", "open"),
@@ -163,44 +163,50 @@ window.renderTabelLaporan = async () => {
         );
         const evSnap = await getDocs(qEvent);
         const isEventRunning = !evSnap.empty;
-        // 2. Ambil data absensi saat ini
+        // 2. Ambil riwayat absen
         const hSnap = await getDocs(collection(db, "attendance"));
         const statusMap = {};
-        hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
-        // 3. Ambil Master Jamaah (Filter sesuai wilayah laporan)
+        hSnap.forEach(doc => { 
+            const d = doc.data();
+            statusMap[d.nama] = d.status; 
+        });
+        // 3. Ambil Master Jamaah (PENTING: Ini sumber data statistik)
         let qM = collection(db, "master_jamaah");
         if(fD) qM = query(qM, where("desa", "==", fD));
         if(fK) qM = query(qM, where("kelompok", "==", fK));
         const mSnap = await getDocs(qM);
         let listJamaah = [];
-        mSnap.forEach(doc => { listJamaah.push(doc.data()); });
-        listJamaah.sort((a, b) => a.nama.localeCompare(b.nama));
-        // 4. LOGIKA TAMPILAN TABEL
-        let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
-        let adaData = false;
-        // Jika data absensi kosong sama sekali (setelah reset), jangan tampilkan apa-apa
-        if (Object.keys(statusMap).length === 0) {
-            tableDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Data kosong. Silakan buat event atau lakukan scan.</p>";
+        mSnap.forEach(doc => { 
+            const data = doc.data();
+            listJamaah.push(data); 
+        });
+        // KUNCI UTAMA: Simpan ke variabel global agar tombol Statistik bisa baca
+        window.currentListData = listJamaah;
+        if (listJamaah.length === 0) {
+            tableDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Data jamaah tidak ditemukan untuk wilayah ini.</p>";
             return;
         }
-
+        // 4. Render Tabel
+        let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
+        let adaTampilan = false;
         listJamaah.forEach(d => {
             const s = statusMap[d.nama];
-            // KONDISI A: Saat Event sedang jalan -> Hanya tampilkan yang sudah scan
+            // Logika filter tampilan sesuai diskusi sebelumnya
             if (isEventRunning && !s) return;
-            // KONDISI B: Saat Event sudah ditutup -> Tampilkan semua (yang tidak scan jadi ALFA)
-            // (Jika s kosong tapi absensi global tidak kosong, berarti dia ALFA)
-            adaData = true;
+
+            adaTampilan = true;
             let color = "#ffebee", txt = "❌ ALFA";
             if(s === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
             else if(s === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+
             html += `<tr style="background:${color}">
                         <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
                         <td style="text-align:center;"><b>${txt}</b></td>
                      </tr>`;
         });
-        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px;'>Belum ada yang melakukan scan.</p>";
+        tableDiv.innerHTML = adaTampilan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px;'>Belum ada yang melakukan scan.</p>";
     } catch (e) {
+        console.error(e);
         tableDiv.innerHTML = "Error: " + e.message;
     }
 };
