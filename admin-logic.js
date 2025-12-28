@@ -138,14 +138,32 @@ window.lihatLaporan = async () => {
             </div>
         </div>
         <div id="tabel-container"></div>`;
-    // Logika pengisian otomatis list kelompok untuk Admin Desa
+    // 3. Ambil elemen dropdown
+    const fDesa = document.getElementById('f-desa');
+    const fKel = document.getElementById('f-kelompok');
+    // 4. Logika ganti kelompok saat Desa dipilih (Penting untuk Admin Daerah)
+    fDesa.onchange = () => {
+        const desaTerpilih = fDesa.value;
+        // Bersihkan isi kelompok
+        fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>';
+        if (desaTerpilih !== "") {
+            // Ambil daftar kelompok dari dataWilayah yang sudah ada di file ini
+            const daftar = dataWilayah[desaTerpilih] || [];
+            daftar.forEach(klp => {
+                const opt = document.createElement('option');
+                opt.value = klp;
+                opt.innerText = klp;
+                fKel.appendChild(opt);
+            });
+        }
+    };
+    // 5. Jika Admin Desa, langsung tampilkan list kelompoknya
     if (role === "DESA") {
-        const fKel = document.getElementById('f-kelompok');
         const daftar = dataWilayah[wilayah] || [];
         fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + 
                          daftar.map(k => `<option value="${k}">${k}</option>`).join('');
     }
-    // Langsung eksekusi agar data muncul
+    // Jalankan tabel pertama kali
     renderTabelLaporan();
 };
 
