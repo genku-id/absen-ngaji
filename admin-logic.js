@@ -1,4 +1,5 @@
-// 1. Data Mapping Desa dan Kelompok
+// admin-logic.js
+
 const dataWilayah = {
     "WATES": ["KREMBANGAN", "BOJONG", "GIRIPENI 1", "GIRIPENI 2", "HARGOWILIS", "TRIHARJO"],
     "PENGASIH": ["MARGOSARI", "SENDANGSARI", "BANJARHARJO", "NANGGULAN", "GIRINYONO", "JATIMULYO", "SERUT"],
@@ -7,28 +8,27 @@ const dataWilayah = {
     "SAMIGALUH": ["PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO"]
 };
 
-// 2. Fungsi untuk merubah teks tombol & update dropdown kelompok
+// Fungsi agar teks tombol berubah dan dropdown kelompok aktif
 window.updateTeksTombolAdmin = () => {
     const selDesa = document.getElementById('sel-desa');
     const selKelompok = document.getElementById('sel-kelompok');
     const btn = document.getElementById('btn-konfirmasi-admin');
     
     const desaTerpilih = selDesa.value;
-    const kelompokTerpilih = selKelompok.value;
 
-    // KOSONGKAN & RESET KELOMPOK
-    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
+    // 1. Reset isi kelompok dulu
+    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Kosongkan jika Desa) --</option>';
 
     if (desaTerpilih === "") {
-        // Mode ADMIN DAERAH
+        // Jika desa kosong -> Admin Daerah
         selKelompok.disabled = true;
         btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
-        btn.style.background = "#2196F3"; // Biru
+        btn.style.background = "#2196F3"; 
     } else {
-        // Aktifkan dropdown kelompok
+        // Jika desa dipilih -> Aktifkan dropdown kelompok
         selKelompok.disabled = false;
         
-        // Isi dropdown kelompok sesuai desa yang dipilih
+        // Isi daftar kelompok sesuai desa
         const daftarKelompok = dataWilayah[desaTerpilih] || [];
         daftarKelompok.forEach(klp => {
             const opt = document.createElement('option');
@@ -37,10 +37,7 @@ window.updateTeksTombolAdmin = () => {
             selKelompok.appendChild(opt);
         });
 
-        // Kembalikan nilai kelompok yang tadi (jika ada)
-        selKelompok.value = kelompokTerpilih;
-
-        // CEK TEKS TOMBOL
+        // 2. Cek apakah kelompok sudah dipilih untuk tentukan teks tombol
         if (selKelompok.value === "") {
             btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desaTerpilih}`;
             btn.style.background = "#4CAF50"; // Hijau
@@ -51,7 +48,7 @@ window.updateTeksTombolAdmin = () => {
     }
 };
 
-// Fungsi saat tombol diklik (Tetap sama)
+// Fungsi saat tombol "MASUK SEBAGAI..." diklik
 window.konfirmasiMasukAdmin = () => {
     const desa = document.getElementById('sel-desa').value;
     const kelompok = document.getElementById('sel-kelompok').value;
@@ -68,9 +65,17 @@ window.konfirmasiMasukAdmin = () => {
         wilayah = kelompok;
     }
 
+    // Simpan ke memori aplikasi
     window.currentAdmin = { role, wilayah };
-    document.getElementById('modal-pilih-admin').style.display = 'none';
-    alert(`Akses Diterima: Admin ${role} ${wilayah}`);
     
-    if(typeof bukaAdmin === 'function') bukaAdmin();
+    // Tutup modal
+    document.getElementById('modal-pilih-admin').style.display = 'none';
+    
+    // Buka Panel Admin yang ada di app.js
+    if(typeof window.bukaPanelAdmin === 'function') {
+        window.bukaPanelAdmin();
+    } else {
+        // Jika bukaPanelAdmin bukan window function, panggil langsung
+        bukaPanelAdmin();
+    }
 };
