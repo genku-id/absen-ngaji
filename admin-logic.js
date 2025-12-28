@@ -100,10 +100,22 @@ window.konfirmasiMasukAdmin = () => {
 
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    // 1. Ambil data siapa yang login
     const role = window.currentAdmin?.role || "DAERAH";
     const wilayah = window.currentAdmin?.wilayah || "SEMUA";
-    // 2. Buat judul yang dinamis
+    // CARI DESA INDUK (Khusus jika admin yang masuk levelnya Kelompok)
+    let desaInduk = "";
+    if (role === "DESA") {
+        desaInduk = wilayah;
+    } else if (role === "KELOMPOK") {
+        // Cari wilayah ini ada di Desa mana dalam dataWilayah
+        for (let d in dataWilayah) {
+            if (dataWilayah[d].includes(wilayah)) {
+                desaInduk = d;
+                break;
+            }
+        }
+    }
+
     let judul = "Laporan Seluruh Wilayah";
     if (role === "DESA") judul = `Laporan Desa ${wilayah}`;
     if (role === "KELOMPOK") judul = `Laporan Kelompok ${wilayah}`;
@@ -112,9 +124,10 @@ window.lihatLaporan = async () => {
         <h3>${judul}</h3>
         <div class="filter-box">
             <select id="f-desa" ${role !== 'DAERAH' ? 'disabled' : ''} style="background:#f0f0f0; font-weight:bold;">
-                <option value="${role !== 'DAERAH' ? wilayah : ''}">${role !== 'DAERAH' ? wilayah : '-- Semua Desa --'}</option>
+                <option value="${role !== 'DAERAH' ? desaInduk : ''}">${role !== 'DAERAH' ? desaInduk : '-- Semua Desa --'}</option>
                 ${role === 'DAERAH' ? Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('') : ''}
             </select>
+
             <select id="f-kelompok" ${role === 'KELOMPOK' ? 'disabled' : ''} style="margin-top:10px;">
                 <option value="${role === 'KELOMPOK' ? wilayah : ''}">${role === 'KELOMPOK' ? wilayah : '-- Semua Kelompok --'}</option>
             </select>
@@ -125,22 +138,14 @@ window.lihatLaporan = async () => {
             </div>
         </div>
         <div id="tabel-container"></div>`;
-    // 3. Logika Dropdown Kelompok Otomatis (Hanya untuk Admin Daerah & Desa)
-    const fDesa = document.getElementById('f-desa');
-    const fKel = document.getElementById('f-kelompok');
-    fDesa.onchange = (e) => {
-        const desaTerpilih = e.target.value;
-        const kel = dataWilayah[desaTerpilih] || [];
-        fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + 
-                         kel.map(k => `<option value="${k}">${k}</option>`).join('');
-    };
-    // 4. Jika Admin Desa, isi list kelompoknya saat pertama buka
+    // Logika pengisian otomatis list kelompok untuk Admin Desa
     if (role === "DESA") {
-        const kel = dataWilayah[wilayah] || [];
+        const fKel = document.getElementById('f-kelompok');
+        const daftar = dataWilayah[wilayah] || [];
         fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + 
-                         kel.map(k => `<option value="${k}">${k}</option>`).join('');
+                         daftar.map(k => `<option value="${k}">${k}</option>`).join('');
     }
-    // 5. Langsung jalankan tabel agar admin tidak perlu klik dua kali
+    // Langsung eksekusi agar data muncul
     renderTabelLaporan();
 };
 
