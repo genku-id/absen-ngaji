@@ -111,18 +111,19 @@
     <option value="WATES">WATES</option>
     <option value="PENGASIH">PENGASIH</option>
     <option value="TEMON">TEMON</option>
-    <option value="PANJATAN">LENDAH</option>
-    <option value="KOKAP">SAMIGALUH</option>
+    <option value="LENDAH">LENDAH</option>
+    <option value="SAMIGALUH">SAMIGALUH</option>
 </select>
 
 <select id="sel-kelompok" onchange="updateTeksTombolAdmin()" disabled style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;">
     <option value="">-- Pilih Kelompok --</option>
 </select>
-
         <button id="btn-konfirmasi-admin" onclick="konfirmasiMasukAdmin()" style="width:100%; padding:12px; background:#2196F3; color:white; border:none; border-radius:8px; font-weight:bold;">
             MASUK SEBAGAI ADMIN DAERAH
         </button>
-        <button onclick="tutupModalAdmin()" style="margin-top:10px; background:none; border:none; color:red;">Batal</button>
+        <button type="button" onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="margin-top:10px; background:none; border:none; color:red; cursor:pointer;">
+    Batal
+</button>
     </div>
 </div>
     <script type="module" src="firebase-config.js"></script>
