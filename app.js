@@ -296,19 +296,40 @@ window.switchAdminTab = (tab) => {
 
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    const q = query(collection(db, "events"), where("status", "==", "open"));
+    
+    // AMBIL IDENTITAS ADMIN SAAT INI
+    const admRole = window.currentAdmin?.role || "DAERAH";
+    const admWil = window.currentAdmin?.wilayah || "SEMUA";
+
+    // CARI EVENT YANG OPEN KHUSUS UNTUK WILAYAH ADMIN INI SAAT INI
+    // Jika admin daerah, cari yang wilayahnya SEMUA. Jika admin desa/klp, cari yang wilayahnya pas.
+    const q = query(
+        collection(db, "events"), 
+        where("status", "==", "open"),
+        where("wilayah", "==", admWil)
+    );
+    
     const snap = await getDocs(q);
+    
     if (!snap.empty) {
+        // Jika sudah ada event buatanku yang open, tampilkan barcodenya
         const d = snap.docs[0].data();
         tampilkanBarcode(snap.docs[0].id, d.namaEvent, d.waktu || "");
     } else {
-        container.innerHTML = `<h3>Buat Event</h3><input type="text" id="ev-nama" placeholder="Nama Ngaji"><input type="datetime-local" id="ev-waktu"><button onclick="simpanEvent()" class="primary-btn">Terbitkan</button>`;
+        // Jika belum ada event buatanku yang open, tampilkan form buat baru
+        container.innerHTML = `
+            <h3>Buat Event (${admRole} ${admWil})</h3>
+            <input type="text" id="ev-nama" placeholder="Nama Ngaji">
+            <input type="datetime-local" id="ev-waktu">
+            <button onclick="simpanEvent()" class="primary-btn">Terbitkan</button>
+        `;
     }
 };
 
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const waktu = document.getElementById('ev-waktu').value;
+    
     if (!nama || !waktu) return alert("Isi data!");
     
     try {
@@ -316,11 +337,13 @@ window.simpanEvent = async () => {
             namaEvent: nama,
             waktu: waktu,
             status: "open",
-            level: window.currentAdmin?.role || "DAERAH",   
-            wilayah: window.currentAdmin?.wilayah || "SEMUA", 
+            // Data identitas admin yang sedang login
+            level: window.currentAdmin.role,   
+            wilayah: window.currentAdmin.wilayah, 
             createdAt: serverTimestamp()
         });
-        bukaPanelAdmin();
+        alert("Event Berhasil Dibuat!");
+        bukaPanelAdmin(); 
     } catch (e) {
         alert("Gagal simpan: " + e.message);
     }
