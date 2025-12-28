@@ -271,9 +271,18 @@ window.bukaAdmin = () => {
 
 window.bukaPanelAdmin = () => {
     const content = document.getElementById('app-content');
+    // AMBIL DATA ROLE DAN WILAYAH DARI MEMORI
+    const role = window.currentAdmin?.role || "DAERAH";
+    const wilayah = window.currentAdmin?.wilayah || "SEMUA";
+    // BUAT TEKS JUDUL DINAMIS
+    let judulPanel = "Panel Admin Daerah";
+    if (role === "DESA") judulPanel = `Panel Admin Desa ${wilayah}`;
+    if (role === "KELOMPOK") judulPanel = `Panel Admin Kelompok ${wilayah}`;
+
     content.innerHTML = `
         <div class="card" style="max-width:95%">
-            <h2>Panel Admin</h2>
+            <h2 style="margin-bottom: 5px;">${judulPanel}</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Tugas Aktif: ${role} ${wilayah}</p>
             <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
                 <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white;">EVENT</button>
                 <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white;">LAPORAN</button>
@@ -288,7 +297,6 @@ window.switchAdminTab = (tab) => {
     document.querySelectorAll('.admin-btn').forEach(b => b.style.background = "#666");
     const activeBtn = document.getElementById(`btn-${tab}`);
     if(activeBtn) activeBtn.style.background = "#007bff"; 
-    
     if (tab === 'ev') formBuatEvent();
     else if (tab === 'lp') lihatLaporan();
     else if (tab === 'db') lihatDatabase();
@@ -296,11 +304,9 @@ window.switchAdminTab = (tab) => {
 
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    
     // AMBIL IDENTITAS ADMIN SAAT INI
     const admRole = window.currentAdmin?.role || "DAERAH";
     const admWil = window.currentAdmin?.wilayah || "SEMUA";
-
     // CARI EVENT YANG OPEN KHUSUS UNTUK WILAYAH ADMIN INI SAAT INI
     // Jika admin daerah, cari yang wilayahnya SEMUA. Jika admin desa/klp, cari yang wilayahnya pas.
     const q = query(
@@ -310,7 +316,6 @@ window.formBuatEvent = async () => {
     );
     
     const snap = await getDocs(q);
-    
     if (!snap.empty) {
         // Jika sudah ada event buatanku yang open, tampilkan barcodenya
         const d = snap.docs[0].data();
@@ -329,11 +334,8 @@ window.formBuatEvent = async () => {
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const waktu = document.getElementById('ev-waktu').value;
-    
     if (!nama || !waktu) return alert("Isi data!");
-    
-    try {
-        await addDoc(collection(db, "events"), {
+    try { await addDoc(collection(db, "events"), {
             namaEvent: nama,
             waktu: waktu,
             status: "open",
@@ -395,7 +397,6 @@ window.tutupEvent = async (id) => {
     if(confirm("Tutup Event?")) { await deleteDoc(doc(db, "events", id)); bukaPanelAdmin(); }
 };
 
-// --- 5. LAPORAN & STATISTIK ---
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
     container.innerHTML = `
