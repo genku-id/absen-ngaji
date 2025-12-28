@@ -207,14 +207,28 @@ window.mulaiScanner = (userData) => {
 async function prosesAbsensi(eventID, userData) {
     try {
         const cleanID = eventID.replace("_IZIN", "");
+        
+        // 1. Ambil data event untuk mendapatkan ownerWilayah (pembuat event)
         const eventSnap = await getDoc(doc(db, "events", cleanID));
-        if (!eventSnap.exists()) { alert("EVENT SUDAH DITUTUP"); return showDashboard(userData); }
+        if (!eventSnap.exists()) { 
+            alert("EVENT SUDAH DITUTUP"); 
+            return showDashboard(userData); 
+        }
+        const evData = eventSnap.data();
 
         const statusAbsen = eventID.includes("_IZIN") ? "izin" : "hadir";
         const attID = `${cleanID}_${userData.nama.replace(/\s/g, '')}`;
+
+        // 2. Simpan absensi dengan label wilayahEvent sesuai pembuat event
         await setDoc(doc(db, "attendance", attID), {
-            nama: userData.nama, desa: userData.desa, kelompok: userData.kelompok,
-            eventId: cleanID, waktu: serverTimestamp(), status: statusAbsen
+            nama: userData.nama, 
+            desa: userData.desa, 
+            kelompok: userData.kelompok,
+            eventId: cleanID, 
+            // KUNCI: Menandai data scan ini milik wilayah mana
+            wilayahEvent: evData.ownerWilayah || "SEMUA", 
+            waktu: serverTimestamp(), 
+            status: statusAbsen
         });
         
         const overlay = document.getElementById('success-overlay');
@@ -245,7 +259,6 @@ async function prosesAbsensi(eventID, userData) {
         showDashboard(userData);
     }
 }
-
 function createParticle(parent) {
     const p = document.createElement('div');
     p.classList.add('particle');
@@ -271,62 +284,40 @@ window.bukaAdmin = () => {
 
 window.bukaPanelAdmin = () => {
     const content = document.getElementById('app-content');
-    // AMBIL DATA ROLE DAN WILAYAH DARI MEMORI
-    const role = window.currentAdmin?.role || "DAERAH";
-    const wilayah = window.currentAdmin?.wilayah || "SEMUA";
-    // BUAT TEKS JUDUL DINAMIS
-    let judulPanel = "Panel Admin Daerah";
-    if (role === "DESA") judulPanel = `Panel Admin Desa ${wilayah}`;
-    if (role === "KELOMPOK") judulPanel = `Panel Admin Kelompok ${wilayah}`;
-
+    const { role, wilayah } = window.currentAdmin;
+    
     content.innerHTML = `
-        <div class="card" style="max-width:95%">
-            <h2 style="margin-bottom: 5px;">${judulPanel}</h2>
+        <div class="card">
+            <h2>Panel Admin ${role} ${wilayah}</h2>
             <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
-                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white;">EVENT</button>
-                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white;">LAPORAN</button>
-                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')" style="flex:1; padding:10px; border:none; color:white;">DATABASE</button>
+                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1;">EVENT</button>
+                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1;">LAPORAN</button>
             </div>
             <div id="admin-dynamic-content"></div>
         </div>`;
-    switchAdminTab('ev');
+    window.switchAdminTab('ev');
 };
 
 window.switchAdminTab = (tab) => {
-    document.querySelectorAll('.admin-btn').forEach(b => b.style.background = "#666");
-    const activeBtn = document.getElementById(`btn-${tab}`);
-    if(activeBtn) activeBtn.style.background = "#007bff"; 
-    if (tab === 'ev') formBuatEvent();
-    else if (tab === 'lp') lihatLaporan();
-    else if (tab === 'db') lihatDatabase();
+    if (tab === 'ev') window.formBuatEvent();
+    else window.lihatLaporan();
 };
 
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    // AMBIL IDENTITAS ADMIN SAAT INI
-    const admRole = window.currentAdmin?.role || "DAERAH";
-    const admWil = window.currentAdmin?.wilayah || "SEMUA";
-    // CARI EVENT YANG OPEN KHUSUS UNTUK WILAYAH ADMIN INI SAAT INI
-    // Jika admin daerah, cari yang wilayahnya SEMUA. Jika admin desa/klp, cari yang wilayahnya pas.
-    const q = query(
-        collection(db, "events"), 
-        where("status", "==", "open"),
-        where("wilayah", "==", admWil)
-    );
+    const { wilayah } = window.currentAdmin;
     
+    const q = query(collection(db, "events"), where("status", "==", "open"), where("ownerWilayah", "==", wilayah));
     const snap = await getDocs(q);
+    
     if (!snap.empty) {
-        // Jika sudah ada event buatanku yang open, tampilkan barcodenya
         const d = snap.docs[0].data();
-        tampilkanBarcode(snap.docs[0].id, d.namaEvent, d.waktu || "");
+        tampilkanBarcode(snap.docs[0].id, d.namaEvent, d.waktu);
     } else {
-        // Jika belum ada event buatanku yang open, tampilkan form buat baru
-        container.innerHTML = `
-            <h3>Buat Event (${admRole} ${admWil})</h3>
-            <input type="text" id="ev-nama" placeholder="Nama Ngaji">
+        container.innerHTML = `<h3>Buat Event Baru</h3>
+            <input type="text" id="ev-nama" placeholder="Nama Acara">
             <input type="datetime-local" id="ev-waktu">
-            <button onclick="simpanEvent()" class="primary-btn">Terbitkan</button>
-        `;
+            <button onclick="simpanEvent()" class="primary-btn">Buka Absensi</button>`;
     }
 };
 
