@@ -382,15 +382,34 @@ window.downloadStatistikGambar = (e) => {
 };
 
 window.resetAbsensiGass = async (asal) => {
-    if (confirm("Hapus semua riwayat absen sekarang?")) {
+    const pesan = asal === 'statistik' 
+        ? "Laporan sudah didownload? Riwayat akan dihapus dan semua data disembunyikan kembali." 
+        : "Hapus semua riwayat absen sekarang?";
+    if (confirm(pesan)) {
         try {
+            // 1. Ambil semua data kehadiran
             const snap = await getDocs(collection(db, "attendance"));
+            if (snap.empty && asal === 'luar') return alert("Riwayat sudah kosong.");
+            // 2. Hapus satu per satu dari database
             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+            // 3. TUTUP MODAL (jika dipanggil dari statistik)
             const modal = document.getElementById('modal-stat');
             if(modal) document.body.removeChild(modal);
-            alert("Data Berhasil Dibersihkan!");
-            if(asal === 'statistik') bukaPanelAdmin();
-            else renderTabelLaporan();
-        } catch (e) { alert("Gagal: " + e.message); }
+            // 4. SEMBUNYIKAN TABEL (Kunci utamanya di sini)
+            const tableDiv = document.getElementById('tabel-container');
+            if (tableDiv) {
+                tableDiv.innerHTML = ""; // Menghapus tabel dari layar
+                // Opsional: berikan pesan kecil
+                tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:gray;'>Data telah direset. Tabel disembunyikan.</p>";
+            }
+            // 5. Kosongkan variabel data statistik di memori
+            window.currentListData = [];
+            alert("Data Berhasil Dibersihkan & Tabel Disembunyikan!");
+            if(asal === 'statistik') {
+                bukaPanelAdmin(); // Kembali ke dashboard admin
+            }
+        } catch (e) {
+            alert("Gagal reset: " + e.message);
+        }
     }
 };
