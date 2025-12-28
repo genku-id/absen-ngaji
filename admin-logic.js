@@ -40,10 +40,10 @@ window.updateTeksTombolAdmin = () => {
         // UPDATE TEKS TOMBOL SECARA DINAMIS
         if (selKelompok.value === "") {
             btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desaTerpilih}`;
-            btn.style.background = "#4CAF50"; 
+            btn.style.background = "#2196F3"; 
         } else {
             btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${selKelompok.value}`;
-            btn.style.background = "#FF9800"; 
+            btn.style.background = "#2196F3"; 
         }
     }
 };
@@ -65,11 +65,21 @@ window.konfirmasiMasukAdmin = () => {
     }
 
     window.currentAdmin = { role, wilayah };
+    selDesa.value = ""; // Reset Desa ke pilihan awal
+    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>'; // Kosongkan list kelompok
+    selKelompok.disabled = true; // Kunci kembali dropdown kelompok
+    
+    // Reset tombol ke tampilan Admin Daerah (Biru)
+    const btn = document.getElementById('btn-konfirmasi-admin');
+    btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
+    btn.style.background = "#2196F3";
+    // -----------------------------------------
+
+    // Tutup modal
     document.getElementById('modal-pilih-admin').style.display = 'none';
     
     alert(`Akses Diterima: Admin ${role} ${wilayah}`);
     
-    // Memanggil fungsi dari app.js
     if (typeof window.bukaPanelAdmin === 'function') {
         window.bukaPanelAdmin();
     }
