@@ -284,23 +284,47 @@ window.bukaAdmin = () => {
 
 window.bukaPanelAdmin = () => {
     const content = document.getElementById('app-content');
-    const { role, wilayah } = window.currentAdmin;
     
+    // Ambil data role dan wilayah agar judul dinamis
+    const role = window.currentAdmin?.role || "DAERAH";
+    const wilayah = window.currentAdmin?.wilayah || "SEMUA";
+    
+    let judulPanel = "Panel Admin Daerah";
+    if (role === "DESA") judulPanel = `Panel Admin Desa ${wilayah}`;
+    if (role === "KELOMPOK") judulPanel = `Panel Admin Kelompok ${wilayah}`;
+
     content.innerHTML = `
-        <div class="card">
-            <h2>Panel Admin ${role} ${wilayah}</h2>
+        <div class="card" style="max-width:95%">
+            <h2 style="margin-bottom: 5px;">${judulPanel}</h2>
+            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Tugas Aktif: ${role} ${wilayah}</p>
+            
             <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
-                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1;">EVENT</button>
-                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1;">LAPORAN</button>
+                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white; background:#007bff; border-radius:8px;">EVENT</button>
+                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white; background:#666; border-radius:8px;">LAPORAN</button>
+                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')" style="flex:1; padding:10px; border:none; color:white; background:#666; border-radius:8px;">DATABASE</button>
             </div>
             <div id="admin-dynamic-content"></div>
         </div>`;
+    
+    // Jalankan tab default (Event)
     window.switchAdminTab('ev');
 };
 
 window.switchAdminTab = (tab) => {
-    if (tab === 'ev') window.formBuatEvent();
-    else window.lihatLaporan();
+    // Reset warna semua tombol jadi abu-abu
+    document.querySelectorAll('.admin-btn').forEach(b => b.style.background = "#666");
+    
+    // Warnai tombol yang aktif jadi biru
+    const activeBtn = document.getElementById(`btn-${tab}`);
+    if(activeBtn) activeBtn.style.background = "#007bff"; 
+    
+    if (tab === 'ev') {
+        window.formBuatEvent();
+    } else if (tab === 'lp') {
+        window.lihatLaporan();
+    } else if (tab === 'db') {
+        window.lihatDatabase(); // Pintu ke menu Database
+    }
 };
 
 window.formBuatEvent = async () => {
@@ -317,7 +341,7 @@ window.formBuatEvent = async () => {
         container.innerHTML = `<h3>Buat Event Baru</h3>
             <input type="text" id="ev-nama" placeholder="Nama Acara">
             <input type="datetime-local" id="ev-waktu">
-            <button onclick="simpanEvent()" class="primary-btn">Buka Absensi</button>`;
+            <button onclick="simpanEvent()" class="primary-btn">Buat QR</button>`;
     }
 };
 
@@ -356,7 +380,7 @@ function tampilkanBarcode(id, nama, waktu) {
                 <div id="qrcode-izin" style="background:white; padding:10px; border-radius:8px; display:flex; justify-content:center;"></div>
                 <button onclick="downloadQR('qrcode-izin','Izin_${nama}')" class="secondary-btn" style="margin-top:10px; width:200px;">🖼️ Preview Barcode Izin</button>
             </div>
-            <button onclick="tutupEvent('${id}')" style="background:#d32f2f; color:white; width:90%; max-width:300px; padding:15px; margin-top:10px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT (HAPUS QR)</button>
+            <button onclick="tutupEvent('${id}')" style="background:#d32f2f; color:white; width:90%; max-width:300px; padding:15px; margin-top:10px; border:none; border-radius:8px; font-weight:bold;">TUTUP EVENT</button>
         </div>`;
     new QRCode(document.getElementById("qrcode-absen"), { text: id, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
     new QRCode(document.getElementById("qrcode-izin"), { text: id + "_IZIN", width: 180, height: 180, correctLevel: QRCode.CorrectLevel.H });
