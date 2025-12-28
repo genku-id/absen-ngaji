@@ -266,8 +266,8 @@ function createParticle(parent) {
 window.bukaAdmin = () => {
     const pass = prompt("Password Admin:");
     if (pass !== "1234") return alert("Salah!");
-    bukaPanelAdmin();
-};
+   document.getElementById('modal-pilih-admin').style.display = 'block';
+}
 
 window.bukaPanelAdmin = () => {
     const content = document.getElementById('app-content');
