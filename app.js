@@ -282,7 +282,6 @@ window.bukaPanelAdmin = () => {
     content.innerHTML = `
         <div class="card" style="max-width:95%">
             <h2 style="margin-bottom: 5px;">${judulPanel}</h2>
-            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Tugas Aktif: ${role} ${wilayah}</p>
             <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
                 <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white;">EVENT</button>
                 <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white;">LAPORAN</button>
