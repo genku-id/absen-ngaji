@@ -1,25 +1,34 @@
+// admin-logic.js
 window.updateTeksTombolAdmin = () => {
     const desa = document.getElementById('sel-desa').value;
     const kelompok = document.getElementById('sel-kelompok').value;
     const btn = document.getElementById('btn-konfirmasi-admin');
+    const inputKelompok = document.getElementById('sel-kelompok');
 
+    // Aturan: Kelompok hanya bisa dipilih jika Desa sudah ada isinya
     if (desa === "") {
+        inputKelompok.disabled = true;
+        inputKelompok.value = ""; // reset kelompok jika desa dikosongkan
         btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
-        btn.style.background = "#2196F3"; // Biru
-    } else if (kelompok === "") {
-        btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
-        btn.style.background = "#4CAF50"; // Hijau
+        btn.style.background = "#2196F3"; 
     } else {
-        btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${kelompok}`;
-        btn.style.background = "#FF9800"; // Oranye
+        inputKelompok.disabled = false;
+        
+        if (kelompok === "") {
+            btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
+            btn.style.background = "#2196F3";
+        } else {
+            btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${kelompok}`;
+            btn.style.background = "#2196F3"; 
+        }
     }
 };
 
+// Fungsi saat tombol diklik
 window.konfirmasiMasukAdmin = () => {
     const desa = document.getElementById('sel-desa').value;
     const kelompok = document.getElementById('sel-kelompok').value;
     
-    // Tentukan Role dan Wilayah
     let role = "DAERAH";
     let wilayah = "SEMUA";
 
@@ -32,17 +41,14 @@ window.konfirmasiMasukAdmin = () => {
         wilayah = kelompok;
     }
 
-    // Simpan di memori aplikasi
+    // Simpan identitas admin di memori aplikasi
     window.currentAdmin = { role, wilayah };
     
-    // Tutup modal dan buka panel admin
     document.getElementById('modal-pilih-admin').style.display = 'none';
-    alert(`Mode Admin Aktif: ${role} - ${wilayah}`);
+    alert(`Akses Diterima: Admin ${role} ${wilayah}`);
     
-    // Panggil fungsi bukaAdmin yang ada di app.js kamu
-    if(typeof bukaAdmin === 'function') bukaAdmin();
-};
-
-window.tutupModalAdmin = () => {
-    document.getElementById('modal-pilih-admin').style.display = 'none';
+    // Panggil fungsi utama admin di app.js
+    if(typeof bukaAdmin === 'function') {
+        bukaAdmin();
+    }
 };
