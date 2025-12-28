@@ -49,8 +49,11 @@ window.updateTeksTombolAdmin = () => {
 };
 
 window.konfirmasiMasukAdmin = () => {
-    const desa = document.getElementById('sel-desa').value;
-    const kelompok = document.getElementById('sel-kelompok').value;
+    const selDesa = document.getElementById('sel-desa');
+    const selKelompok = document.getElementById('sel-kelompok');
+    
+    const desa = selDesa.value;
+    const kelompok = selKelompok.value;
     
     let role = "DAERAH";
     let wilayah = "SEMUA";
@@ -64,23 +67,32 @@ window.konfirmasiMasukAdmin = () => {
         wilayah = kelompok;
     }
 
+    // Simpan identitas admin ke memori
     window.currentAdmin = { role, wilayah };
-    selDesa.value = ""; // Reset Desa ke pilihan awal
-    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>'; // Kosongkan list kelompok
-    selKelompok.disabled = true; // Kunci kembali dropdown kelompok
     
-    // Reset tombol ke tampilan Admin Daerah (Biru)
+    // --- AUTO BERSIHKAN FORM ---
+    selDesa.value = ""; 
+    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>'; 
+    selKelompok.disabled = true; 
+    
     const btn = document.getElementById('btn-konfirmasi-admin');
     btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
     btn.style.background = "#2196F3";
-    // -----------------------------------------
+    // ----------------------------
 
     // Tutup modal
     document.getElementById('modal-pilih-admin').style.display = 'none';
     
-    alert(`Akses Diterima: Admin ${role} ${wilayah}`);
-    
+    // PANGGIL PANEL ADMIN (Cara Paling Aman)
     if (typeof window.bukaPanelAdmin === 'function') {
         window.bukaPanelAdmin();
+    } else {
+        // Jika tidak ada di window, kita coba cari langsung fungsinya
+        try {
+            bukaPanelAdmin(); 
+        } catch (e) {
+            console.error("Fungsi bukaPanelAdmin tidak ditemukan!", e);
+            alert("Terjadi kesalahan teknis, silakan refresh halaman.");
+        }
     }
 };
