@@ -101,7 +101,30 @@
 
     <div id="success-overlay" style="display: none;">
     </div>
+<div id="modal-pilih-admin" class="modal" style="display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8);">
+    <div style="background:white; margin:15% auto; padding:20px; width:80%; border-radius:15px; text-align:center;">
+        <h3>Pilih Level Admin</h3>
+        <p>Tentukan wilayah tugas anda saat ini:</p>
+        
+        <select id="sel-desa" onchange="updateTeksTombolAdmin()" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;">
+            <option value="">-- Pilih Desa (Kosongkan jika Daerah) --</option>
+            <option value="WATES">WATES</option>
+            <option value="PENGASIH">PENGASIH</option>
+            <option value="SAMIGALUH">SAMIGALUH</option>
+        </select>
 
+        <select id="sel-kelompok" onchange="updateTeksTombolAdmin()" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;">
+            <option value="">-- Pilih Kelompok (Kosongkan jika Desa) --</option>
+            <option value="KREMBANGAN">KREMBANGAN</option>
+            <option value="GLAGAH">GLAGAH</option>
+        </select>
+
+        <button id="btn-konfirmasi-admin" onclick="konfirmasiMasukAdmin()" style="width:100%; padding:12px; background:#2196F3; color:white; border:none; border-radius:8px; font-weight:bold;">
+            MASUK SEBAGAI ADMIN DAERAH
+        </button>
+        <button onclick="tutupModalAdmin()" style="margin-top:10px; background:none; border:none; color:red;">Batal</button>
+    </div>
+</div>
     <script type="module" src="firebase-config.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
