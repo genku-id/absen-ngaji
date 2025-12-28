@@ -173,7 +173,16 @@ window.renderTabelLaporan = async () => {
     const tableDiv = document.getElementById('tabel-container');
     tableDiv.innerHTML = "Memuat data...";
     try {
-        // 1. Cek status event
+        // 1. Ambil riwayat absen DULU
+        const hSnap = await getDocs(collection(db, "attendance"));
+        // KUNCI UTAMA: Jika riwayat absen kosong (setelah RESET), 
+        // langsung bersihkan layar dan BERHENTI (jangan lanjut ambil master jamaah).
+        if (hSnap.empty) {
+            tableDiv.innerHTML = ""; 
+            window.currentListData = []; 
+            return; 
+        }
+        // 2. Cek status event
         const qEvent = query(
             collection(db, "events"), 
             where("status", "==", "open"),
@@ -181,14 +190,12 @@ window.renderTabelLaporan = async () => {
         );
         const evSnap = await getDocs(qEvent);
         const isEventRunning = !evSnap.empty;
-        // 2. Ambil riwayat absen
-        const hSnap = await getDocs(collection(db, "attendance"));
         const statusMap = {};
         hSnap.forEach(doc => { 
             const d = doc.data();
             statusMap[d.nama] = d.status; 
         });
-        // 3. Ambil Master Jamaah (PENTING: Ini sumber data statistik)
+        // 3. Ambil Master Jamaah
         let qM = collection(db, "master_jamaah");
         if(fD) qM = query(qM, where("desa", "==", fD));
         if(fK) qM = query(qM, where("kelompok", "==", fK));
@@ -198,20 +205,14 @@ window.renderTabelLaporan = async () => {
             const data = doc.data();
             listJamaah.push(data); 
         });
-        // KUNCI UTAMA: Simpan ke variabel global agar tombol Statistik bisa baca
         window.currentListData = listJamaah;
-        if (listJamaah.length === 0) {
-            tableDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Data jamaah tidak ditemukan untuk wilayah ini.</p>";
-            return;
-        }
         // 4. Render Tabel
         let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
         let adaTampilan = false;
         listJamaah.forEach(d => {
             const s = statusMap[d.nama];
-            // Logika filter tampilan sesuai diskusi sebelumnya
+            // Saat event jalan -> hanya tampilkan yang sudah scan
             if (isEventRunning && !s) return;
-
             adaTampilan = true;
             let color = "#ffebee", txt = "❌ ALFA";
             if(s === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
@@ -222,7 +223,7 @@ window.renderTabelLaporan = async () => {
                         <td style="text-align:center;"><b>${txt}</b></td>
                      </tr>`;
         });
-        tableDiv.innerHTML = adaTampilan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px;'>Belum ada yang melakukan scan.</p>";
+        tableDiv.innerHTML = adaTampilan ? html + `</tbody></table>` : ""; // Jika tidak ada data scan, kosongkan saja.
     } catch (e) {
         console.error(e);
         tableDiv.innerHTML = "Error: " + e.message;
@@ -392,22 +393,24 @@ window.resetAbsensiGass = async (asal) => {
             if (snap.empty && asal === 'luar') return alert("Riwayat sudah kosong.");
             // 2. Hapus satu per satu dari database
             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-            // 3. TUTUP MODAL (jika dipanggil dari statistik)
+            // 3. TUTUP MODAL STATISTIK
             const modal = document.getElementById('modal-stat');
             if(modal) document.body.removeChild(modal);
-            // 4. SEMBUNYIKAN TABEL (Kunci utamanya di sini)
+            // 4. SEMBUNYIKAN TABEL TOTAL (Bagian yang diganti)
             const tableDiv = document.getElementById('tabel-container');
             if (tableDiv) {
-                tableDiv.innerHTML = ""; // Menghapus tabel dari layar
-                // Opsional: berikan pesan kecil
-                tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:gray;'>Data telah direset. Tabel disembunyikan.</p>";
+                tableDiv.innerHTML = ""; // Menghapus tabel total (Jangan kasih pesan teks lagi)
             }
-            // 5. Kosongkan variabel data statistik di memori
+            // 5. Bersihkan variabel data agar tidak nyangkut
             window.currentListData = [];
             alert("Data Berhasil Dibersihkan & Tabel Disembunyikan!");
-            if(asal === 'statistik') {
-                bukaPanelAdmin(); // Kembali ke dashboard admin
+            // 6. KEMBALI KE TAB EVENT (Agar layar refresh ke tampilan awal)
+            if(typeof switchAdminTab === 'function') {
+                switchAdminTab('ev'); 
+            } else if(asal === 'statistik') {
+                bukaPanelAdmin();
             }
+
         } catch (e) {
             alert("Gagal reset: " + e.message);
         }
