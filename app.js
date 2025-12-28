@@ -310,9 +310,13 @@ window.simpanEvent = async () => {
     const waktu = document.getElementById('ev-waktu').value;
     if (!nama || !waktu) return alert("Isi data!");
     const id = "EVT-" + Date.now();
-    await setDoc(doc(db, "events", id), { nama, waktu, status: "open", createdAt: serverTimestamp() });
-    tampilkanBarcode(id, nama, waktu);
-};
+await addDoc(collection(db, "events"), {
+    namaEvent: namaEventInput,
+    status: "open",
+    level: window.currentAdmin.role,   
+    wilayah: window.currentAdmin.wilayah, 
+    createdAt: serverTimestamp()
+});
 
 function tampilkanBarcode(id, nama, waktu) {
     document.getElementById('admin-dynamic-content').innerHTML = `
