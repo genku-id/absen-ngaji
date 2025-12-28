@@ -266,8 +266,8 @@ function createParticle(parent) {
 window.bukaAdmin = () => {
     const pass = prompt("Password Admin:");
     if (pass !== "1234") return alert("Salah!");
-   document.getElementById('modal-pilih-admin').style.display = 'block';
-}
+    document.getElementById('modal-pilih-admin').style.display = 'block';
+};
 
 window.bukaPanelAdmin = () => {
     const content = document.getElementById('app-content');
@@ -299,7 +299,8 @@ window.formBuatEvent = async () => {
     const q = query(collection(db, "events"), where("status", "==", "open"));
     const snap = await getDocs(q);
     if (!snap.empty) {
-        tampilkanBarcode(snap.docs[0].id, snap.docs[0].data().nama, snap.docs[0].data().waktu);
+        const d = snap.docs[0].data();
+        tampilkanBarcode(snap.docs[0].id, d.namaEvent, d.waktu || "");
     } else {
         container.innerHTML = `<h3>Buat Event</h3><input type="text" id="ev-nama" placeholder="Nama Ngaji"><input type="datetime-local" id="ev-waktu"><button onclick="simpanEvent()" class="primary-btn">Terbitkan</button>`;
     }
@@ -309,14 +310,21 @@ window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const waktu = document.getElementById('ev-waktu').value;
     if (!nama || !waktu) return alert("Isi data!");
-    const id = "EVT-" + Date.now();
-await addDoc(collection(db, "events"), {
-    namaEvent: namaEventInput,
-    status: "open",
-    level: window.currentAdmin.role,   
-    wilayah: window.currentAdmin.wilayah, 
-    createdAt: serverTimestamp()
-});
+    
+    try {
+        await addDoc(collection(db, "events"), {
+            namaEvent: nama,
+            waktu: waktu,
+            status: "open",
+            level: window.currentAdmin?.role || "DAERAH",   
+            wilayah: window.currentAdmin?.wilayah || "SEMUA", 
+            createdAt: serverTimestamp()
+        });
+        bukaPanelAdmin();
+    } catch (e) {
+        alert("Gagal simpan: " + e.message);
+    }
+};
 
 function tampilkanBarcode(id, nama, waktu) {
     document.getElementById('admin-dynamic-content').innerHTML = `
@@ -361,7 +369,7 @@ window.downloadQR = (el, name) => {
 };
 
 window.tutupEvent = async (id) => {
-    if(confirm("Tutup Event?")) { await deleteDoc(doc(db, "events", id)); bukaAdmin(); }
+    if(confirm("Tutup Event?")) { await deleteDoc(doc(db, "events", id)); bukaPanelAdmin(); }
 };
 
 // --- 5. LAPORAN & STATISTIK ---
@@ -393,7 +401,6 @@ window.renderTabelLaporan = async () => {
     tableDiv.innerHTML = "Memuat...";
     try {
         const hSnap = await getDocs(collection(db, "attendance"));
-        if (hSnap.empty) { tableDiv.innerHTML = "<p style='text-align:center; padding:20px;'>Riwayat kosong.</p>"; return; }
         const qEvent = query(collection(db, "events"), where("status", "==", "open"));
         const evSnap = await getDocs(qEvent);
         const isEventRunning = !evSnap.empty;
@@ -580,31 +587,16 @@ window.downloadStatistikGambar = (e) => {
 };
 
 window.resetAbsensiGass = async (asal) => {
-    const pesan = asal === 'statistik' 
-        ? "Laporan sudah didownload? Riwayat akan dihapus dan kembali ke menu Admin." 
-        : "Hapus semua riwayat absen sekarang?";
-
-    if (confirm(pesan)) {
+    if (confirm("Hapus semua riwayat absen sekarang?")) {
         try {
             const snap = await getDocs(collection(db, "attendance"));
-            if (snap.empty && asal === 'luar') return alert("Riwayat sudah kosong.");
-            
             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-            
-            // Jika dipanggil dari dalam statistik, tutup modalnya
             const modal = document.getElementById('modal-stat');
             if(modal) document.body.removeChild(modal);
-            
             alert("Data Berhasil Dibersihkan!");
-            
-            if(asal === 'statistik') {
-                bukaPanelAdmin(); // Kembali ke menu utama admin
-            } else {
-                renderTabelLaporan(); // Segarkan tabel laporan saja
-            }
-        } catch (e) {
-            alert("Gagal: " + e.message);
-        }
+            if(asal === 'statistik') bukaPanelAdmin();
+            else renderTabelLaporan();
+        } catch (e) { alert("Gagal: " + e.message); }
     }
 };
 
@@ -633,8 +625,10 @@ window.hapusJamaah = async (id, nama) => {
 };
 
 document.getElementById('menu-btn').onclick = (e) => { e.stopPropagation(); document.getElementById('menu-dropdown').classList.toggle('hidden'); };
-window.onclick = () => document.getElementById('menu-dropdown').classList.add('hidden');
-window.promptAdmin = () => { const p = prompt("Pass:"); if(p==="1234") bukaAdmin(); };
+window.onclick = () => {
+    const menu = document.getElementById('menu-dropdown');
+    if(menu) menu.classList.add('hidden');
+};
 
 const initApp = () => {
     const accounts = getSavedAccounts();
