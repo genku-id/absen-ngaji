@@ -44,7 +44,7 @@ window.prosesLoginAdmin = async () => {
 
     try {
         // Cari akun di koleksi 'admins'
-        const q = query(collection(db, "admins"), where("username", "==", user), where("password", "==", pass));
+        const q = query(collection(db, "admins"), where("username", "==", username), where("password", "==", password));
         const snap = await getDocs(q);
 
         if (snap.empty) {
