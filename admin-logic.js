@@ -13,26 +13,27 @@ const dataWilayah = {
 };
 
 // --- MODAL & LOGIN ADMIN ---
+// --- MODAL & LOGIN ADMIN ---
 window.updateTeksTombolAdmin = () => {
     const selDesa = document.getElementById('sel-desa');
     const selKelompok = document.getElementById('sel-kelompok');
     const btn = document.getElementById('btn-konfirmasi-admin');
     
     const desa = selDesa.value;
-    selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
-
+    
     if (desa === "") {
+        selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
         selKelompok.disabled = true;
         btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
         btn.style.background = "#2196F3"; 
     } else {
         selKelompok.disabled = false;
-        const kelompok = dataWilayah[desa] || [];
-        kelompok.forEach(k => {
-            const opt = document.createElement('option');
-            opt.value = k; opt.innerText = k;
-            selKelompok.appendChild(opt);
-        });
+        // Hanya isi jika dropdown masih kosong agar tidak duplikat saat pilih ulang
+        if (selKelompok.innerHTML.includes('-- Pilih Kelompok --')) {
+            const kelompok = dataWilayah[desa] || [];
+            selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Opsional) --</option>' + 
+                                     kelompok.map(k => `<option value="${k}">${k}</option>`).join('');
+        }
 
         if (selKelompok.value === "") {
             btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
@@ -42,6 +43,28 @@ window.updateTeksTombolAdmin = () => {
             btn.style.background = "#2196F3";
         }
     }
+};
+
+window.konfirmasiMasukAdmin = () => {
+    const d = document.getElementById('sel-desa').value;
+    const k = document.getElementById('sel-kelompok').value;
+    
+    // Penentuan Level Admin Otomatis
+    window.currentAdmin = {
+        role: k ? "KELOMPOK" : (d ? "DESA" : "DAERAH"),
+        wilayah: k || d || "SEMUA"
+    };
+
+    // PENGHAPUSAN ULANG PILIHAN (Reset form untuk penggunaan berikutnya)
+    document.getElementById('sel-desa').value = "";
+    document.getElementById('sel-kelompok').innerHTML = '<option value="">-- Pilih Kelompok --</option>';
+    document.getElementById('sel-kelompok').disabled = true;
+    
+    // Tutup Modal
+    document.getElementById('modal-pilih-admin').style.display = 'none';
+    
+    // Muat Panel Admin
+    if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
 };
 
 window.konfirmasiMasukAdmin = () => {
