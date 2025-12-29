@@ -334,26 +334,23 @@ window.formBuatEvent = async () => {
     container.innerHTML = "<p style='text-align:center;'>Memeriksa status event...</p>";
 
     try {
-        // Cari event yang statusnya OPEN dan ownerWilayah-nya COCOK
+        // SESUAI SCREENSHOT: Field di database adalah "wilayah"
         const q = query(
             collection(db, "events"), 
             where("status", "==", "open"), 
-            where("ownerWilayah", "==", wilayah)
+            where("wilayah", "==", wilayah) 
         );
         
         const snap = await getDocs(q);
         
         if (!snap.empty) {
-            // Jika ada event terbuka milik wilayah ini
             const docAktif = snap.docs[0];
             const d = docAktif.data();
             
-            // Tampilkan Barcode
-            // Pastikan fungsi tampilkanBarcode tersedia di app.js kamu
+            // Panggil fungsi tampilkan barcode
             tampilkanBarcode(docAktif.id, d.namaEvent, d.waktu);
             
         } else {
-            // Jika TIDAK ADA event terbuka, tampilkan form buat baru
             container.innerHTML = `
                 <div style="background:#fff3cd; padding:10px; border-radius:5px; margin-bottom:10px; font-size:12px;">
                     Belum ada event aktif untuk <b>${wilayah}</b>
@@ -365,7 +362,7 @@ window.formBuatEvent = async () => {
             `;
         }
     } catch (e) {
-        console.error("Error formBuatEvent:", e);
+        console.error(e);
         container.innerHTML = "Error: " + e.message;
     }
 };
