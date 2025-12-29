@@ -206,37 +206,70 @@ window.mulaiScanner = (userData) => {
 
 async function prosesAbsensi(eventID, userData) {
     try {
-        // 1. Bersihkan ID jika itu scan Izin
         const cleanID = eventID.replace("_IZIN", "");
         
-        // 2. Ambil data asli dari Event tersebut (Kunci Keamanan)
-        const eventDoc = await getDoc(doc(db, "events", cleanID));
-        
-        if (!eventDoc.exists()) {
-            return alert("Error: Data Event tidak ditemukan di database!");
+        // 1. Ambil data event
+        const eventSnap = await getDoc(doc(db, "events", cleanID));
+        if (!eventSnap.exists()) { 
+            alert("EVENT TIDAK DITEMUKAN ATAU SUDAH DITUTUP"); 
+            return showDashboard(userData); 
         }
         
-        const evData = eventDoc.data();
-        // evData.wilayah akan berisi "LENDAH" sesuai data di koleksi events Anda
+        const evData = eventSnap.data();
 
-        // 3. Simpan ke koleksi attendance dengan wilayah yang BENAR
-        await setDoc(doc(db, "attendance", `${cleanID}_${userData.nama.replace(/\s/g, '')}`), {
-            nama: userData.nama,
-            desa: userData.desa,
+        // KUNCI PERBAIKAN: Gunakan 'wilayah', bukan 'ownerWilayah'
+        const wilayahPunyaEvent = evData.wilayah || "SEMUA"; 
+
+        const statusAbsen = eventID.includes("_IZIN") ? "izin" : "hadir";
+        const attID = `${cleanID}_${userData.nama.replace(/\s/g, '')}`;
+
+        // 2. Simpan absensi
+        await setDoc(doc(db, "attendance", attID), {
+            nama: userData.nama, 
+            desa: userData.desa, 
             kelompok: userData.kelompok,
-            status: eventID.includes("_IZIN") ? "izin" : "hadir",
-            eventId: cleanID,
-            // AMBIL DARI DATA EVENT, BUKAN DARI LOGIN ADMIN
-            wilayahEvent: evData.wilayah, 
-            waktu: serverTimestamp()
+            eventId: cleanID, 
+            wilayahEvent: wilayahPunyaEvent, // Sekarang akan tersimpan "LENDAH"
+            waktu: serverTimestamp(), 
+            status: statusAbsen
         });
         
-        // Tampilkan feedback sukses ke user
-        showScanSuccess(userData.nama, eventID.includes("_IZIN") ? "IZIN" : "HADIR");
-        
-    } catch (e) {
-        console.error("Gagal Absensi:", e);
-        alert("Terjadi kesalahan sistem saat scan.");
+        // 3. Feedback Visual
+        const overlay = document.getElementById('success-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+            overlay.innerHTML = `
+                <div class="celebration-wrap">
+                    <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
+                    <div class="text-main">LANCAR<br>BAROKAH!</div>
+                    <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
+                </div>
+            `;
+
+            // Cek apakah fungsi createParticle ada agar tidak error
+            if (typeof createParticle === 'function') {
+                for (let i = 0; i < 50; i++) {
+                    createParticle(overlay);
+                }
+            }
+
+            const sound = document.getElementById('success-sound');
+            if(sound) sound.play().catch(e => console.log("Audio blocked"));
+
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                showDashboard(userData);
+            }, 4000);
+        } else {
+            // Jika overlay tidak ada, langsung ke dashboard saja
+            alert("BERHASIL ABSEN!");
+            showDashboard(userData);
+        }
+
+    } catch (e) { 
+        console.error("Detail Error:", e);
+        alert("Gagal: " + e.message); 
+        showDashboard(userData);
     }
 }
 function createParticle(parent) {
