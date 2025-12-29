@@ -17,9 +17,9 @@ window.updateTeksTombolAdmin = () => {
     const selDesa = document.getElementById('sel-desa');
     const selKelompok = document.getElementById('sel-kelompok');
     const btn = document.getElementById('btn-konfirmasi-admin');
-    
+    if (!selDesa || !selKelompok || !btn) return;
+
     const desa = selDesa.value;
-    
     if (desa === "") {
         selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
         selKelompok.disabled = true;
@@ -27,19 +27,19 @@ window.updateTeksTombolAdmin = () => {
         btn.style.background = "#2196F3"; 
     } else {
         selKelompok.disabled = false;
-        // Hanya isi jika dropdown kelompok masih default atau kosong
-        if (selKelompok.options.length <= 1) {
-            const kelompok = dataWilayah[desa] || [];
+        // Hanya update jika desa berbeda dari cache terakhir
+        if (selKelompok.getAttribute('data-last') !== desa) {
+            const daftar = dataWilayah[desa] || [];
             selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Opsional) --</option>' + 
-                                     kelompok.map(k => `<option value="${k}">${k}</option>`).join('');
+                                     daftar.map(k => `<option value="${k}">${k}</option>`).join('');
+            selKelompok.setAttribute('data-last', desa);
         }
-
         if (selKelompok.value === "") {
             btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
-            btn.style.background = "#4CAF50"; // Warna Hijau untuk Desa
+            btn.style.background = "#4CAF50";
         } else {
             btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${selKelompok.value}`;
-            btn.style.background = "#FF9800"; // Warna Oranye untuk Kelompok
+            btn.style.background = "#FF9800";
         }
     }
 };
@@ -47,25 +47,18 @@ window.updateTeksTombolAdmin = () => {
 window.konfirmasiMasukAdmin = () => {
     const d = document.getElementById('sel-desa').value;
     const k = document.getElementById('sel-kelompok').value;
-    
-    // Penentuan Level Admin Otomatis
     window.currentAdmin = {
         role: k ? "KELOMPOK" : (d ? "DESA" : "DAERAH"),
         wilayah: k || d || "SEMUA"
     };
-
-    // PENGHAPUSAN ULANG PILIHAN (Reset form agar bersih untuk login berikutnya)
+    // Reset Form agar login berikutnya bersih
     document.getElementById('sel-desa').value = "";
     document.getElementById('sel-kelompok').innerHTML = '<option value="">-- Pilih Kelompok --</option>';
     document.getElementById('sel-kelompok').disabled = true;
-    
-    // Tutup Modal
+    document.getElementById('sel-kelompok').removeAttribute('data-last');
     document.getElementById('modal-pilih-admin').style.display = 'none';
-    
-    // Muat Panel Admin
     if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
 };
-
 // --- SIMPAN EVENT TERISOLASI ---
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
@@ -96,11 +89,8 @@ window.lihatLaporan = async () => {
     const { role, wilayah } = window.currentAdmin;
     let desaInduk = role === "DESA" ? wilayah : "";
     if (role === "KELOMPOK") {
-        for (let d in dataWilayah) {
-            if (dataWilayah[d].includes(wilayah)) { desaInduk = d; break; }
-        }
+        for (let d in dataWilayah) { if (dataWilayah[d].includes(wilayah)) { desaInduk = d; break; } }
     }
-
     container.innerHTML = `
         <h3>Laporan ${role} ${wilayah}</h3>
         <div class="filter-box">
@@ -118,81 +108,49 @@ window.lihatLaporan = async () => {
             </div>
         </div>
         <div id="tabel-container"></div>`;
-    if (role === "DESA") {
-        const fKel = document.getElementById('f-kelompok');
-        const daftar = dataWilayah[wilayah] || [];
-        fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + daftar.map(k => `<option value="${k}">${k}</option>`).join('');
-    }
     window.renderTabelLaporan();
 };
+
 window.renderTabelLaporan = async () => {
-    const fD = document.getElementById('f-desa').value;
-    const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
-    tableDiv.innerHTML = "Memuat data...";
+    if (!tableDiv) return;
+    tableDiv.innerHTML = "Menyinkronkan data...";
     try {
-        // 1. Cek dulu apakah ada Event yang sedang OPEN
         const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
         const evSnap = await getDocs(qEv);
-        const isEventRunning = !evSnap.empty;
-        // 2. Ambil Riwayat Absen
-        let qAbsen = collection(db, "attendance");
-        if (role === "KELOMPOK") qAbsen = query(qAbsen, where("kelompok", "==", wilayah));
-        else if (role === "DESA") qAbsen = query(qAbsen, where("desa", "==", wilayah));
-        const hSnap = await getDocs(qAbsen);
-        // KUNCI: Jika database attendance kosong (setelah reset), SEMBUNYIKAN TABEL
-        if (hSnap.empty) {
-            tableDiv.innerHTML = ""; 
-            window.currentListData = [];
-            return;
-        }
-        const attendanceData = {};
-        hSnap.forEach(doc => { 
-            const d = doc.data();
-            let jam = "-";
-            if (d.waktu) {
-                const date = d.waktu.toDate();
-                jam = date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
-            }
-            attendanceData[d.nama] = { status: d.status, jam: jam }; 
-        });
-        // 3. Ambil Master Jamaah
+        const hSnap = await getDocs(collection(db, "attendance"));
+        const allAtt = hSnap.docs.map(doc => doc.data());
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
         const mSnap = await getDocs(qM);
         let listJamaah = [];
         mSnap.forEach(doc => {
-            const data = doc.data();
-            const att = attendanceData[data.nama];
-            listJamaah.push({
-                ...data,
-                status: att ? att.status : "alfa",
-                jam: att ? att.jam : "-"
-            });
+            const j = doc.data();
+            const sini = allAtt.find(a => a.nama === j.nama && a.wilayahEvent === wilayah);
+            const luar = allAtt.find(a => a.nama === j.nama && a.wilayahEvent !== wilayah);
+            let status = "alfa", jam = "-", color = "#ffebee", txt = "❌ ALFA";
+            if (sini) {
+                status = sini.status;
+                jam = sini.waktu ? sini.waktu.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "-";
+            } else if (luar) {
+                status = "tugas_luar"; txt = "🚀 TUGAS LUAR"; color = "#e3f2fd";
+            }
+            if (status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
+            else if (status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+            listJamaah.push({ ...j, status, jam, color, txt });
         });
         window.currentListData = listJamaah;
-        // 4. Render Tabel dengan Logika Filter
-        let html = `<table><thead><tr><th>Nama</th><th>Waktu</th><th>Status</th></tr></thead><tbody>`;
-        let adaDataDitampilkan = false;
+        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>`;
+        let adaData = false;
         listJamaah.forEach(d => {
-            // ALUR: Jika event masih jalan (OPEN), yang ALFA disembunyikan
-            if (isEventRunning && d.status === "alfa") return;
-            adaDataDitampilkan = true;
-            let color = "#ffebee", txt = "❌ ALFA";
-            if(d.status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
-            else if(d.status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
-            html += `<tr style="background:${color}">
-                        <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
-                        <td style="text-align:center;">${d.jam}</td>
-                        <td style="text-align:center;"><b>${txt}</b></td>
-                    </tr>`;
+            if (!evSnap.empty && d.status === "alfa") return; // Sembunyikan Alfa jika event jalan
+            adaData = true;
+            html += `<tr style="background:${d.color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td align="center">${d.jam}</td><td align="center"><b>${d.txt}</b></td></tr>`;
         });
-        tableDiv.innerHTML = adaDataDitampilkan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px; color:gray;'>Belum ada yang scan.</p>";
-    } catch (e) {
-        tableDiv.innerHTML = "Error: " + e.message;
-    }
+        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p align='center' style='padding:20px;'>Belum ada data.</p>";
+    } catch (e) { tableDiv.innerHTML = e.message; }
 };
 window.downloadLaporan = () => {
     if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan data dahulu!");
@@ -253,27 +211,19 @@ window.downloadStatistikGambar = () => {
 };
 
 window.resetAbsensiGass = async (asal) => {
-    const { role, wilayah } = window.currentAdmin;
-    if (confirm("⚠️ PERINGATAN: Semua data absen akan dihapus dan laporan akan disembunyikan kembali untuk acara baru.")) {
+    const { wilayah, role } = window.currentAdmin;
+    if (confirm("Reset data wilayah " + wilayah + "?")) {
         try {
-            // 1. Cari & Hapus data attendance
-            let q = query(collection(db, "attendance"), where("desa", "==", wilayah));
-            if (role === "KELOMPOK") q = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
+            let q = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
             if (role === "DAERAH") q = collection(db, "attendance");
             const snap = await getDocs(q);
             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-            // 2. KUNCI: Sembunyikan Tabel secara fisik dari layar
             const tableDiv = document.getElementById('tabel-container');
             if (tableDiv) tableDiv.innerHTML = ""; 
-            window.currentListData = []; // Bersihkan memori
-            // 3. Tutup modal statistik
-            const modal = document.getElementById('modal-stat');
-            if (modal) document.body.removeChild(modal);
-            alert("✅ Berhasil Reset! Tabel laporan telah disembunyikan.");
-            // Kembali ke tab Event
-            if (typeof window.switchAdminTab === 'function') window.switchAdminTab('ev');
-        } catch (e) {
-            alert("❌ Gagal: " + e.message);
-        }
+            window.currentListData = [];
+            if (asal === 'statistik' && document.getElementById('modal-stat')) document.body.removeChild(document.getElementById('modal-stat'));
+            alert("Reset Berhasil!");
+            window.switchAdminTab('ev');
+        } catch (e) { alert(e.message); }
     }
 };
