@@ -14,22 +14,26 @@ const dataWilayah = {
 
 // --- MODAL & LOGIN ADMIN ---
 window.bukaModalPilihAdmin = () => {
-    // 1. Hapus Cache Admin & Desa Terakhir
+    // 1. Reset Identitas Admin di Memori
     window.currentAdmin = null;
+
+    // 2. Ambil elemen-elemen UI
     const selDesa = document.getElementById('sel-desa');
     const selKelompok = document.getElementById('sel-kelompok');
     const btn = document.getElementById('btn-konfirmasi-admin');
 
-    // 2. Reset Visual ke Posisi Nol (Daerah)
+    // 3. PAKSA VISUAL KEMBALI KE DAERAH (BIRU)
     if (selDesa) selDesa.value = "";
     if (selKelompok) {
         selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
         selKelompok.disabled = true;
-        selKelompok.removeAttribute('data-last'); // Kunci agar dropdown tidak macet
+        selKelompok.removeAttribute('data-last'); // Hapus jejak desa terakhir
     }
+    
+    // Reset Tombol ke Biru (Admin Daerah) secara manual agar tidak orange lagi
     if (btn) {
         btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
-        btn.style.background = "#2196F3";
+        btn.style.background = "#2196F3"; // Biru Default
     }
 
     document.getElementById('modal-pilih-admin').style.display = 'flex';
@@ -45,10 +49,9 @@ window.updateTeksTombolAdmin = () => {
         selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
         selKelompok.disabled = true;
         btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
-        btn.style.background = "#2196F3"; 
+        btn.style.background = "#2196F3"; // Biru
     } else {
         selKelompok.disabled = false;
-        // Hanya isi ulang kelompok jika desa berubah
         if (selKelompok.getAttribute('data-last') !== desa) {
             const daftar = dataWilayah[desa] || [];
             selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Opsional) --</option>' + 
@@ -56,12 +59,13 @@ window.updateTeksTombolAdmin = () => {
             selKelompok.setAttribute('data-last', desa);
         }
 
+        // Sinkronisasi Warna Berdasarkan Pilihan
         if (selKelompok.value === "") {
             btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
-            btn.style.background = "#4CAF50";
+            btn.style.background = "#4CAF50"; // Hijau Desa
         } else {
             btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${selKelompok.value}`;
-            btn.style.background = "#FF9800";
+            btn.style.background = "#FF9800"; // Orange Kelompok
         }
     }
 };
@@ -75,12 +79,6 @@ window.konfirmasiMasukAdmin = () => {
         wilayah: k || d || "SEMUA"
     };
 
-    // Bersihkan form segera setelah login (Double Clean)
-    document.getElementById('sel-desa').value = "";
-    document.getElementById('sel-kelompok').innerHTML = '<option value="">-- Pilih Kelompok --</option>';
-    document.getElementById('sel-kelompok').disabled = true;
-    document.getElementById('sel-kelompok').removeAttribute('data-last');
-    
     document.getElementById('modal-pilih-admin').style.display = 'none';
     if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
 };
@@ -108,50 +106,84 @@ window.simpanEvent = async () => {
     }
 };
 
-// --- LAPORAN TERISOLASI ---
-// --- 2. WINDOW LAPORAN: PAKSA BERSIH SETIAP BUKA ---
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
     const { role, wilayah } = window.currentAdmin;
 
-    // Bersihkan tampilan lama agar tidak nyangkut
+    // Cari Desa Induk jika login sebagai Admin Desa/Kelompok
+    let desaInduk = role === "DESA" ? wilayah : "";
+    if (role === "KELOMPOK") {
+        for (let d in dataWilayah) {
+            if (dataWilayah[d].includes(wilayah)) { desaInduk = d; break; }
+        }
+    }
+
     container.innerHTML = `
-        <div style="padding:15px; background:#f8f9fa; border-radius:10px;">
-            <h3>Laporan ${role} ${wilayah}</h3>
-            <p style="font-size:12px; color:gray;">Silakan pilih filter dan klik tampilkan untuk melihat data terbaru.</p>
+        <h3>Laporan ${role} ${wilayah}</h3>
+        <div class="filter-box">
+            <select id="f-desa" ${role !== 'DAERAH' ? 'disabled' : ''} onchange="updateFilterKelompok()">
+                <option value="${desaInduk}">${desaInduk || '-- Semua Desa --'}</option>
+                ${role === 'DAERAH' ? Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('') : ''}
+            </select>
             
-            <div class="filter-box" style="margin-top:10px;">
-                <button onclick="renderTabelLaporan()" class="primary-btn" style="width:100%; padding:12px;">🔍 TAMPILKAN LAPORAN SEKARANG</button>
-                
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <button onclick="downloadLaporan()" class="secondary-btn" style="flex:1;">Excel</button>
-                    <button onclick="bukaModalStatistik()" class="primary-btn" style="flex:1; background:#28a745;">Statistik</button>
-                </div>
+            <select id="f-kelompok" ${role === 'KELOMPOK' ? 'disabled' : ''} style="margin-top:10px;">
+                <option value="${role === 'KELOMPOK' ? wilayah : ''}">${role === 'KELOMPOK' ? wilayah : '-- Semua Kelompok --'}</option>
+            </select>
+
+            <button onclick="renderTabelLaporan()" class="primary-btn" style="margin-top:10px; width:100%;">Tampilkan Detail</button>
+            
+            <div style="display:flex; gap:10px; margin-top:10px;">
+                <button onclick="downloadLaporan()" class="secondary-btn" style="flex:1;">Excel</button>
+                <button onclick="bukaModalStatistik()" class="primary-btn" style="flex:1; background:#28a745;">Statistik</button>
             </div>
         </div>
-        <div id="tabel-container" style="margin-top:20px;"></div>`;
+        <div id="tabel-container"></div>`;
+
+    // Jalankan pengisian dropdown kelompok awal jika Admin Desa
+    if (role === "DESA") {
+        const fKel = document.getElementById('f-kelompok');
+        const daftar = dataWilayah[wilayah] || [];
+        fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + daftar.map(k => `<option value="${k}">${k}</option>`).join('');
+    }
+    
+    window.renderTabelLaporan();
+};
+
+// Fungsi pembantu untuk dropdown filter di tab laporan
+window.updateFilterKelompok = () => {
+    const d = document.getElementById('f-desa').value;
+    const fK = document.getElementById('f-kelompok');
+    if (d && fK) {
+        const daftar = dataWilayah[d] || [];
+        fK.innerHTML = '<option value="">-- Semua Kelompok --</option>' + daftar.map(k => `<option value="${k}">${k}</option>`).join('');
+    }
 };
 
 window.renderTabelLaporan = async () => {
+    const fD = document.getElementById('f-desa').value;
+    const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
-    tableDiv.innerHTML = "<p align='center'>Sedang mengambil data...</p>";
+    if (!tableDiv) return;
+
+    tableDiv.innerHTML = "Menyinkronkan data...";
 
     try {
-        // Cek apakah ada event aktif untuk wilayah ini
         const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
         const evSnap = await getDocs(qEv);
-        
-        // Ambil data absensi
         const hSnap = await getDocs(collection(db, "attendance"));
         const allAtt = hSnap.docs.map(doc => doc.data());
 
-        // Ambil Master Jamaah
+        // Master Jamaah dengan Filter dari UI
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
-        const mSnap = await getDocs(qM);
+        
+        // Tambahan filter manual dari dropdown laporan
+        if(fD && role === "DAERAH") qM = query(qM, where("desa", "==", fD));
+        if(fK && (role === "DAERAH" || role === "DESA")) qM = query(qM, where("kelompok", "==", fK));
 
+        const mSnap = await getDocs(qM);
         let listJamaah = [];
         mSnap.forEach(doc => {
             const j = doc.data();
@@ -171,17 +203,15 @@ window.renderTabelLaporan = async () => {
         });
 
         window.currentListData = listJamaah;
-
-        // Render tabel. Jika event sedang jalan, Alfa tetap disembunyikan
         let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>`;
         let adaData = false;
         listJamaah.forEach(d => {
             if (!evSnap.empty && d.status === "alfa") return;
             adaData = true;
-            html += `<tr style="background:${d.color}"><td><b>${d.nama}</b></td><td align="center">${d.jam}</td><td align="center">${d.txt}</td></tr>`;
+            html += `<tr style="background:${d.color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td align="center">${d.jam}</td><td align="center"><b>${d.txt}</b></td></tr>`;
         });
-        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p align='center'>Belum ada data masuk.</p>";
-    } catch (e) { tableDiv.innerHTML = "Gagal memuat: " + e.message; }
+        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p align='center' style='padding:20px;'>Belum ada data masuk.</p>";
+    } catch (e) { tableDiv.innerHTML = e.message; }
 };
 window.downloadLaporan = () => {
     if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan data dahulu!");
