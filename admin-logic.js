@@ -133,87 +133,108 @@ window.renderTabelLaporan = async () => {
     tableDiv.innerHTML = "Memuat data...";
 
     try {
-        // 1. Ambil Riwayat Absen berdasarkan Role Admin
+        // 1. Ambil Riwayat Absen
         let qAbsen = collection(db, "attendance");
-
-        if (role === "KELOMPOK") {
-            // Jika Admin Kelompok, cari yang field kelompok-nya cocok
-            qAbsen = query(qAbsen, where("kelompok", "==", wilayah));
-        } else if (role === "DESA") {
-            // Jika Admin Desa, cari yang field desa-nya cocok (Sesuai screenshot: desa: "WATES")
-            qAbsen = query(qAbsen, where("desa", "==", wilayah));
-        }
-        // Jika DAERAH, tidak perlu filter (ambil semua)
+        if (role === "KELOMPOK") qAbsen = query(qAbsen, where("kelompok", "==", wilayah));
+        else if (role === "DESA") qAbsen = query(qAbsen, where("desa", "==", wilayah));
 
         const hSnap = await getDocs(qAbsen);
-
-        // Jika riwayat kosong
-        if (hSnap.empty) {
-            tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:gray;'>Data absensi tidak ditemukan.</p>";
-            window.currentListData = []; 
-            return;
-        }
-
-        // 2. Cek status event (untuk menentukan siapa yang ALFA)
-        const qEvent = query(
-            collection(db, "events"), 
-            where("status", "==", "open"), 
-            where("wilayah", "==", wilayah)
-        );
-        const evSnap = await getDocs(qEvent);
-        const isEventRunning = !evSnap.empty;
-
-        const statusMap = {};
+        
+        // Simpan status dan waktu ke dalam map
+        const attendanceData = {};
         hSnap.forEach(doc => { 
             const d = doc.data();
-            statusMap[d.nama] = d.status; 
+            // Format waktu jika ada
+            let jam = "-";
+            if (d.waktu) {
+                const date = d.waktu.toDate();
+                jam = date.getHours().toString().padStart(2, '0') + ":" + 
+                      date.getMinutes().toString().padStart(2, '0');
+            }
+            attendanceData[d.nama] = { status: d.status, jam: jam }; 
         });
 
-        // 3. Ambil Master Jamaah untuk wilayah ini
+        // 2. Ambil Master Jamaah
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
         
-        // Tambahan filter dari dropdown laporan (jika admin ganti-ganti filter)
+        // Filter tambahan dari dropdown
         if(fD && role === "DAERAH") qM = query(qM, where("desa", "==", fD));
         if(fK && (role === "DAERAH" || role === "DESA")) qM = query(qM, where("kelompok", "==", fK));
 
         const mSnap = await getDocs(qM);
         let listJamaah = [];
-        mSnap.forEach(doc => listJamaah.push(doc.data()));
-        
-        // Simpan ke global untuk statistik
-        window.currentListData = listJamaah;
-
-        // 4. Render Tabel
-        let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
-        let adaTampilan = false;
-
-        listJamaah.forEach(d => {
-            const s = statusMap[d.nama];
-            
-            // Jika event jalan, hanya tampilkan yang sudah scan
-            if (isEventRunning && !s) return;
-
-            adaTampilan = true;
-            let color = "#ffebee", txt = "❌ ALFA";
-            if(s === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
-            else if(s === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
-
-            html += `<tr style="background:${color}">
-                        <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
-                        <td style="text-align:center;"><b>${txt}</b></td>
-                     </tr>`;
+        mSnap.forEach(doc => {
+            const data = doc.data();
+            const att = attendanceData[data.nama];
+            // Gabungkan data untuk statistik & excel
+            listJamaah.push({
+                ...data,
+                status: att ? att.status : "alfa",
+                jam: att ? att.jam : "-"
+            });
         });
 
-        tableDiv.innerHTML = adaTampilan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px;'>Belum ada data masuk.</p>";
+        // KUNCI: Simpan ke global agar tombol Statistik & Excel bisa baca
+        window.currentListData = listJamaah;
+
+        if (listJamaah.length === 0) {
+            tableDiv.innerHTML = "Data kosong.";
+            return;
+        }
+
+        // 3. Render Tabel (Update Header: Tambah Kolom Waktu)
+        let html = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nama</th>
+                        <th>Waktu</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+        listJamaah.forEach(d => {
+            let color = "#ffebee", txt = "❌ ALFA";
+            if(d.status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
+            else if(d.status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+
+            html += `
+                <tr style="background:${color}">
+                    <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                    <td style="text-align:center;">${d.jam}</td>
+                    <td style="text-align:center;"><b>${txt}</b></td>
+                </tr>`;
+        });
+
+        tableDiv.innerHTML = html + `</tbody></table>`;
 
     } catch (e) {
-        console.error(e);
         tableDiv.innerHTML = "Error: " + e.message;
     }
 };
+window.downloadLaporan = () => {
+    if (!window.currentListData || window.currentListData.length === 0) {
+        return alert("Tampilkan data terlebih dahulu!");
+    }
 
+    let csv = "Nama,Desa,Kelompok,Waktu,Status\n";
+    window.currentListData.forEach(row => {
+        csv += `${row.nama},${row.desa},${row.kelompok},${row.jam},${row.status.toUpperCase()}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.setAttribute('hidden', '');
+    a.setAttribute('href', url);
+    a.setAttribute('download', `Laporan_Absensi_${new Date().toLocaleDateString()}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+};
 // --- RESET TERISOLASI ---
 window.resetAbsensiGass = async (asal) => {
     const { wilayah } = window.currentAdmin;
