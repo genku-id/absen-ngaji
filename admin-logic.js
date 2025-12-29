@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import { 
     collection, getDocs, query, where, addDoc, 
-    doc, deleteDoc, serverTimestamp 
+    doc, deleteDoc, serverTimestamp, getDoc 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const dataWilayah = {
@@ -12,14 +12,13 @@ const dataWilayah = {
     "SAMIGALUH": ["PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO"]
 };
 
-// --- MODAL & LOGIN ADMIN ---
+// --- 1. MODAL LOGIN (FIX MACET & RESET DROPDOWN) ---
 window.updateTeksTombolAdmin = () => {
     const selDesa = document.getElementById('sel-desa');
     const selKelompok = document.getElementById('sel-kelompok');
     const btn = document.getElementById('btn-konfirmasi-admin');
-    
     const desa = selDesa.value;
-    
+
     if (desa === "") {
         selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
         selKelompok.disabled = true;
@@ -27,19 +26,18 @@ window.updateTeksTombolAdmin = () => {
         btn.style.background = "#2196F3"; 
     } else {
         selKelompok.disabled = false;
-        // Hanya isi jika dropdown kelompok masih default atau kosong
-        if (selKelompok.options.length <= 1) {
-            const kelompok = dataWilayah[desa] || [];
-            selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Opsional) --</option>' + 
-                                     kelompok.map(k => `<option value="${k}">${k}</option>`).join('');
-        }
-
+        // Reset isi kelompok setiap desa berubah agar tidak nyangkut data desa lain
+        const daftar = dataWilayah[desa] || [];
+        selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Opsional) --</option>' + 
+                                 daftar.map(k => `<option value="${k}">${k}</option>`).join('');
+        
+        // Atur teks tombol sesuai pilihan
         if (selKelompok.value === "") {
             btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
-            btn.style.background = "#4CAF50"; // Warna Hijau untuk Desa
+            btn.style.background = "#4CAF50";
         } else {
             btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${selKelompok.value}`;
-            btn.style.background = "#FF9800"; // Warna Oranye untuk Kelompok
+            btn.style.background = "#FF9800";
         }
     }
 };
@@ -48,25 +46,21 @@ window.konfirmasiMasukAdmin = () => {
     const d = document.getElementById('sel-desa').value;
     const k = document.getElementById('sel-kelompok').value;
     
-    // Penentuan Level Admin Otomatis
     window.currentAdmin = {
         role: k ? "KELOMPOK" : (d ? "DESA" : "DAERAH"),
         wilayah: k || d || "SEMUA"
     };
 
-    // PENGHAPUSAN ULANG PILIHAN (Reset form agar bersih untuk login berikutnya)
+    // Bersihkan form agar saat admin logout/pindah, pilihan kembali ke awal
     document.getElementById('sel-desa').value = "";
     document.getElementById('sel-kelompok').innerHTML = '<option value="">-- Pilih Kelompok --</option>';
     document.getElementById('sel-kelompok').disabled = true;
-    
-    // Tutup Modal
     document.getElementById('modal-pilih-admin').style.display = 'none';
     
-    // Muat Panel Admin
     if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
 };
 
-// --- SIMPAN EVENT TERISOLASI ---
+// --- 2. SIMPAN EVENT ---
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const waktu = document.getElementById('ev-waktu').value;
@@ -80,20 +74,19 @@ window.simpanEvent = async () => {
             waktu: waktu,
             status: "open",
             level: role,
-            wilayah: wilayah,
+            wilayah: wilayah, 
             createdAt: serverTimestamp()
         });
         alert("Event Berhasil Dibuka!");
         window.switchAdminTab('ev'); 
-    } catch (e) {
-        alert("Gagal: " + e.message);
-    }
+    } catch (e) { alert("Gagal: " + e.message); }
 };
 
-// --- LAPORAN TERISOLASI ---
+// --- 3. LAPORAN (DENGAN IZIN OTOMATIS) ---
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
     const { role, wilayah } = window.currentAdmin;
+
     let desaInduk = role === "DESA" ? wilayah : "";
     if (role === "KELOMPOK") {
         for (let d in dataWilayah) {
@@ -118,82 +111,109 @@ window.lihatLaporan = async () => {
             </div>
         </div>
         <div id="tabel-container"></div>`;
-    if (role === "DESA") {
-        const fKel = document.getElementById('f-kelompok');
-        const daftar = dataWilayah[wilayah] || [];
-        fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + daftar.map(k => `<option value="${k}">${k}</option>`).join('');
-    }
     window.renderTabelLaporan();
 };
+
 window.renderTabelLaporan = async () => {
-    const fD = document.getElementById('f-desa').value;
-    const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
-    tableDiv.innerHTML = "Memuat data...";
+    tableDiv.innerHTML = "Menyusun laporan...";
+
     try {
-        // 1. Cek dulu apakah ada Event yang sedang OPEN
+        // A. Cek Event Aktif milik admin ini
         const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
         const evSnap = await getDocs(qEv);
-        const isEventRunning = !evSnap.empty;
-        // 2. Ambil Riwayat Absen
-        let qAbsen = collection(db, "attendance");
-        if (role === "KELOMPOK") qAbsen = query(qAbsen, where("kelompok", "==", wilayah));
-        else if (role === "DESA") qAbsen = query(qAbsen, where("desa", "==", wilayah));
-        const hSnap = await getDocs(qAbsen);
-        // KUNCI: Jika database attendance kosong (setelah reset), SEMBUNYIKAN TABEL
+        
+        // B. Ambil Seluruh Data Absensi (untuk cek lintas event/izin otomatis)
+        const hSnap = await getDocs(collection(db, "attendance"));
+        
         if (hSnap.empty) {
             tableDiv.innerHTML = ""; 
             window.currentListData = [];
             return;
         }
-        const attendanceData = {};
-        hSnap.forEach(doc => { 
-            const d = doc.data();
-            let jam = "-";
-            if (d.waktu) {
-                const date = d.waktu.toDate();
-                jam = date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
-            }
-            attendanceData[d.nama] = { status: d.status, jam: jam }; 
-        });
-        // 3. Ambil Master Jamaah
+
+        const allAttendance = [];
+        hSnap.forEach(doc => allAttendance.push(doc.data()));
+
+        // C. Ambil Master Jamaah sesuai wilayah admin
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
         const mSnap = await getDocs(qM);
+
         let listJamaah = [];
         mSnap.forEach(doc => {
-            const data = doc.data();
-            const att = attendanceData[data.nama];
-            listJamaah.push({
-                ...data,
-                status: att ? att.status : "alfa",
-                jam: att ? att.jam : "-"
-            });
+            const jamaah = doc.data();
+            // Cari apakah jamaah absen di event milik admin ini
+            const absenSini = allAttendance.find(a => a.nama === jamaah.nama && a.wilayahEvent === wilayah);
+            // Cari apakah jamaah absen di event level lain (Izin Otomatis)
+            const absenLain = allAttendance.find(a => a.nama === jamaah.nama && a.wilayahEvent !== wilayah);
+
+            let status = "alfa", jam = "-", color = "#ffebee", txt = "❌ ALFA";
+
+            if (absenSini) {
+                status = absenSini.status;
+                jam = absenSini.waktu ? absenSini.waktu.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "-";
+            } else if (absenLain) {
+                status = "izin_tugas";
+                txt = "🚀 TUGAS LUAR";
+                color = "#e3f2fd";
+            }
+
+            if (status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
+            else if (status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+
+            listJamaah.push({ ...jamaah, status, jam, color, txt });
         });
+
         window.currentListData = listJamaah;
-        // 4. Render Tabel dengan Logika Filter
-        let html = `<table><thead><tr><th>Nama</th><th>Waktu</th><th>Status</th></tr></thead><tbody>`;
-        let adaDataDitampilkan = false;
+
+        // D. Render Tabel
+        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>`;
+        let adaData = false;
         listJamaah.forEach(d => {
-            // ALUR: Jika event masih jalan (OPEN), yang ALFA disembunyikan
-            if (isEventRunning && d.status === "alfa") return;
-            adaDataDitampilkan = true;
-            let color = "#ffebee", txt = "❌ ALFA";
-            if(d.status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
-            else if(d.status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
-            html += `<tr style="background:${color}">
-                        <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
-                        <td style="text-align:center;">${d.jam}</td>
-                        <td style="text-align:center;"><b>${txt}</b></td>
-                    </tr>`;
+            // Jika event sedang jalan, sembunyikan yang masih ALFA
+            if (!evSnap.empty && d.status === "alfa") return;
+            adaData = true;
+            html += `<tr style="background:${d.color}">
+                <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                <td align="center">${d.jam}</td>
+                <td align="center"><b>${d.txt}</b></td>
+            </tr>`;
         });
-        tableDiv.innerHTML = adaDataDitampilkan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px; color:gray;'>Belum ada yang scan.</p>";
-    } catch (e) {
-        tableDiv.innerHTML = "Error: " + e.message;
+
+        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px;'>Belum ada data scan.</p>";
+    } catch (e) { tableDiv.innerHTML = "Error: " + e.message; }
+};
+
+// --- 4. RESET BERDASIKAN ID EVENT (AMAN) ---
+window.resetAbsensiGass = async (asal) => {
+    const { role, wilayah } = window.currentAdmin;
+    if (confirm("⚠️ Hapus riwayat absen wilayah ini? Data wilayah lain aman.")) {
+        try {
+            let q = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
+            if (role === "DAERAH") q = collection(db, "attendance");
+
+            const snap = await getDocs(q);
+            await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+
+            const tableDiv = document.getElementById('tabel-container');
+            if (tableDiv) tableDiv.innerHTML = ""; 
+            window.currentListData = [];
+            
+            if (asal === 'statistik') {
+                const modal = document.getElementById('modal-stat');
+                if (modal) document.body.removeChild(modal);
+            }
+
+            alert("✅ Berhasil Reset!");
+            window.switchAdminTab('ev');
+        } catch (e) { alert("Error: " + e.message); }
     }
 };
+
+// --- FUNGSI PENDUKUNG (TETAP SAMA) ---
 window.downloadLaporan = () => {
     if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan data dahulu!");
     let csv = "Nama,Desa,Kelompok,Waktu,Status\n";
@@ -220,6 +240,7 @@ window.bukaModalStatistik = () => {
         rekap[key].t++;
         if (d.status === 'hadir') rekap[key].h++;
         else if (d.status === 'izin') rekap[key].i++;
+        else if (d.status === 'izin_tugas') rekap[key].h++; // Tugas luar dianggap hadir
         else rekap[key].a++;
     });
 
@@ -250,30 +271,4 @@ window.downloadStatistikGambar = () => {
     printWindow.document.write(`<html><head><style>table{width:100%;border-collapse:collapse;} th,td{border:1px solid black;padding:8px;text-align:center;}</style></head><body>${content}</body></html>`);
     printWindow.document.close();
     printWindow.print();
-};
-
-window.resetAbsensiGass = async (asal) => {
-    const { role, wilayah } = window.currentAdmin;
-    if (confirm("⚠️ PERINGATAN: Semua data absen akan dihapus dan laporan akan disembunyikan kembali untuk acara baru.")) {
-        try {
-            // 1. Cari & Hapus data attendance
-            let q = query(collection(db, "attendance"), where("desa", "==", wilayah));
-            if (role === "KELOMPOK") q = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
-            if (role === "DAERAH") q = collection(db, "attendance");
-            const snap = await getDocs(q);
-            await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-            // 2. KUNCI: Sembunyikan Tabel secara fisik dari layar
-            const tableDiv = document.getElementById('tabel-container');
-            if (tableDiv) tableDiv.innerHTML = ""; 
-            window.currentListData = []; // Bersihkan memori
-            // 3. Tutup modal statistik
-            const modal = document.getElementById('modal-stat');
-            if (modal) document.body.removeChild(modal);
-            alert("✅ Berhasil Reset! Tabel laporan telah disembunyikan.");
-            // Kembali ke tab Event
-            if (typeof window.switchAdminTab === 'function') window.switchAdminTab('ev');
-        } catch (e) {
-            alert("❌ Gagal: " + e.message);
-        }
-    }
 };
