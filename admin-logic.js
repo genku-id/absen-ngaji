@@ -72,13 +72,13 @@ window.simpanEvent = async () => {
 
     try {
         await addDoc(collection(db, "events"), {
-            namaEvent: nama,
-            waktu: waktu,
-            status: "open",
-            ownerRole: role,
-            ownerWilayah: wilayah, // Data hanya milik wilayah ini
-            createdAt: serverTimestamp()
-        });
+        namaEvent: nama, 
+        waktu: waktu,
+        status: "open",
+        ownerWilayah: wilayah, 
+        ownerRole: role,
+        createdAt: serverTimestamp()
+    });
         alert("Event Berhasil Dibuka!");
         window.bukaPanelAdmin();
     } catch (e) { alert("Gagal: " + e.message); }
