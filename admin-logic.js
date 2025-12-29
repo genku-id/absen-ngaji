@@ -13,74 +13,67 @@ const dataWilayah = {
 };
 
 // --- MODAL & LOGIN ADMIN ---
+// --- 1. WINDOW LOGIN AKUN (PENGGANTI DROPDOWN) ---
+
 window.bukaModalPilihAdmin = () => {
-    // 1. Reset Identitas Admin di Memori
-    window.currentAdmin = null;
-
-    // 2. Ambil elemen-elemen UI
-    const selDesa = document.getElementById('sel-desa');
-    const selKelompok = document.getElementById('sel-kelompok');
-    const btn = document.getElementById('btn-konfirmasi-admin');
-
-    // 3. PAKSA VISUAL KEMBALI KE DAERAH (BIRU)
-    if (selDesa) selDesa.value = "";
-    if (selKelompok) {
-        selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
-        selKelompok.disabled = true;
-        selKelompok.removeAttribute('data-last'); // Hapus jejak desa terakhir
-    }
+    // Bersihkan modal dan ganti isinya dengan form login
+    const modalBody = document.querySelector('#modal-pilih-admin .modal-content'); 
+    // Ganti selektor di atas sesuai ID pembungkus konten modal kamu
     
-    // Reset Tombol ke Biru (Admin Daerah) secara manual agar tidak orange lagi
-    if (btn) {
-        btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
-        btn.style.background = "#2196F3"; // Biru Default
-    }
-
+    modalBody.innerHTML = `
+        <h3 style="margin-bottom:20px;">Login Admin</h3>
+        <input type="text" id="admin-user" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
+        <input type="password" id="admin-pass" placeholder="Password" style="width:100%; padding:12px; margin-bottom:20px; border-radius:5px; border:1px solid #ccc;">
+        
+        <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" style="width:100%; background:#2196F3;">MASUK KE PANEL</button>
+        <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="width:100%; margin-top:10px; background:none; border:none; color:red; cursor:pointer;">Batal</button>
+    `;
+    
     document.getElementById('modal-pilih-admin').style.display = 'flex';
 };
 
-window.updateTeksTombolAdmin = () => {
-    const selDesa = document.getElementById('sel-desa');
-    const selKelompok = document.getElementById('sel-kelompok');
-    const btn = document.getElementById('btn-konfirmasi-admin');
-    const desa = selDesa.value;
+window.prosesLoginAdmin = async () => {
+    const user = document.getElementById('admin-user').value;
+    const pass = document.getElementById('admin-pass').value;
+    const btn = document.getElementById('btn-login-admin');
 
-    if (desa === "") {
-        selKelompok.innerHTML = '<option value="">-- Pilih Kelompok --</option>';
-        selKelompok.disabled = true;
-        btn.innerText = "MASUK SEBAGAI ADMIN DAERAH";
-        btn.style.background = "#2196F3"; // Biru
-    } else {
-        selKelompok.disabled = false;
-        if (selKelompok.getAttribute('data-last') !== desa) {
-            const daftar = dataWilayah[desa] || [];
-            selKelompok.innerHTML = '<option value="">-- Pilih Kelompok (Opsional) --</option>' + 
-                                     daftar.map(k => `<option value="${k}">${k}</option>`).join('');
-            selKelompok.setAttribute('data-last', desa);
+    if (!user || !pass) return alert("Isi username & password!");
+
+    btn.innerText = "Memverifikasi...";
+    btn.disabled = true;
+
+    try {
+        // Cari akun di koleksi 'admins'
+        const q = query(collection(db, "admins"), where("username", "==", user), where("password", "==", pass));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+            alert("Username atau Password Salah!");
+            btn.innerText = "MASUK KE PANEL";
+            btn.disabled = false;
+            return;
         }
 
-        // Sinkronisasi Warna Berdasarkan Pilihan
-        if (selKelompok.value === "") {
-            btn.innerText = `MASUK SEBAGAI ADMIN DESA ${desa}`;
-            btn.style.background = "#4CAF50"; // Hijau Desa
-        } else {
-            btn.innerText = `MASUK SEBAGAI ADMIN KELOMPOK ${selKelompok.value}`;
-            btn.style.background = "#FF9800"; // Orange Kelompok
-        }
+        // Ambil data admin dari database
+        const adminData = snap.docs[0].data();
+        
+        // Simpan identitas asli ke memori
+        window.currentAdmin = {
+            role: adminData.role,
+            wilayah: adminData.wilayah === "DAERAH" ? "SEMUA" : adminData.wilayah
+        };
+
+        alert(`Selamat Datang, Admin ${adminData.wilayah}!`);
+        document.getElementById('modal-pilih-admin').style.display = 'none';
+        
+        // Buka panel admin otomatis sesuai hak aksesnya
+        if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
+
+    } catch (e) {
+        alert("Gagal Login: " + e.message);
+        btn.disabled = false;
+        btn.innerText = "MASUK KE PANEL";
     }
-};
-
-window.konfirmasiMasukAdmin = () => {
-    const d = document.getElementById('sel-desa').value;
-    const k = document.getElementById('sel-kelompok').value;
-
-    window.currentAdmin = {
-        role: k ? "KELOMPOK" : (d ? "DESA" : "DAERAH"),
-        wilayah: k || d || "SEMUA"
-    };
-
-    document.getElementById('modal-pilih-admin').style.display = 'none';
-    if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
 };
 // --- SIMPAN EVENT TERISOLASI ---
 window.simpanEvent = async () => {
@@ -110,42 +103,25 @@ window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
     const { role, wilayah } = window.currentAdmin;
 
-    // Cari Desa Induk jika login sebagai Admin Desa/Kelompok
-    let desaInduk = role === "DESA" ? wilayah : "";
-    if (role === "KELOMPOK") {
-        for (let d in dataWilayah) {
-            if (dataWilayah[d].includes(wilayah)) { desaInduk = d; break; }
-        }
-    }
-
+    // Laporan otomatis terkunci sesuai akun login
     container.innerHTML = `
-        <h3>Laporan ${role} ${wilayah}</h3>
-        <div class="filter-box">
-            <select id="f-desa" ${role !== 'DAERAH' ? 'disabled' : ''} onchange="updateFilterKelompok()">
-                <option value="${desaInduk}">${desaInduk || '-- Semua Desa --'}</option>
-                ${role === 'DAERAH' ? Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('') : ''}
-            </select>
-            
-            <select id="f-kelompok" ${role === 'KELOMPOK' ? 'disabled' : ''} style="margin-top:10px;">
-                <option value="${role === 'KELOMPOK' ? wilayah : ''}">${role === 'KELOMPOK' ? wilayah : '-- Semua Kelompok --'}</option>
-            </select>
-
-            <button onclick="renderTabelLaporan()" class="primary-btn" style="margin-top:10px; width:100%;">Tampilkan Detail</button>
+        <div style="background:#f0f7ff; padding:15px; border-radius:10px; border-left:5px solid #2196F3;">
+            <h3 style="margin:0;">Laporan ${role}</h3>
+            <p style="margin:5px 0 0; font-weight:bold; color:#1976D2;">Wilayah: ${wilayah}</p>
+        </div>
+        
+        <div class="filter-box" style="margin-top:15px;">
+            <button onclick="renderTabelLaporan()" class="primary-btn" style="width:100%; padding:15px;">TAMPILKAN DATA TERBARU</button>
             
             <div style="display:flex; gap:10px; margin-top:10px;">
-                <button onclick="downloadLaporan()" class="secondary-btn" style="flex:1;">Excel</button>
+                <button onclick="downloadLaporan()" class="secondary-btn" style="flex:1;">Download Excel</button>
                 <button onclick="bukaModalStatistik()" class="primary-btn" style="flex:1; background:#28a745;">Statistik</button>
             </div>
         </div>
-        <div id="tabel-container"></div>`;
-
-    // Jalankan pengisian dropdown kelompok awal jika Admin Desa
-    if (role === "DESA") {
-        const fKel = document.getElementById('f-kelompok');
-        const daftar = dataWilayah[wilayah] || [];
-        fKel.innerHTML = '<option value="">-- Semua Kelompok --</option>' + daftar.map(k => `<option value="${k}">${k}</option>`).join('');
-    }
+        <div id="tabel-container" style="margin-top:20px;"></div>
+    `;
     
+    // Langsung muat datanya
     window.renderTabelLaporan();
 };
 
