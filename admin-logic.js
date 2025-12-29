@@ -235,19 +235,92 @@ window.downloadLaporan = () => {
     a.click();
     document.body.removeChild(a);
 };
-// --- RESET TERISOLASI ---
-window.resetAbsensiGass = async (asal) => {
-    const { wilayah } = window.currentAdmin;
-    if (confirm(`Hapus permanen riwayat absen wilayah ${wilayah}?`)) {
-        try {
-            const q = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
-            const snap = await getDocs(q);
-            await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
+window.bukaModalStatistik = () => {
+    // Cek apakah data laporan sudah ditarik
+    if (!window.currentListData || window.currentListData.length === 0) {
+        return alert("Tampilkan laporan dulu agar statistik bisa dihitung.");
+    }
+
+    // Hitung data
+    const total = window.currentListData.length;
+    const hadir = window.currentListData.filter(d => d.status === 'hadir').length;
+    const izin = window.currentListData.filter(d => d.status === 'izin').length;
+    const alfa = total - (hadir + izin);
+
+    // Buat elemen modal
+    const modal = document.createElement('div');
+    modal.id = 'modal-stat';
+    modal.className = 'modal';
+    modal.style.display = 'flex';
+    modal.innerHTML = `
+        <div class="modal-content" id="stat-capture" style="max-width:400px; text-align:center; padding:20px;">
+            <h3>📊 Statistik Kehadiran</h3>
+            <hr>
+            <div style="display:flex; justify-content:space-around; margin:20px 0;">
+                <div><h2 style="color:#28a745;">${hadir}</h2><small>HADIR</small></div>
+                <div><h2 style="color:#ffc107;">${izin}</h2><small>IZIN</small></div>
+                <div><h2 style="color:#dc3545;">${alfa}</h2><small>ALFA</small></div>
+            </div>
+            <div style="background:#f8f9fa; padding:10px; border-radius:8px;">
+                <strong>Total Jamaah: ${total}</strong>
+            </div>
             
-            if(asal === 'statistik') document.body.removeChild(document.getElementById('modal-stat'));
-            document.getElementById('tabel-container').innerHTML = "";
-            alert("Data wilayah Anda telah dibersihkan!");
+            <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;">
+                <button onclick="downloadStatistikGambar()" class="primary-btn" style="background:#17a2b8;">📸 Download Gambar</button>
+                <button onclick="resetAbsensiGass('statistik')" class="secondary-btn" style="background:#dc3545; color:white;">🗑️ Selesai & Reset Data</button>
+                <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" class="primary-btn" style="background:#6c757d;">Tutup</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+};
+window.downloadStatistikGambar = () => {
+    const area = document.getElementById('stat-capture');
+    // Sembunyikan tombol saat akan diambil gambarnya
+    const buttons = area.querySelectorAll('button');
+    buttons.forEach(b => b.style.display = 'none');
+
+    // Gunakan window.print atau arahkan user untuk screenshot 
+    // Jika ingin otomatis jadi file .png, kamu butuh library html2canvas. 
+    // Sebagai alternatif ringan, kita gunakan mode print khusus:
+    window.print();
+
+    // Tampilkan kembali tombolnya
+    buttons.forEach(b => b.style.display = 'block');
+};
+window.resetAbsensiGass = async (asal) => {
+    const { role, wilayah } = window.currentAdmin;
+    const pesan = "Laporan sudah disimpan? Jika di-reset, semua data absen wilayah ini akan dihapus permanen.";
+
+    if (confirm(pesan)) {
+        try {
+            // 1. Cari data absen milik wilayah ini
+            let q = query(collection(db, "attendance"), where("desa", "==", wilayah));
+            if (role === "KELOMPOK") q = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
+            if (role === "DAERAH") q = collection(db, "attendance");
+
+            const snap = await getDocs(q);
+            
+            // 2. Hapus dari Firestore
+            const deletePromises = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
+            await Promise.all(deletePromises);
+
+            // 3. Bersihkan Tampilan & Memori
+            window.currentListData = [];
+            const tableDiv = document.getElementById('tabel-container');
+            if (tableDiv) tableDiv.innerHTML = "";
+            
+            // Tutup modal jika ada
+            const modal = document.getElementById('modal-stat');
+            if (modal) document.body.removeChild(modal);
+
+            alert("Data berhasil dibersihkan! Sistem siap untuk acara berikutnya.");
+            
+            // Arahkan kembali ke tab Event
             if (typeof window.switchAdminTab === 'function') window.switchAdminTab('ev');
-        } catch (e) { alert(e.message); }
+
+        } catch (e) {
+            alert("Gagal Reset: " + e.message);
+        }
     }
 };
