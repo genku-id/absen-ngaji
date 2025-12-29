@@ -16,70 +16,93 @@ const dataWilayah = {
 // --- 1. WINDOW LOGIN AKUN (PENGGANTI DROPDOWN) ---
 
 window.bukaModalPilihAdmin = () => {
-    // Bersihkan modal dan ganti isinya dengan form login
-    const modalBody = document.querySelector('#modal-pilih-admin .modal-content'); 
-    // Ganti selektor di atas sesuai ID pembungkus konten modal kamu
+    const modal = document.getElementById('modal-pilih-admin');
+    const modalContent = modal.querySelector('.modal-content');
     
-    modalBody.innerHTML = `
-        <h3 style="margin-bottom:20px;">Login Admin</h3>
-        <input type="text" id="admin-user" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border-radius:5px; border:1px solid #ccc;">
-        <input type="password" id="admin-pass" placeholder="Password" style="width:100%; padding:12px; margin-bottom:20px; border-radius:5px; border:1px solid #ccc;">
-        
-        <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" style="width:100%; background:#2196F3;">MASUK KE PANEL</button>
-        <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="width:100%; margin-top:10px; background:none; border:none; color:red; cursor:pointer;">Batal</button>
+    // 1. Reset isi modal agar bersih (Menghapus jejak login sebelumnya)
+    modalContent.innerHTML = `
+        <div style="text-align:center;">
+            <h2 style="margin-bottom:10px; color:#333;">Login Panel Admin</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Silakan masukkan kredensial wilayah Anda</p>
+            
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="text" id="admin-user" placeholder="Username" 
+                       style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-size:16px; box-sizing:border-box;">
+                
+                <input type="password" id="admin-pass" placeholder="Password" 
+                       style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-size:16px; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
+                <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" 
+                        style="width:100%; background:#2196F3; padding: 15px; font-weight: bold; border-radius:10px; cursor:pointer;">
+                    MASUK SEKARANG
+                </button>
+                
+                <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" 
+                        style="background:none; border:none; color:#ff4444; font-weight:bold; cursor:pointer; padding: 10px;">
+                    Batal / Kembali
+                </button>
+            </div>
+        </div>
     `;
-    
-    document.getElementById('modal-pilih-admin').style.display = 'flex';
+
+    // 2. Paksa modal tampil di tengah layar
+    modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.position = 'fixed';
+    modal.style.zIndex = '9999';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.background = 'rgba(0,0,0,0.6)';
 };
 
 window.prosesLoginAdmin = async () => {
-    const inputUser = document.getElementById('admin-user').value;
-    const inputPass = document.getElementById('admin-pass').value;
+    const inputUser = document.getElementById('admin-user').value.trim();
+    const inputPass = document.getElementById('admin-pass').value.trim();
     const btn = document.getElementById('btn-login-admin');
 
-    if (!inputUser || !inputPass) return alert("Isi username & password!");
+    if (!inputUser || !inputPass) return alert("Username & Password wajib diisi!");
 
+    // Ubah status tombol agar user tahu proses sedang berjalan
     btn.innerText = "Memverifikasi...";
     btn.disabled = true;
+    btn.style.opacity = "0.7";
 
     try {
-        // Mencocokkan input dengan field 'username' dan 'password' di Firebase
-        const q = query(
-            collection(db, "admins"), 
-            where("username", "==", inputUser), 
-            where("password", "==", inputPass)
-        );
-        
+        const q = query(collection(db, "admins"), where("username", "==", inputUser));
         const snap = await getDocs(q);
 
         if (snap.empty) {
-            alert("Username atau Password Salah!");
-            btn.innerText = "MASUK SEKARANG";
-            btn.disabled = false;
-            return;
+            alert("Username tidak terdaftar!");
+        } else {
+            const adminData = snap.docs[0].data();
+            // Gunakan String() untuk antisipasi jika di Firebase pass adalah tipe Number
+            if (String(adminData.password) === inputPass) {
+                window.currentAdmin = {
+                    role: adminData.role,
+                    wilayah: adminData.wilayah,
+                    username: adminData.username
+                };
+                alert("Login Berhasil!");
+                document.getElementById('modal-pilih-admin').style.display = 'none';
+                if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
+                return;
+            } else {
+                alert("Password salah!");
+            }
         }
-
-        const adminData = snap.docs[0].data();
-        
-        // Simpan data login ke memori aplikasi
-        window.currentAdmin = {
-            role: adminData.role,
-            wilayah: adminData.wilayah,
-            username: adminData.username
-        };
-
-        alert(`Selamat Datang, Admin ${adminData.wilayah}!`);
-        document.getElementById('modal-pilih-admin').style.display = 'none';
-        
-        // Langsung buka panel admin
-        if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
-
     } catch (e) {
-        console.error("Login Error:", e);
-        alert("Gagal Login: " + e.message);
-        btn.disabled = false;
-        btn.innerText = "MASUK SEKARANG";
+        alert("Error: " + e.message);
     }
+
+    // Jika sampai sini berarti GAGAL, kembalikan tombol ke normal
+    btn.innerText = "MASUK SEKARANG";
+    btn.disabled = false;
+    btn.style.opacity = "1";
 };
 // --- SIMPAN EVENT TERISOLASI ---
 window.simpanEvent = async () => {
