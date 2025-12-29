@@ -65,23 +65,25 @@ window.konfirmasiMasukAdmin = () => {
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const waktu = document.getElementById('ev-waktu').value;
-    if (!nama || !waktu) return alert("Isi data!");
-
-    const role = window.currentAdmin.role;
-    const wilayah = window.currentAdmin.wilayah;
-
+    // Ambil identitas admin yang sedang login
+    const role = window.currentAdmin?.role;
+    const wilayah = window.currentAdmin?.wilayah;
+    if (!nama || !waktu) return alert("Nama event dan waktu harus diisi!");
     try {
         await addDoc(collection(db, "events"), {
-        namaEvent: nama, 
-        waktu: waktu,
-        status: "open",
-        ownerWilayah: wilayah, 
-        ownerRole: role,
-        createdAt: serverTimestamp()
-    });
+            namaEvent: nama,
+            waktu: waktu,
+            status: "open",
+            ownerRole: role,
+            ownerWilayah: wilayah, // INI KUNCI UTAMA
+            createdAt: serverTimestamp()
+        });
         alert("Event Berhasil Dibuka!");
-        window.bukaPanelAdmin();
-    } catch (e) { alert("Gagal: " + e.message); }
+        // Langsung refresh dashboard agar form ganti jadi QR Code
+        window.switchAdminTab('ev'); 
+    } catch (e) {
+        alert("Gagal simpan: " + e.message);
+    }
 };
 
 // --- LAPORAN TERISOLASI ---
