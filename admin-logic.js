@@ -83,7 +83,6 @@ window.simpanEvent = async () => {
             wilayah: wilayah,
             createdAt: serverTimestamp()
         });
-        
         alert("Event Berhasil Dibuka!");
         window.switchAdminTab('ev'); 
     } catch (e) {
@@ -95,7 +94,6 @@ window.simpanEvent = async () => {
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
     const { role, wilayah } = window.currentAdmin;
-
     let desaInduk = role === "DESA" ? wilayah : "";
     if (role === "KELOMPOK") {
         for (let d in dataWilayah) {
@@ -120,7 +118,6 @@ window.lihatLaporan = async () => {
             </div>
         </div>
         <div id="tabel-container"></div>`;
-
     if (role === "DESA") {
         const fKel = document.getElementById('f-kelompok');
         const daftar = dataWilayah[wilayah] || [];
@@ -128,40 +125,42 @@ window.lihatLaporan = async () => {
     }
     window.renderTabelLaporan();
 };
-
 window.renderTabelLaporan = async () => {
     const fD = document.getElementById('f-desa').value;
     const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
-
     tableDiv.innerHTML = "Memuat data...";
-
     try {
+        // 1. Cek dulu apakah ada Event yang sedang OPEN
+        const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
+        const evSnap = await getDocs(qEv);
+        const isEventRunning = !evSnap.empty;
+        // 2. Ambil Riwayat Absen
         let qAbsen = collection(db, "attendance");
         if (role === "KELOMPOK") qAbsen = query(qAbsen, where("kelompok", "==", wilayah));
         else if (role === "DESA") qAbsen = query(qAbsen, where("desa", "==", wilayah));
-
         const hSnap = await getDocs(qAbsen);
+        // KUNCI: Jika database attendance kosong (setelah reset), SEMBUNYIKAN TABEL
+        if (hSnap.empty) {
+            tableDiv.innerHTML = ""; 
+            window.currentListData = [];
+            return;
+        }
         const attendanceData = {};
         hSnap.forEach(doc => { 
             const d = doc.data();
             let jam = "-";
             if (d.waktu) {
                 const date = d.waktu.toDate();
-                jam = date.getHours().toString().padStart(2, '0') + ":" + 
-                      date.getMinutes().toString().padStart(2, '0');
+                jam = date.getHours().toString().padStart(2, '0') + ":" + date.getMinutes().toString().padStart(2, '0');
             }
             attendanceData[d.nama] = { status: d.status, jam: jam }; 
         });
-
+        // 3. Ambil Master Jamaah
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
-        
-        if(fD && role === "DAERAH") qM = query(qM, where("desa", "==", fD));
-        if(fK && (role === "DAERAH" || role === "DESA")) qM = query(qM, where("kelompok", "==", fK));
-
         const mSnap = await getDocs(qM);
         let listJamaah = [];
         mSnap.forEach(doc => {
@@ -173,27 +172,28 @@ window.renderTabelLaporan = async () => {
                 jam: att ? att.jam : "-"
             });
         });
-
         window.currentListData = listJamaah;
-
-        if (listJamaah.length === 0) {
-            tableDiv.innerHTML = "Data kosong.";
-            return;
-        }
-
+        // 4. Render Tabel dengan Logika Filter
         let html = `<table><thead><tr><th>Nama</th><th>Waktu</th><th>Status</th></tr></thead><tbody>`;
+        let adaDataDitampilkan = false;
         listJamaah.forEach(d => {
+            // ALUR: Jika event masih jalan (OPEN), yang ALFA disembunyikan
+            if (isEventRunning && d.status === "alfa") return;
+            adaDataDitampilkan = true;
             let color = "#ffebee", txt = "❌ ALFA";
             if(d.status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
             else if(d.status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
-            html += `<tr style="background:${color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td style="text-align:center;">${d.jam}</td><td style="text-align:center;"><b>${txt}</b></td></tr>`;
+            html += `<tr style="background:${color}">
+                        <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                        <td style="text-align:center;">${d.jam}</td>
+                        <td style="text-align:center;"><b>${txt}</b></td>
+                    </tr>`;
         });
-        tableDiv.innerHTML = html + `</tbody></table>`;
+        tableDiv.innerHTML = adaDataDitampilkan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px; color:gray;'>Belum ada yang scan.</p>";
     } catch (e) {
         tableDiv.innerHTML = "Error: " + e.message;
     }
 };
-
 window.downloadLaporan = () => {
     if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan data dahulu!");
     let csv = "Nama,Desa,Kelompok,Waktu,Status\n";
@@ -254,22 +254,23 @@ window.downloadStatistikGambar = () => {
 
 window.resetAbsensiGass = async (asal) => {
     const { role, wilayah } = window.currentAdmin;
-    if (confirm("⚠️ PERINGATAN: Semua data absen wilayah ini akan dihapus permanen!")) {
+    if (confirm("⚠️ PERINGATAN: Semua data absen akan dihapus dan laporan akan disembunyikan kembali untuk acara baru.")) {
         try {
+            // 1. Cari & Hapus data attendance
             let q = query(collection(db, "attendance"), where("desa", "==", wilayah));
             if (role === "KELOMPOK") q = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
             if (role === "DAERAH") q = collection(db, "attendance");
-
             const snap = await getDocs(q);
             await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-
-            window.currentListData = [];
+            // 2. KUNCI: Sembunyikan Tabel secara fisik dari layar
             const tableDiv = document.getElementById('tabel-container');
-            if (tableDiv) tableDiv.innerHTML = "";
+            if (tableDiv) tableDiv.innerHTML = ""; 
+            window.currentListData = []; // Bersihkan memori
+            // 3. Tutup modal statistik
             const modal = document.getElementById('modal-stat');
             if (modal) document.body.removeChild(modal);
-
-            alert("✅ Reset Berhasil!");
+            alert("✅ Berhasil Reset! Tabel laporan telah disembunyikan.");
+            // Kembali ke tab Event
             if (typeof window.switchAdminTab === 'function') window.switchAdminTab('ev');
         } catch (e) {
             alert("❌ Gagal: " + e.message);
