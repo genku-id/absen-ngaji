@@ -33,46 +33,52 @@ window.bukaModalPilihAdmin = () => {
 };
 
 window.prosesLoginAdmin = async () => {
-    const user = document.getElementById('admin-user').value;
-    const pass = document.getElementById('admin-pass').value;
+    const inputUser = document.getElementById('admin-user').value;
+    const inputPass = document.getElementById('admin-pass').value;
     const btn = document.getElementById('btn-login-admin');
 
-    if (!user || !pass) return alert("Isi username & password!");
+    if (!inputUser || !inputPass) return alert("Isi username & password!");
 
     btn.innerText = "Memverifikasi...";
     btn.disabled = true;
 
     try {
-        // Cari akun di koleksi 'admins'
-        const q = query(collection(db, "admins"), where("username", "==", username), where("password", "==", password));
+        // Mencocokkan input dengan field 'username' dan 'password' di Firebase
+        const q = query(
+            collection(db, "admins"), 
+            where("username", "==", inputUser), 
+            where("password", "==", inputPass)
+        );
+        
         const snap = await getDocs(q);
 
         if (snap.empty) {
             alert("Username atau Password Salah!");
-            btn.innerText = "MASUK KE PANEL";
+            btn.innerText = "MASUK SEKARANG";
             btn.disabled = false;
             return;
         }
 
-        // Ambil data admin dari database
         const adminData = snap.docs[0].data();
         
-        // Simpan identitas asli ke memori
+        // Simpan data login ke memori aplikasi
         window.currentAdmin = {
             role: adminData.role,
-            wilayah: adminData.wilayah === "DAERAH" ? "SEMUA" : adminData.wilayah
+            wilayah: adminData.wilayah,
+            username: adminData.username
         };
 
         alert(`Selamat Datang, Admin ${adminData.wilayah}!`);
         document.getElementById('modal-pilih-admin').style.display = 'none';
         
-        // Buka panel admin otomatis sesuai hak aksesnya
+        // Langsung buka panel admin
         if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
 
     } catch (e) {
+        console.error("Login Error:", e);
         alert("Gagal Login: " + e.message);
         btn.disabled = false;
-        btn.innerText = "MASUK KE PANEL";
+        btn.innerText = "MASUK SEKARANG";
     }
 };
 // --- SIMPAN EVENT TERISOLASI ---
@@ -136,18 +142,18 @@ window.updateFilterKelompok = () => {
 };
 
 window.renderTabelLaporan = async () => {
-    const fD = document.getElementById('f-desa').value;
-    const fK = document.getElementById('f-kelompok').value;
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
-    if (!tableDiv) return;
-
-    tableDiv.innerHTML = "Menyinkronkan data...";
+    tableDiv.innerHTML = "Memuat data...";
 
     try {
-        const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
-        const evSnap = await getDocs(qEv);
-        const hSnap = await getDocs(collection(db, "attendance"));
+        // Ambil data absensi yang hanya sesuai wilayah admin tersebut
+        let qAbsen = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
+        
+        // Jika admin DAERAH, baru boleh lihat semua
+        if (role === "DAERAH") qAbsen = collection(db, "attendance");
+
+        const hSnap = await getDocs(qAbsen);
         const allAtt = hSnap.docs.map(doc => doc.data());
 
         // Master Jamaah dengan Filter dari UI
@@ -187,8 +193,9 @@ window.renderTabelLaporan = async () => {
             html += `<tr style="background:${d.color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td align="center">${d.jam}</td><td align="center"><b>${d.txt}</b></td></tr>`;
         });
         tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p align='center' style='padding:20px;'>Belum ada data masuk.</p>";
-    } catch (e) { tableDiv.innerHTML = e.message; }
+    } catch (e) { tableDiv.innerHTML = "Error: " + e.message; }
 };
+
 window.downloadLaporan = () => {
     if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan data dahulu!");
     let csv = "Nama,Desa,Kelompok,Waktu,Status\n";
