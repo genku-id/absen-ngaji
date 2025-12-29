@@ -101,30 +101,34 @@
 
     <div id="success-overlay" style="display: none;">
     </div>
-<div id="modal-pilih-admin" class="modal" style="display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.8);">
-    <div style="background:white; margin:15% auto; padding:20px; width:80%; border-radius:15px; text-align:center;">
-        <h3>Pilih Level Admin</h3>
-        <p>Tentukan wilayah tugas anda saat ini:</p>
-        
-        <select id="sel-desa" onchange="updateTeksTombolAdmin()" style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;">
-    <option value="">DAERAH / DESA</option>
-    <option value="WATES">WATES</option>
-    <option value="PENGASIH">PENGASIH</option>
-    <option value="TEMON">TEMON</option>
-    <option value="LENDAH">LENDAH</option>
-    <option value="SAMIGALUH">SAMIGALUH</option>
-</select>
+<div id="modal-pilih-admin" class="modal" style="display:none;">
+    <div class="modal-content">
+        <h3 style="margin-bottom:20px;">Login Panel Utama</h3>
+        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">
+            Gunakan akun resmi wilayah Anda untuk masuk.
+        </p>
 
-<select id="sel-kelompok" onchange="updateTeksTombolAdmin()" disabled style="width:100%; padding:10px; margin-bottom:10px; border-radius:8px;">
-    <option value="">-- Pilih Kelompok --</option>
-</select>
-        <button id="btn-konfirmasi-admin" onclick="konfirmasiMasukAdmin()" style="width:100%; padding:12px; background:#2196F3; color:white; border:none; border-radius:8px; font-weight:bold;">
-            MASUK SEBAGAI ADMIN DAERAH
-        </button>
-        <button type="button" onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="margin-top:10px; background:none; border:none; color:red; cursor:pointer;">
-    Batal
-</button>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            <input type="text" id="admin-user" placeholder="Username" 
+                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; outline:none;">
+            
+            <input type="password" id="admin-pass" placeholder="Password" 
+                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; outline:none;">
+        </div>
+
+        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" 
+                    style="width:100%; background:#2196F3; padding: 15px; font-weight: bold;">
+                MASUK SEKARANG
+            </button>
+            
+            <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" 
+                    style="background:none; border:none; color:#777; cursor:pointer; padding: 10px;">
+                Batal
+            </button>
+        </div>
     </div>
+</div>
 </div>
     <script type="module" src="firebase-config.js"></script>
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
