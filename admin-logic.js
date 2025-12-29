@@ -65,27 +65,26 @@ window.konfirmasiMasukAdmin = () => {
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const waktu = document.getElementById('ev-waktu').value;
-    // Ambil identitas admin yang sedang login
-    const role = window.currentAdmin?.role;
-    const wilayah = window.currentAdmin?.wilayah;
-    if (!nama || !waktu) return alert("Nama event dan waktu harus diisi!");
+    const { role, wilayah } = window.currentAdmin;
+
+    if (!nama || !waktu) return alert("Isi data dulu!");
+
     try {
         await addDoc(collection(db, "events"), {
             namaEvent: nama,
             waktu: waktu,
             status: "open",
-            ownerRole: role,
-            ownerWilayah: wilayah, // INI KUNCI UTAMA
+            level: role,    // Sesuai screenshot kamu
+            wilayah: wilayah, // Sesuai screenshot kamu
             createdAt: serverTimestamp()
         });
+        
         alert("Event Berhasil Dibuka!");
-        // Langsung refresh dashboard agar form ganti jadi QR Code
         window.switchAdminTab('ev'); 
     } catch (e) {
-        alert("Gagal simpan: " + e.message);
+        alert("Gagal: " + e.message);
     }
 };
-
 // --- LAPORAN TERISOLASI ---
 window.lihatLaporan = async () => {
     const container = document.getElementById('admin-dynamic-content');
