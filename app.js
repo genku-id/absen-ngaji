@@ -329,19 +329,41 @@ window.switchAdminTab = (tab) => {
 
 window.formBuatEvent = async () => {
     const container = document.getElementById('admin-dynamic-content');
-    const { wilayah } = window.currentAdmin;
-    
-    const q = query(collection(db, "events"), where("status", "==", "open"), where("ownerWilayah", "==", wilayah));
-    const snap = await getDocs(q);
-    
-    if (!snap.empty) {
-        const d = snap.docs[0].data();
-        tampilkanBarcode(snap.docs[0].id, d.namaEvent, d.waktu);
-    } else {
-        container.innerHTML = `<h3>Buat Event Baru</h3>
-            <input type="text" id="ev-nama" placeholder="Nama Acara">
-            <input type="datetime-local" id="ev-waktu">
-            <button onclick="simpanEvent()" class="primary-btn">Buat QR</button>`;
+    const { wilayah, role } = window.currentAdmin;
+    container.innerHTML = "Memeriksa status event...";
+    try {
+        // Cari event yang statusnya OPEN dan pemiliknya adalah wilayah ini
+        const q = query(
+            collection(db, "events"), 
+            where("status", "==", "open"), 
+            where("ownerWilayah", "==", wilayah)
+        );
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            // JIKA DITEMUKAN: Ambil data event paling atas
+            const docAktif = snap.docs[0];
+            const d = docAktif.data();
+            // Panggil fungsi untuk menampilkan Barcode yang sudah ada
+            // Pastikan fungsi tampilkanBarcode menerima (id, nama, waktu)
+            tampilkanBarcode(docAktif.id, d.namaEvent, d.waktu);
+            
+        } else {
+            // JIKA TIDAK ADA: Tampilkan formulir buat baru
+            container.innerHTML = `
+                <div style="padding: 10px; background: #e3f2fd; border-radius: 8px; margin-bottom: 15px;">
+                    <small>📍 Wilayah: <b>${role} ${wilayah}</b></small>
+                </div>
+                <h3>Buat Event Baru</h3>
+                <div class="filter-box">
+                    <label>Nama Acara:</label>
+                    <input type="text" id="ev-nama" placeholder="" style="width:100%; padding:10px; margin: 5px 0 15px 0;">
+                    <label>Waktu:</label>
+                    <input type="datetime-local" id="ev-waktu" style="width:100%; padding:10px; margin: 5px 0 15px 0;">
+                    <button onclick="simpanEvent()" class="primary-btn" style="width:100%; padding:12px;">BUAT QR SEKARANG</button>
+                </div>`;
+        }
+    } catch (e) {
+        container.innerHTML = "Gagal memuat data event: " + e.message;
     }
 };
 
