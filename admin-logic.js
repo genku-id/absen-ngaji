@@ -130,39 +130,88 @@ window.renderTabelLaporan = async () => {
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
 
-    try {
-        const hSnap = await getDocs(query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah)));
-        if (hSnap.empty) { tableDiv.innerHTML = ""; return; }
+    tableDiv.innerHTML = "Memuat data...";
 
-        const qEvent = query(collection(db, "events"), where("status", "==", "open"), where("ownerWilayah", "==", wilayah));
+    try {
+        // 1. Ambil Riwayat Absen berdasarkan Role Admin
+        let qAbsen = collection(db, "attendance");
+
+        if (role === "KELOMPOK") {
+            // Jika Admin Kelompok, cari yang field kelompok-nya cocok
+            qAbsen = query(qAbsen, where("kelompok", "==", wilayah));
+        } else if (role === "DESA") {
+            // Jika Admin Desa, cari yang field desa-nya cocok (Sesuai screenshot: desa: "WATES")
+            qAbsen = query(qAbsen, where("desa", "==", wilayah));
+        }
+        // Jika DAERAH, tidak perlu filter (ambil semua)
+
+        const hSnap = await getDocs(qAbsen);
+
+        // Jika riwayat kosong
+        if (hSnap.empty) {
+            tableDiv.innerHTML = "<p style='text-align:center; padding:20px; color:gray;'>Data absensi tidak ditemukan.</p>";
+            window.currentListData = []; 
+            return;
+        }
+
+        // 2. Cek status event (untuk menentukan siapa yang ALFA)
+        const qEvent = query(
+            collection(db, "events"), 
+            where("status", "==", "open"), 
+            where("wilayah", "==", wilayah)
+        );
         const evSnap = await getDocs(qEvent);
         const isEventRunning = !evSnap.empty;
 
         const statusMap = {};
-        hSnap.forEach(doc => { statusMap[doc.data().nama] = doc.data().status; });
+        hSnap.forEach(doc => { 
+            const d = doc.data();
+            statusMap[d.nama] = d.status; 
+        });
 
+        // 3. Ambil Master Jamaah untuk wilayah ini
         let qM = collection(db, "master_jamaah");
-        if(fD) qM = query(qM, where("desa", "==", fD));
-        if(fK) qM = query(qM, where("kelompok", "==", fK));
-        const mSnap = await getDocs(qM);
+        if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
+        else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
+        
+        // Tambahan filter dari dropdown laporan (jika admin ganti-ganti filter)
+        if(fD && role === "DAERAH") qM = query(qM, where("desa", "==", fD));
+        if(fK && (role === "DAERAH" || role === "DESA")) qM = query(qM, where("kelompok", "==", fK));
 
+        const mSnap = await getDocs(qM);
         let listJamaah = [];
         mSnap.forEach(doc => listJamaah.push(doc.data()));
+        
+        // Simpan ke global untuk statistik
         window.currentListData = listJamaah;
 
+        // 4. Render Tabel
         let html = `<table><thead><tr><th>Nama</th><th>Status</th></tr></thead><tbody>`;
         let adaTampilan = false;
 
         listJamaah.forEach(d => {
             const s = statusMap[d.nama];
+            
+            // Jika event jalan, hanya tampilkan yang sudah scan
             if (isEventRunning && !s) return;
+
             adaTampilan = true;
-            let color = s === "hadir" ? "#e8f5e9" : (s === "izin" ? "#fff9c4" : "#ffebee");
-            let txt = s === "hadir" ? "✅ HADIR" : (s === "izin" ? "🙏🏻 IZIN" : "❌ ALFA");
-            html += `<tr style="background:${color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td align="center"><b>${txt}</b></td></tr>`;
+            let color = "#ffebee", txt = "❌ ALFA";
+            if(s === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
+            else if(s === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+
+            html += `<tr style="background:${color}">
+                        <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                        <td style="text-align:center;"><b>${txt}</b></td>
+                     </tr>`;
         });
-        tableDiv.innerHTML = adaTampilan ? html + `</tbody></table>` : "";
-    } catch (e) { tableDiv.innerHTML = "Error: " + e.message; }
+
+        tableDiv.innerHTML = adaTampilan ? html + `</tbody></table>` : "<p style='text-align:center; padding:20px;'>Belum ada data masuk.</p>";
+
+    } catch (e) {
+        console.error(e);
+        tableDiv.innerHTML = "Error: " + e.message;
+    }
 };
 
 // --- RESET TERISOLASI ---
