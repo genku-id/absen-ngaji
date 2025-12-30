@@ -107,13 +107,38 @@ window.prosesLoginAdmin = async () => {
     btn.style.opacity = "1";
 };
 window.bukaPanelAdmin = () => {
-    // Sembunyikan halaman registrasi/dashboard utama
-    document.getElementById('pendaftar-section').classList.add('hidden');
-    document.getElementById('admin-section').classList.remove('hidden');
+    // 1. Ambil elemen dengan ID yang pasti ada di HTML
+    const pendaftarSec = document.getElementById('pendaftar-section');
+    const adminSec = document.getElementById('admin-section');
 
-    // Kosongkan konten lama agar tidak "numpuk" dari admin sebelumnya
-    const container = document.getElementById('admin-dynamic-content');
-    if (container) container.innerHTML = "<h3>Selamat Datang, Admin " + window.currentAdmin.wilayah + "</h3>";
+    // 2. Jika elemen ditemukan, lakukan perpindahan halaman
+    if (pendaftarSec && adminSec) {
+        pendaftarSec.style.display = 'none'; // Sembunyikan pendaftaran
+        adminSec.classList.remove('hidden'); // Munculkan panel admin
+        adminSec.style.display = 'block';
+
+        const container = document.getElementById('admin-dynamic-content');
+        if (container) {
+            container.innerHTML = `
+                <div style="text-align:center; padding:20px;">
+                    <h2 style="color:#007bff;">Panel Admin ${window.currentAdmin.wilayah}</h2>
+                    <p>Berhasil masuk sebagai ${window.currentAdmin.role}</p>
+                    <hr>
+                    <button onclick="lihatLaporan()" class="primary-btn">LIHAT LAPORAN KEHADIRAN</button>
+                </div>
+            `;
+        }
+    } else {
+        // 3. Jika elemen TIDAK ditemukan, tampilkan pesan error yang jelas
+        alert("Gagal Pindah Halaman: Elemen 'pendaftar-section' atau 'admin-section' tidak ditemukan di HTML Anda.");
+        
+        // Reset tombol login agar tidak macet di "Memverifikasi"
+        const btn = document.getElementById('btn-login-admin');
+        if (btn) {
+            btn.innerText = "MASUK SEKARANG";
+            btn.disabled = false;
+        }
+    }
 };
 // --- SIMPAN EVENT TERISOLASI ---
 window.simpanEvent = async () => {
