@@ -466,8 +466,8 @@ const initApp = () => {
     else showPageRegistrasi();
 };
 
+// --- SCRIPT INJECTOR OTOMATIS (JALANKAN SEKALI SAJA) ---
 window.autoUploadAkunKelompok = async () => {
-    // Daftar 31 Kelompok
     const daftarKelompok = [
         "KREMBANGAN", "BOJONG", "GIRIPENI 1", "GIRIPENI 2", "HARGOWILIS", "TRIHARJO", 
         "MARGOSARI", "SENDANGSARI", "BANJARHARJO", "NANGGULAN", "GIRINYONO", "JATIMULYO", "SERUT", 
@@ -476,37 +476,34 @@ window.autoUploadAkunKelompok = async () => {
         "PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO" 
     ];
 
-    console.log("Memulai proses upload massal...");
+    console.log("🚀 Memulai upload 31 akun...");
 
     try {
-        // 1. Tambahkan Admin Daerah (Username: pusat01)
+        // 1. Tambah Admin Daerah
         await addDoc(collection(db, "admins"), {
             username: "pusat01",
             password: "999", 
             role: "DAERAH",
             wilayah: "SEMUA"
         });
-        console.log("Admin Daerah berhasil ditambahkan.");
 
-        // 2. Looping 31 Kelompok
+        // 2. Tambah 31 Admin Kelompok
         for (let namaKlp of daftarKelompok) {
-            // Logika Username: Huruf kecil, hapus spasi, tambah 01
-            // Contoh: "GIRIPENI 1" -> "giripeni1" + "01" -> "giripeni101"
             let userID = namaKlp.toLowerCase().replace(/\s/g, '') + "01"; 
             
             await addDoc(collection(db, "admins"), {
                 username: userID,
-                password: "1234", // Password sesuai permintaanmu
+                password: "1234", 
                 role: "KELOMPOK",
                 wilayah: namaKlp
             });
-            console.log(`Berhasil upload: ${userID} untuk wilayah ${namaKlp}`);
+            console.log(`✅ Berhasil: ${userID}`);
         }
 
-        alert("ALHAMDULILLAH! Semua akun (Pusat & 31 Kelompok) sudah masuk ke Firebase.");
+        alert("ALHAMDULILLAH! Semua akun sudah masuk ke Firebase.");
     } catch (e) {
-        console.error("Gagal:", e);
-        alert("Gagal upload: " + e.message);
+        console.error("Gagal Upload:", e);
+        alert("Gagal: " + e.message);
     }
 };
 initApp();
