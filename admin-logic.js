@@ -17,31 +17,47 @@ const dataWilayah = {
 
 window.bukaModalPilihAdmin = () => {
     const modal = document.getElementById('modal-pilih-admin');
+    const modalContent = modal.querySelector('.modal-content');
     
-    // Tulis ulang seluruh isi HTML modal agar bersih
-    modal.innerHTML = `
-        <div class="admin-login-box">
-            <h2>Login Admin</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 20px;">Silakan masukkan akun wilayah Anda</p>
+    // 1. Reset isi modal agar bersih (Menghapus jejak login sebelumnya)
+    modalContent.innerHTML = `
+        <div style="text-align:center;">
+            <h2 style="margin-bottom:10px; color:#333;">Login Panel Admin</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Silakan masukkan kredensial wilayah Anda</p>
             
-            <input type="text" id="admin-user" placeholder="Username" autocomplete="off">
-            <input type="password" id="admin-pass" placeholder="Password">
-            
-            <div style="margin-top: 25px;">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <input type="text" id="admin-user" placeholder="Username" 
+                       style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-size:16px; box-sizing:border-box;">
+                
+                <input type="password" id="admin-pass" placeholder="Password" 
+                       style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-size:16px; box-sizing:border-box;">
+            </div>
+
+            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
                 <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" 
-                        style="background:#007bff; color:white; border:none; padding:15px; border-radius:10px; font-weight:bold; cursor:pointer; width:100%;">
+                        style="width:100%; background:#2196F3; padding: 15px; font-weight: bold; border-radius:10px; cursor:pointer;">
                     MASUK SEKARANG
                 </button>
+                
                 <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" 
-                        style="background:none; border:none; color:#ff4444; font-weight:bold; cursor:pointer; margin-top:15px; width:100%;">
-                    Batal
+                        style="background:none; border:none; color:#ff4444; font-weight:bold; cursor:pointer; padding: 10px;">
+                    Batal / Kembali
                 </button>
             </div>
         </div>
     `;
 
-    // Paksa gaya flexbox agar posisi di tengah layar
+    // 2. Paksa modal tampil di tengah layar
     modal.style.display = 'flex';
+    modal.style.justifyContent = 'center';
+    modal.style.alignItems = 'center';
+    modal.style.position = 'fixed';
+    modal.style.zIndex = '9999';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100%';
+    modal.style.height = '100%';
+    modal.style.background = 'rgba(0,0,0,0.6)';
 };
 
 window.prosesLoginAdmin = async () => {
@@ -79,13 +95,15 @@ window.prosesLoginAdmin = async () => {
                 alert("Password salah!");
             }
         }
-   // Tambahkan baris ini di dalam bagian catch(e) kamu:
-} catch (e) {
-    alert("Error: " + e.message);
-    btn.innerText = "MASUK SEKARANG"; // Pastikan tombol kembali normal
+    } catch (e) {
+        alert("Error: " + e.message);
+    }
+
+    // Jika sampai sini berarti GAGAL, kembalikan tombol ke normal
+    btn.innerText = "MASUK SEKARANG";
     btn.disabled = false;
     btn.style.opacity = "1";
-}
+};
 // --- SIMPAN EVENT TERISOLASI ---
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
