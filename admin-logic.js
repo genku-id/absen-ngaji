@@ -167,58 +167,86 @@ window.updateFilterKelompok = () => {
 window.renderTabelLaporan = async () => {
     const tableDiv = document.getElementById('tabel-container');
     const { role, wilayah } = window.currentAdmin;
-    tableDiv.innerHTML = "Memuat data...";
+    if (!tableDiv) return;
+
+    tableDiv.innerHTML = "<p align='center'>Menyusun laporan wilayah " + wilayah + "...</p>";
 
     try {
-        // Ambil data absensi yang hanya sesuai wilayah admin tersebut
-        let qAbsen = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
+        // 1. Cari Event yang berstatus "open" di wilayah admin saat ini
+        const qEv = query(collection(db, "events"), 
+            where("status", "==", "open"), 
+            where("wilayah", "==", wilayah)
+        );
+        const evSnap = await getDocs(qEv);
         
-        // Jika admin DAERAH, baru boleh lihat semua
-        if (role === "DAERAH") qAbsen = collection(db, "attendance");
+        // Ambil semua ID event yang sedang aktif di wilayah ini
+        const activeEventIds = evSnap.docs.map(doc => doc.id);
 
-        const hSnap = await getDocs(qAbsen);
-        const allAtt = hSnap.docs.map(doc => doc.data());
+        // 2. Ambil semua data absensi untuk wilayah ini
+        const qAtt = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
+        const attSnap = await getDocs(qAtt);
+        const allAtt = attSnap.docs.map(doc => doc.data());
 
-        // Master Jamaah dengan Filter dari UI
+        // 3. Ambil Master Jamaah sesuai hirarki admin
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
         
-        // Tambahan filter manual dari dropdown laporan
-        if(fD && role === "DAERAH") qM = query(qM, where("desa", "==", fD));
-        if(fK && (role === "DAERAH" || role === "DESA")) qM = query(qM, where("kelompok", "==", fK));
-
         const mSnap = await getDocs(qM);
+
         let listJamaah = [];
         mSnap.forEach(doc => {
             const j = doc.data();
-            const sini = allAtt.find(a => a.nama === j.nama && a.wilayahEvent === wilayah);
-            const luar = allAtt.find(a => a.nama === j.nama && a.wilayahEvent !== wilayah);
             
+            // Cari apakah jamaah ini sudah absen di event wilayah sendiri
+            const absenSini = allAtt.find(a => a.nama === j.nama && activeEventIds.includes(a.eventId));
+            
+            // Cari apakah jamaah ini absen di wilayah lain (Tugas Luar)
+            // (Hanya jika belum ada catatan absen di wilayah sendiri)
+            const absenLuar = !absenSini ? allAtt.find(a => a.nama === j.nama && !activeEventIds.includes(a.eventId)) : null;
+
             let status = "alfa", jam = "-", color = "#ffebee", txt = "❌ ALFA";
-            if (sini) {
-                status = sini.status;
-                jam = sini.waktu ? sini.waktu.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "-";
-            } else if (luar) {
-                status = "tugas_luar"; txt = "🚀 SB LAIN"; color = "#e3f2fd";
+
+            if (absenSini) {
+                status = absenSini.status;
+                jam = absenSini.waktu ? absenSini.waktu.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : "-";
+            } else if (absenLuar) {
+                status = "tugas_luar";
+                txt = "🚀 SB LAIN";
+                color = "#e3f2fd";
             }
+
             if (status === "hadir") { color = "#e8f5e9"; txt = "✅ HADIR"; }
             else if (status === "izin") { color = "#fff9c4"; txt = "🙏🏻 IZIN"; }
+
             listJamaah.push({ ...j, status, jam, color, txt });
         });
 
         window.currentListData = listJamaah;
+
+        // 4. Render ke Tabel
         let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>`;
         let adaData = false;
-        listJamaah.forEach(d => {
-            if (!evSnap.empty && d.status === "alfa") return;
-            adaData = true;
-            html += `<tr style="background:${d.color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td align="center">${d.jam}</td><td align="center"><b>${d.txt}</b></td></tr>`;
-        });
-        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p align='center' style='padding:20px;'>Belum ada data masuk.</p>";
-    } catch (e) { tableDiv.innerHTML = "Error: " + e.message; }
-};
 
+        listJamaah.forEach(d => {
+            // Sembunyikan Alfa jika sedang ada event aktif agar tidak penuh
+            if (activeEventIds.length > 0 && d.status === "alfa") return;
+            
+            adaData = true;
+            html += `<tr style="background:${d.color}">
+                <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                <td align="center">${d.jam}</td>
+                <td align="center"><b>${d.txt}</b></td>
+            </tr>`;
+        });
+
+        tableDiv.innerHTML = adaData ? html + `</tbody></table>` : "<p align='center' style='padding:20px;'>Belum ada data hadir/izin.</p>";
+
+    } catch (e) {
+        console.error("Laporan Error:", e);
+        tableDiv.innerHTML = "<p style='color:red;'>Gagal memuat: " + e.message + "</p>";
+    }
+};
 window.downloadLaporan = () => {
     if (!window.currentListData || window.currentListData.length === 0) return alert("Tampilkan data dahulu!");
     let csv = "Nama,Desa,Kelompok,Waktu,Status\n";
