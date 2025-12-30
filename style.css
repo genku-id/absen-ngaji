@@ -350,3 +350,48 @@ body {
     background-color: #007bff;
     color: white;
 }
+
+window.prosesLoginAdmin = async () => {
+    const inputUser = document.getElementById('admin-user').value.trim();
+    const inputPass = document.getElementById('admin-pass').value.trim();
+    const btn = document.getElementById('btn-login-admin');
+
+    if (!inputUser || !inputPass) return alert("Username & Password wajib diisi!");
+
+    // Ubah status tombol agar user tahu proses sedang berjalan
+    btn.innerText = "Memverifikasi...";
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+
+    try {
+        const q = query(collection(db, "admins"), where("username", "==", inputUser));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+            alert("Username tidak terdaftar!");
+        } else {
+            const adminData = snap.docs[0].data();
+            // Gunakan String() untuk antisipasi jika di Firebase pass adalah tipe Number
+            if (String(adminData.password) === inputPass) {
+                window.currentAdmin = {
+                    role: adminData.role,
+                    wilayah: adminData.wilayah,
+                    username: adminData.username
+                };
+                alert("Login Berhasil!");
+                document.getElementById('modal-pilih-admin').style.display = 'none';
+                if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
+                return;
+            } else {
+                alert("Password salah!");
+            }
+        }
+    } catch (e) {
+        alert("Error: " + e.message);
+    }
+
+    // Jika sampai sini berarti GAGAL, kembalikan tombol ke normal
+    btn.innerText = "MASUK SEKARANG";
+    btn.disabled = false;
+    btn.style.opacity = "1";
+};
