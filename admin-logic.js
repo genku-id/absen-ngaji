@@ -17,47 +17,34 @@ const dataWilayah = {
 
 window.bukaModalPilihAdmin = () => {
     const modal = document.getElementById('modal-pilih-admin');
-    const modalContent = modal.querySelector('.modal-content');
     
-    // 1. Reset isi modal agar bersih (Menghapus jejak login sebelumnya)
-    modalContent.innerHTML = `
-        <div style="text-align:center;">
-            <h2 style="margin-bottom:10px; color:#333;">Login Panel Admin</h2>
-            <p style="font-size: 13px; color: #666; margin-bottom: 20px;">Silakan masukkan kredensial wilayah Anda</p>
+    // Reset isi form setiap kali modal dibuka
+    modal.innerHTML = `
+        <div class="modal-content-admin" style="background:white; padding:30px; border-radius:20px; text-align:center; width:90%; max-width:380px; box-shadow:0 10px 30px rgba(0,0,0,0.3);">
+            <h2 style="color:#0056b3; margin-top:0;">Login Panel Utama</h2>
+            <p style="font-size:13px; color:gray; margin-bottom:20px;">Gunakan akun resmi wilayah Anda.</p>
             
-            <div style="display: flex; flex-direction: column; gap: 12px;">
-                <input type="text" id="admin-user" placeholder="Username" 
-                       style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-size:16px; box-sizing:border-box;">
-                
-                <input type="password" id="admin-pass" placeholder="Password" 
-                       style="width:100%; padding:14px; border-radius:10px; border:1px solid #ddd; font-size:16px; box-sizing:border-box;">
-            </div>
-
-            <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
-                <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" 
-                        style="width:100%; background:#2196F3; padding: 15px; font-weight: bold; border-radius:10px; cursor:pointer;">
-                    MASUK SEKARANG
-                </button>
-                
-                <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" 
-                        style="background:none; border:none; color:#ff4444; font-weight:bold; cursor:pointer; padding: 10px;">
-                    Batal / Kembali
-                </button>
-            </div>
+            <input type="text" id="admin-user" placeholder="Username" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+            <input type="password" id="admin-pass" placeholder="Password" style="width:100%; padding:12px; margin-bottom:20px; border-radius:10px; border:1px solid #ddd; box-sizing:border-box;">
+            
+            <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" style="width:100%; padding:15px; font-weight:bold; border-radius:10px; background:#2196F3; color:white; border:none; cursor:pointer;">
+                MASUK SEKARANG
+            </button>
+            <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="background:none; border:none; color:red; margin-top:15px; cursor:pointer; font-weight:bold;">Batal</button>
         </div>
     `;
 
-    // 2. Paksa modal tampil di tengah layar
+    // Pastikan modal di tengah layar
     modal.style.display = 'flex';
     modal.style.justifyContent = 'center';
     modal.style.alignItems = 'center';
     modal.style.position = 'fixed';
-    modal.style.zIndex = '9999';
     modal.style.top = '0';
     modal.style.left = '0';
     modal.style.width = '100%';
     modal.style.height = '100%';
-    modal.style.background = 'rgba(0,0,0,0.6)';
+    modal.style.background = 'rgba(0,0,0,0.7)';
+    modal.style.zIndex = '10000';
 };
 
 window.prosesLoginAdmin = async () => {
@@ -67,39 +54,48 @@ window.prosesLoginAdmin = async () => {
 
     if (!inputUser || !inputPass) return alert("Username & Password wajib diisi!");
 
-    // Ubah status tombol agar user tahu proses sedang berjalan
+    // Ubah status tombol agar user tahu proses berjalan
     btn.innerText = "Memverifikasi...";
     btn.disabled = true;
     btn.style.opacity = "0.7";
 
     try {
+        // 1. Ambil data dari koleksi 'admins' berdasarkan username
         const q = query(collection(db, "admins"), where("username", "==", inputUser));
         const snap = await getDocs(q);
 
         if (snap.empty) {
             alert("Username tidak terdaftar!");
         } else {
-            const adminData = snap.docs[0].data();
-            // Gunakan String() untuk antisipasi jika di Firebase pass adalah tipe Number
+            const adminDoc = snap.docs[0];
+            const adminData = adminDoc.data();
+
+            // 2. Cek Password (Konversi ke String untuk antisipasi tipe data Number di Firebase)
             if (String(adminData.password) === inputPass) {
+                // Login Berhasil
                 window.currentAdmin = {
                     role: adminData.role,
                     wilayah: adminData.wilayah,
                     username: adminData.username
                 };
-                alert("Login Berhasil!");
+
+                alert(`Selamat Datang, Admin ${adminData.wilayah}!`);
+                
+                // Tutup Modal & Buka Panel
                 document.getElementById('modal-pilih-admin').style.display = 'none';
                 if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
-                return;
+                return; // Berhenti di sini jika sukses
             } else {
                 alert("Password salah!");
             }
         }
     } catch (e) {
-        alert("Error: " + e.message);
+        console.error("Login Error:", e);
+        alert("Terjadi kesalahan sistem: " + e.message);
     }
 
-    // Jika sampai sini berarti GAGAL, kembalikan tombol ke normal
+    // --- RESET TOMBOL JIKA GAGAL ---
+    // Kode di bawah ini hanya jalan jika proses di atas GAGAL atau salah password
     btn.innerText = "MASUK SEKARANG";
     btn.disabled = false;
     btn.style.opacity = "1";
