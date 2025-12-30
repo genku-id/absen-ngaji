@@ -48,57 +48,72 @@ window.bukaModalPilihAdmin = () => {
 };
 
 window.prosesLoginAdmin = async () => {
-    const inputUser = document.getElementById('admin-user').value.trim();
-    const inputPass = document.getElementById('admin-pass').value.trim();
+    const inputUser = document.getElementById('admin-user');
+    const inputPass = document.getElementById('admin-pass');
     const btn = document.getElementById('btn-login-admin');
 
-    if (!inputUser || !inputPass) return alert("Username & Password wajib diisi!");
+    // Ambil nilainya
+    const userVal = inputUser.value.trim();
+    const passVal = inputPass.value.trim();
 
-    // Ubah status tombol agar user tahu proses berjalan
+    if (!userVal || !passVal) return alert("Username & Password wajib diisi!");
+
     btn.innerText = "Memverifikasi...";
     btn.disabled = true;
-    btn.style.opacity = "0.7";
 
     try {
-        // 1. Ambil data dari koleksi 'admins' berdasarkan username
-        const q = query(collection(db, "admins"), where("username", "==", inputUser));
+        const q = query(collection(db, "admins"), where("username", "==", userVal));
         const snap = await getDocs(q);
 
         if (snap.empty) {
             alert("Username tidak terdaftar!");
         } else {
-            const adminDoc = snap.docs[0];
-            const adminData = adminDoc.data();
-
-            // 2. Cek Password (Konversi ke String untuk antisipasi tipe data Number di Firebase)
-            if (String(adminData.password) === inputPass) {
-                // Login Berhasil
+            const adminData = snap.docs[0].data();
+            if (String(adminData.password) === passVal) {
+                
+                // 1. Simpan Data ke Memori
                 window.currentAdmin = {
                     role: adminData.role,
                     wilayah: adminData.wilayah,
                     username: adminData.username
                 };
 
-                alert(`Selamat Datang, Admin ${adminData.wilayah}!`);
-                
-                // Tutup Modal & Buka Panel
+                // 2. BERSIHKAN FORM (Agar saat logout/buka lagi sudah kosong)
+                inputUser.value = "";
+                inputPass.value = "";
+                btn.innerText = "MASUK SEKARANG";
+                btn.disabled = false;
+
+                // 3. TUTUP MODAL & REFRESH TAMPILAN PANEL
                 document.getElementById('modal-pilih-admin').style.display = 'none';
-                if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
-                return; // Berhenti di sini jika sukses
+                
+                // Pastikan fungsi bukaPanelAdmin dipanggil untuk mengganti konten halaman
+                if (typeof window.bukaPanelAdmin === 'function') {
+                    window.bukaPanelAdmin(); 
+                }
+                
+                return; // Sukses, keluar dari fungsi
             } else {
                 alert("Password salah!");
             }
         }
     } catch (e) {
-        console.error("Login Error:", e);
-        alert("Terjadi kesalahan sistem: " + e.message);
+        alert("Error: " + e.message);
     }
 
-    // --- RESET TOMBOL JIKA GAGAL ---
-    // Kode di bawah ini hanya jalan jika proses di atas GAGAL atau salah password
+    // Balikin tombol kalau gagal
     btn.innerText = "MASUK SEKARANG";
     btn.disabled = false;
     btn.style.opacity = "1";
+};
+window.bukaPanelAdmin = () => {
+    // Sembunyikan halaman registrasi/dashboard utama
+    document.getElementById('pendaftar-section').classList.add('hidden');
+    document.getElementById('admin-section').classList.remove('hidden');
+
+    // Kosongkan konten lama agar tidak "numpuk" dari admin sebelumnya
+    const container = document.getElementById('admin-dynamic-content');
+    if (container) container.innerHTML = "<h3>Selamat Datang, Admin " + window.currentAdmin.wilayah + "</h3>";
 };
 // --- SIMPAN EVENT TERISOLASI ---
 window.simpanEvent = async () => {
