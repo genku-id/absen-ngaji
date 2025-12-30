@@ -296,31 +296,13 @@ window.bukaAdmin = () => {
 };
 
 window.bukaPanelAdmin = () => {
-    const content = document.getElementById('app-content');
-    
-    // Ambil data role dan wilayah agar judul dinamis
-    const role = window.currentAdmin?.role || "DAERAH";
-    const wilayah = window.currentAdmin?.wilayah || "SEMUA";
-    
-    let judulPanel = "Panel Admin Daerah";
-    if (role === "DESA") judulPanel = `Panel Admin Desa ${wilayah}`;
-    if (role === "KELOMPOK") judulPanel = `Panel Admin Kelompok ${wilayah}`;
+    // Sembunyikan halaman registrasi/dashboard utama
+    document.getElementById('pendaftar-section').classList.add('hidden');
+    document.getElementById('admin-section').classList.remove('hidden');
 
-    content.innerHTML = `
-        <div class="card" style="max-width:95%">
-            <h2 style="margin-bottom: 5px;">${judulPanel}</h2>
-            <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Tugas Aktif: ${role} ${wilayah}</p>
-            
-            <div class="admin-actions" style="display:flex; gap:5px; margin-bottom:15px;">
-                <button id="btn-ev" class="admin-btn" onclick="switchAdminTab('ev')" style="flex:1; padding:10px; border:none; color:white; background:#007bff; border-radius:8px;">EVENT</button>
-                <button id="btn-lp" class="admin-btn" onclick="switchAdminTab('lp')" style="flex:1; padding:10px; border:none; color:white; background:#666; border-radius:8px;">LAPORAN</button>
-                <button id="btn-db" class="admin-btn" onclick="switchAdminTab('db')" style="flex:1; padding:10px; border:none; color:white; background:#666; border-radius:8px;">DATABASE</button>
-            </div>
-            <div id="admin-dynamic-content"></div>
-        </div>`;
-    
-    // Jalankan tab default (Event)
-    window.switchAdminTab('ev');
+    // Kosongkan konten lama agar tidak "numpuk" dari admin sebelumnya
+    const container = document.getElementById('admin-dynamic-content');
+    if (container) container.innerHTML = "<h3>Selamat Datang, Admin " + window.currentAdmin.wilayah + "</h3>";
 };
 
 window.switchAdminTab = (tab) => {
