@@ -1,178 +1,49 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <link rel="icon" type="image/png" href="logo.png">
-    <link rel="apple-touch-icon" href="logo.png">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0056b3">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>E-PRESENSI KU</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&display=swap');
-
-#success-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    z-index: 100000;
-    justify-content: center;
-    align-items: center;
-    background: radial-gradient(circle, #1a73e8 0%, #0d47a1 100%); 
-    overflow: hidden;
-    font-family: 'Plus Jakarta Sans', sans-serif;
-}
-
-.celebration-wrap {
-    text-align: center;
-    color: white;
-    z-index: 10;
-    padding: 20px;
-}
-
-.text-top {
-    font-size: 1.2rem;
-    font-weight: 700;
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeInUp 0.5s forwards 0.2s;
-    margin-bottom: 10px;
-    letter-spacing: 0.5px;
-}
-
-.text-main {
-    font-size: 3rem;
-    font-weight: 800;
-    line-height: 1.1;
-    opacity: 0;
-    transform: scale(0.5);
-    animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.4s;
-}
-
-/* Efek Percikan (Burst) ala WA */
-.particle {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    pointer-events: none;
-}
-#modal-pilih-admin {
-    display: none; 
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7);
-    z-index: 10000;
-    justify-content: center; /* Tengah horizontal */
-    align-items: center;     /* Tengah vertikal */
-}
-
-.modal-content {
-    background: white;
-    padding: 30px;
-    border-radius: 15px;
-    width: 90%;
-    max-width: 400px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-        
-@keyframes fadeInUp {
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes popIn {
-    to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes particle-fly {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(var(--x), var(--y)) scale(0); opacity: 0; }
-}
-    </style>
-</head>
 <body>
-
     <header>
         <div class="logo">E-PRESENSI KU</div>
         <div class="menu-container">
-            <button id="menu-btn">⋮</button>
+            <button id="menu-btn" onclick="toggleMenu()">⋮</button>
             <div id="menu-dropdown" class="hidden">
-    <button onclick="showPageRegistrasi()">LogOut</button>
-    <button onclick="bukaAdmin()">Menu Admin</button>
-</div>
-
-<div id="pendaftar-section" class="card">
-    </div>
-
-<div id="admin-section" class="card hidden">
-    <div id="admin-dynamic-content">
+                <button onclick="location.reload()">LogOut</button>
+                <button onclick="bukaModalPilihAdmin()">Menu Admin</button>
+            </div>
         </div>
-</div>
     </header>
 
     <main id="app-content">
-        <div id="loading">Memuat aplikasi...</div>
+        <div id="pendaftar-section">
+            <div id="loading">Memuat aplikasi...</div>
+        </div>
+
+        <div id="admin-section" class="hidden">
+            <div id="admin-dynamic-content"></div>
+        </div>
     </main>
 
-    <div id="success-overlay" style="display: none;">
-    </div>
-<div id="modal-pilih-admin" class="modal" style="display:none;">
-    <div class="modal-content">
-        <h3 style="margin-bottom:20px;">Login Panel Utama</h3>
-        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">
-            Gunakan akun resmi wilayah Anda untuk masuk.
-        </p>
-
-        <div style="display: flex; flex-direction: column; gap: 10px;">
-            <input type="text" id="admin-user" placeholder="Username" 
-                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; outline:none;">
-            
-            <input type="password" id="admin-pass" placeholder="Password" 
-                   style="width:100%; padding:12px; border-radius:8px; border:1px solid #ddd; outline:none;">
-        </div>
-
-        <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-            <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" 
-                    style="width:100%; background:#2196F3; padding: 15px; font-weight: bold;">
-                MASUK SEKARANG
-            </button>
-            
-            <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" 
-                    style="background:none; border:none; color:#777; cursor:pointer; padding: 10px;">
-                Batal
-            </button>
+    <div id="modal-pilih-admin" style="display:none;">
+        <div class="modal-content">
+            <h3 style="margin-bottom:20px;">Login Panel Utama</h3>
+            <p style="font-size: 12px; color: gray; margin-bottom: 15px;">
+                Gunakan akun resmi wilayah Anda untuk masuk.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <input type="text" id="admin-user" placeholder="Username">
+                <input type="password" id="admin-pass" placeholder="Password">
+            </div>
+            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" style="background:#2196F3;">
+                    MASUK SEKARANG
+                </button>
+                <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="background:none; border:none; color:#777; cursor:pointer;">
+                    Batal
+                </button>
+            </div>
         </div>
     </div>
-</div>
-</div>
+
+    <div id="success-overlay" style="display: none;"></div>
+
     <script type="module" src="firebase-config.js"></script>
-    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <script type="module" src="admin-logic.js"></script>
     <script type="module" src="app.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script>if ('serviceWorker' in navigator) {navigator.serviceWorker.register('sw.js')
-      .then(() => console.log("PWA Active"))
-      .catch(err => console.log("PWA Error", err));
-  }
-</script>
-    <div id="admin-modal" class="modal-overlay hidden">
-    <div class="modal-content">
-        <h3>Akses Admin</h3>
-        <p>Masukkan Password:</p>
-        <input type="password" id="admin-pass-input" placeholder="****">
-        <div class="modal-buttons">
-            <button onclick="tutupModalAdmin()" class="secondary-btn">BATAL</button>
-            <button onclick="cekPasswordAdmin()" class="primary-btn">OKE</button>
-        </div>
-    </div>
-</div>
-
 </body>
-</html>
