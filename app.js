@@ -466,4 +466,47 @@ const initApp = () => {
     else showPageRegistrasi();
 };
 
+window.autoUploadAkunKelompok = async () => {
+    // Daftar 31 Kelompok
+    const daftarKelompok = [
+        "KREMBANGAN", "BOJONG", "GIRIPENI 1", "GIRIPENI 2", "HARGOWILIS", "TRIHARJO", 
+        "MARGOSARI", "SENDANGSARI", "BANJARHARJO", "NANGGULAN", "GIRINYONO", "JATIMULYO", "SERUT", 
+        "TAWANGSARI", "HARGOREJO", "SIDATAN 1", "SIDATAN 2", "JOGOBOYO", "JOGORESAN", 
+        "BONOSORO", "BUMIREJO", "CARIKAN", "NGENTAKREJO", "TUKSONO", "SRIKAYANGAN", 
+        "PENGOS", "SUREN", "KALIREJO", "PAGERHARJO", "SEPARANG", "KEBONHARJO" 
+    ];
+
+    console.log("Memulai proses upload massal...");
+
+    try {
+        // 1. Tambahkan Admin Daerah (Username: pusat01)
+        await addDoc(collection(db, "admins"), {
+            username: "pusat01",
+            password: "999", 
+            role: "DAERAH",
+            wilayah: "SEMUA"
+        });
+        console.log("Admin Daerah berhasil ditambahkan.");
+
+        // 2. Looping 31 Kelompok
+        for (let namaKlp of daftarKelompok) {
+            // Logika Username: Huruf kecil, hapus spasi, tambah 01
+            // Contoh: "GIRIPENI 1" -> "giripeni1" + "01" -> "giripeni101"
+            let userID = namaKlp.toLowerCase().replace(/\s/g, '') + "01"; 
+            
+            await addDoc(collection(db, "admins"), {
+                username: userID,
+                password: "1234", // Password sesuai permintaanmu
+                role: "KELOMPOK",
+                wilayah: namaKlp
+            });
+            console.log(`Berhasil upload: ${userID} untuk wilayah ${namaKlp}`);
+        }
+
+        alert("ALHAMDULILLAH! Semua akun (Pusat & 31 Kelompok) sudah masuk ke Firebase.");
+    } catch (e) {
+        console.error("Gagal:", e);
+        alert("Gagal upload: " + e.message);
+    }
+};
 initApp();
