@@ -197,7 +197,7 @@ async function renderTabLaporan() {
 // --- STATISTIK ---
 window.bukaStatistik = () => {
     const data = window.currentReportData;
-    const { wilayah } = window.currentAdmin;
+    const { wilayah, role } = window.currentAdmin;
     if (!data) return alert("Data belum tersedia!");
 
     const hitung = (list) => {
@@ -205,21 +205,28 @@ window.bukaStatistik = () => {
         const H = list.filter(d => d.rawStatus === 'hadir').length;
         const I = list.filter(d => d.rawStatus === 'izin').length;
         const A = list.filter(d => d.rawStatus === 'alfa').length;
-        const H_Pa = list.filter(d => d.rawStatus === 'hadir' && d.gender === 'PUTRA').length;
-        const I_Pa = list.filter(d => d.rawStatus === 'izin' && d.gender === 'PUTRA').length;
-        const A_Pa = list.filter(d => d.rawStatus === 'alfa' && d.gender === 'PUTRA').length;
-        const H_Pi = list.filter(d => d.rawStatus === 'hadir' && d.gender === 'PUTRI').length;
-        const I_Pi = list.filter(d => d.rawStatus === 'izin' && d.gender === 'PUTRI').length;
-        const A_Pi = list.filter(d => d.rawStatus === 'alfa' && d.gender === 'PUTRI').length;
+        
+        const isG = (d, g) => d.gender && d.gender.trim().toUpperCase() === g;
+
+        const H_Pa = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRA')).length;
+        const I_Pa = list.filter(d => d.rawStatus === 'izin' && isG(d, 'PUTRA')).length;
+        const A_Pa = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRA')).length;
+
+        const H_Pi = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRI')).length;
+        const I_Pi = list.filter(d => d.rawStatus === 'izin' && isG(d, 'PUTRI')).length;
+        const A_Pi = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRI')).length;
+
         const P = T > 0 ? Math.round((H / T) * 100) : 0;
         return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi };
     };
 
+    // Kelompokkan data untuk tampilan berjenjang
     let rekapDesa = {};
     let detailKelompok = {}; 
     data.forEach(d => {
         if (!rekapDesa[d.desa]) rekapDesa[d.desa] = [];
         rekapDesa[d.desa].push(d);
+
         if (!detailKelompok[d.desa]) detailKelompok[d.desa] = {};
         if (!detailKelompok[d.desa][d.kelompok]) detailKelompok[d.desa][d.kelompok] = [];
         detailKelompok[d.desa][d.kelompok].push(d);
@@ -227,36 +234,70 @@ window.bukaStatistik = () => {
 
     const sDarah = hitung(data);
 
+    // MULAI BANGUN HTML (Pastikan semua tabel masuk ke dalam variabel htmlStat)
     let htmlStat = `
-        <div id="capture-area" style="background:white; padding:20px; color:black; width:750px;">
-            <h2 style="text-align:center;">LAPORAN STATISTIK KEHADIRAN</h2>
-            <p style="text-align:center;">Wilayah: ${wilayah} | ${new Date().toLocaleDateString('id-ID')}</p>
-            <table class="stat-table" style="margin-bottom:20px; border:2px solid #000;">
-                <tr style="background:#0056b3; color:white;">
+        <div id="capture-area" style="background:white; padding:20px; color:black; width:800px; font-family:Arial;">
+            <h2 style="text-align:center; margin-bottom:5px;">LAPORAN STATISTIK KEHADIRAN</h2>
+            <p style="text-align:center; margin-top:0;">Wilayah: ${wilayah} | ${new Date().toLocaleDateString('id-ID')}</p>
+            
+            <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black;">
+                <tr style="background:#f0f0f0;">
                     <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
                 </tr>
-                <tr style="background:#0056b3; color:white;">
+                <tr style="background:#f0f0f0;">
                     <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
                 </tr>
-                <tr style="font-size:18px; font-weight:bold;">
+                <tr style="font-weight:bold; text-align:center; font-size:16px;">
                     <td>TOTAL</td><td>${sDarah.P}%</td><td>${sDarah.T}</td>
                     <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
                     <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
                     <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
                 </tr>
             </table>
-            </div>
+
+            <h4 style="margin: 10px 0 5px 0;">RINGKASAN PER DESA</h4>
+            <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; margin-bottom:20px;">
+                <thead>
+                    <tr style="background:#eee;">
+                        <th>DESA</th><th>%</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.keys(rekapDesa).map(namaDesa => {
+                        const s = hitung(rekapDesa[namaDesa]);
+                        return `<tr style="border-bottom:1px solid #ccc;"><td style="text-align:left; font-weight:bold;">${namaDesa}</td><td>${s.P}%</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
+                    }).join('')}
+                </tbody>
+            </table>
+
+            <h4 style="margin: 10px 0 5px 0;">DETAIL PER KELOMPOK</h4>
+            ${Object.keys(detailKelompok).map(namaDesa => `
+                <div style="margin-bottom:15px; border:1px solid #ddd;">
+                    <div style="background:#28a745; color:white; padding:5px; font-weight:bold;">DESA: ${namaDesa}</div>
+                    <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; font-size:12px;">
+                        <tr style="background:#f9f9f9;">
+                            <th style="text-align:left;">KELOMPOK</th><th>%</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
+                        </tr>
+                        ${Object.keys(detailKelompok[namaDesa]).map(namaKel => {
+                            const s = hitung(detailKelompok[namaDesa][namaKel]);
+                            return `<tr style="border-top:1px solid #eee;"><td style="text-align:left;">${namaKel}</td><td>${s.P}%</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
+                        }).join('')}
+                    </table>
+                </div>
+            `).join('')}
+        </div>
     `;
 
+    // Tampilkan ke Modal
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'modal-stat';
     modal.innerHTML = `
-        <div class="card" style="max-width:800px; width:95%; max-height:90vh; overflow-y:auto; padding:10px;">
+        <div class="card" style="max-width:900px; width:95%; max-height:90vh; overflow-y:auto; padding:10px;">
             <div style="overflow-x:auto;">${htmlStat}</div>
             <div style="padding:15px; display:flex; flex-direction:column; gap:10px;">
                 <button onclick="window.downloadStatistikGambar()" class="primary-btn" style="background:#17a2b8;">📸 DOWNLOAD GAMBAR (PNG)</button>
-                <button onclick="window.resetLaporan()" class="primary-btn" style="background:#dc3545;">🗑️ RESET SEMUA</button>
+                <button onclick="window.resetLaporan()" class="primary-btn" style="background:#dc3545;">🗑️ RESET DATA WILAYAH</button>
                 <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" class="secondary-btn">TUTUP</button>
             </div>
         </div>
