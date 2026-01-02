@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>E-Presensi Ku</title>
+    <title>E-PRESENSI KU</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -14,23 +14,24 @@
         <div class="menu-container">
             <button id="menu-btn">⋮</button>
             <div id="menu-dropdown" class="hidden">
-                <button onclick="location.reload()">LogOut / Ganti Akun</button>
-                <button onclick="bukaModalPilihAdmin()">Menu Admin</button>
+                <button id="btn-logout-nav">LogOut / Ganti Akun</button>
+                <button id="btn-admin-nav">Menu Admin</button>
             </div>
         </div>
     </header>
 
     <main id="app-content">
-        <div id="pendaftar-section" class="card">
-            <div id="loading">Memuat aplikasi...</div>
-        </div>
+        <section id="pendaftar-section" class="card">
+            <div id="loading-initial">Memuat Aplikasi...</div>
+        </section>
 
-        <div id="admin-section" class="card hidden">
+        <section id="admin-section" class="card hidden">
             <div id="admin-dynamic-content"></div>
-        </div>
+        </section>
     </main>
 
-    <div id="modal-pilih-admin" class="hidden"></div>
+    <div id="modal-pilih-admin" class="modal-overlay hidden"></div>
+
     <div id="success-overlay" class="hidden"></div>
 
     <script type="module" src="firebase-config.js"></script>
