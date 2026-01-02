@@ -365,3 +365,11 @@ window.resetAbsensiGass = async (asal) => {
         } catch (e) { alert("Reset Gagal: " + e.message); }
     }
 };
+window.toggleMenu = () => {
+    const dropdown = document.getElementById('menu-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('show');
+        // Pastikan class 'hidden' dihapus jika menggunakan class 'show'
+        dropdown.classList.remove('hidden'); 
+    }
+};
