@@ -233,33 +233,113 @@ async function renderTabLaporan() {
 // --- STATISTIK & RESET ---
 window.bukaStatistik = () => {
     const data = window.currentReportData;
-    if (!data) return alert("Data belum siap");
-    
-    const hadir = data.filter(d => d.rawStatus === "hadir").length;
-    const izin = data.filter(d => d.rawStatus === "izin").length;
-    const alfa = data.filter(d => d.rawStatus === "alfa").length;
-    const total = data.length;
-    const persen = Math.round((hadir/total)*100) || 0;
+    const { role, wilayah } = window.currentAdmin;
+    if (!data) return alert("Data belum tersedia!");
+
+    // Fungsi hitung otomatis per gender
+    const hitung = (list) => {
+        const T = list.length;
+        const H = list.filter(d => d.rawStatus === 'hadir').length;
+        const I = list.filter(d => d.rawStatus === 'izin').length;
+        const A = list.filter(d => d.rawStatus === 'alfa').length;
+        
+        const H_Pa = list.filter(d => d.rawStatus === 'hadir' && d.gender === 'PUTRA').length;
+        const I_Pa = list.filter(d => d.rawStatus === 'izin' && d.gender === 'PUTRA').length;
+        const A_Pa = list.filter(d => d.rawStatus === 'alfa' && d.gender === 'PUTRA').length;
+
+        const H_Pi = list.filter(d => d.rawStatus === 'hadir' && d.gender === 'PUTRI').length;
+        const I_Pi = list.filter(d => d.rawStatus === 'izin' && d.gender === 'PUTRI').length;
+        const A_Pi = list.filter(d => d.rawStatus === 'alfa' && d.gender === 'PUTRI').length;
+
+        const P = T > 0 ? Math.round((H / T) * 100) : 0;
+        return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi };
+    };
+
+    // Pengelompokan data
+    let rekapDesa = {};
+    let detailKelompok = {}; 
+    data.forEach(d => {
+        if (!rekapDesa[d.desa]) rekapDesa[d.desa] = [];
+        rekapDesa[d.desa].push(d);
+        if (!detailKelompok[d.desa]) detailKelompok[d.desa] = {};
+        if (!detailKelompok[d.desa][d.kelompok]) detailKelompok[d.desa][d.kelompok] = [];
+        detailKelompok[d.desa][d.kelompok].push(d);
+    });
+
+    const sDarah = hitung(data); // Total Daerah
+
+    let htmlStat = `
+        <div id="capture-area" style="background:white; padding:20px; color:black; width:700px;">
+            <h2 style="text-align:center; margin-bottom:5px;">LAPORAN STATISTIK KEHADIRAN</h2>
+            <p style="text-align:center; margin-top:0;">Wilayah: ${wilayah} | ${new Date().toLocaleDateString('id-ID')}</p>
+            
+            <table class="stat-table" style="margin-bottom:20px; border:2px solid #000;">
+                <tr style="background:#0056b3; color:white; font-size:16px;">
+                    <th rowspan="2" style="width:120px;">TOTAL DAERAH</th>
+                    <th rowspan="2">%</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
+                </tr>
+                <tr style="background:#0056b3; color:white;">
+                    <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
+                </tr>
+                <tr style="font-size:18px; font-weight:bold;">
+                    <td>DAERAH</td><td>${sDarah.P}%</td><td>${sDarah.T}</td>
+                    <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
+                    <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
+                    <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
+                </tr>
+            </table>
+
+            <h4 style="margin-bottom:5px;">RINGKASAN PER DESA</h4>
+            <table class="stat-table">
+                ${Object.keys(rekapDesa).map(namaDesa => {
+                    const s = hitung(rekapDesa[namaDesa]);
+                    return `<tr><td style="text-align:left; font-weight:bold; width:120px;">${namaDesa}</td><td>${s.P}%</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
+                }).join('')}
+            </table>
+
+            <div style="margin:25px 0;"></div>
+
+            <h4 style="margin-bottom:5px;">RINCIAN PER KELOMPOK</h4>
+            ${Object.keys(detailKelompok).map(namaDesa => `
+                <div style="margin-bottom:15px; page-break-inside:avoid;">
+                    <div style="background:#eee; padding:5px; font-weight:bold; border:1px solid #ccc;">DESA: ${namaDesa}</div>
+                    <table class="stat-table">
+                        ${Object.keys(detailKelompok[namaDesa]).map(namaKel => {
+                            const s = hitung(detailKelompok[namaDesa][namaKel]);
+                            return `<tr><td style="text-align:left; width:120px;">${namaKel}</td><td>${s.P}%</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
+                        }).join('')}
+                    </table>
+                </div>
+            `).join('')}
+        </div>
+    `;
 
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'modal-stat';
     modal.innerHTML = `
-        <div class="card" id="stat-capture" style="text-align:center;">
-            <h3>STATISTIK WILAYAH</h3>
-            <hr>
-            <div style="font-size:40px; font-weight:bold; color:#007bff;">${persen}%</div>
-            <p>Kehadiran</p>
-            <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:20px;">
-                <div style="background:#e8f5e9; padding:10px; border-radius:10px;"><b>H</b><br>${hadir}</div>
-                <div style="background:#fff9c4; padding:10px; border-radius:10px;"><b>I</b><br>${izin}</div>
-                <div style="background:#ffebee; padding:10px; border-radius:10px;"><b>A</b><br>${alfa}</div>
+        <div class="card" style="max-width:800px; width:95%; max-height:90vh; overflow-y:auto; padding:10px;">
+            <div style="overflow-x:auto;">${htmlStat}</div>
+            <div style="padding:15px; display:flex; flex-direction:column; gap:10px;">
+                <button onclick="downloadStatistikGambar()" class="primary-btn" style="background:#17a2b8;">📸 DOWNLOAD GAMBAR (PNG)</button>
+                <button onclick="resetLaporan()" class="primary-btn" style="background:#dc3545;">🗑️ SELESAI & RESET SEMUA</button>
+                <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" class="secondary-btn">TUTUP</button>
             </div>
-            <button onclick="window.print()" class="primary-btn" style="margin-top:20px; background:#17a2b8;">📸 DOWNLOAD GAMBAR</button>
-            <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" class="secondary-btn">TUTUP</button>
         </div>
     `;
     document.body.appendChild(modal);
+};
+
+// --- FUNGSI DOWNLOAD GAMBAR ASLI ---
+window.downloadStatistikGambar = () => {
+    const area = document.getElementById('capture-area');
+    html2canvas(area, { scale: 2 }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `Statistik_Presensi_${window.currentAdmin.wilayah}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+);
 };
 
 window.resetLaporan = async () => {
