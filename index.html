@@ -12,7 +12,7 @@
     <header>
         <div class="logo">E-PRESENSI KU</div>
         <div class="menu-container">
-            <button id="menu-btn" onclick="toggleMenu()">⋮</button>
+            <button id="menu-btn">⋮</button>
             <div id="menu-dropdown" class="hidden">
                 <button onclick="location.reload()">LogOut / Ganti Akun</button>
                 <button onclick="bukaModalPilihAdmin()">Menu Admin</button>
@@ -21,17 +21,16 @@
     </header>
 
     <main id="app-content">
-        <section id="pendaftar-section" class="card">
-            <div id="loading">Memuat data...</div>
-        </section>
+        <div id="pendaftar-section" class="card">
+            <div id="loading">Memuat aplikasi...</div>
+        </div>
 
-        <section id="admin-section" class="card hidden">
+        <div id="admin-section" class="card hidden">
             <div id="admin-dynamic-content"></div>
-        </section>
+        </div>
     </main>
 
-    <div id="modal-pilih-admin" class="modal-overlay hidden"></div>
-
+    <div id="modal-pilih-admin" class="hidden"></div>
     <div id="success-overlay" class="hidden"></div>
 
     <script type="module" src="firebase-config.js"></script>
