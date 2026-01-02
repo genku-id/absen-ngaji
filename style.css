@@ -97,12 +97,13 @@ input, select {
     justify-content: center;
     align-items: center;
     z-index: 9999;
-    font-family: 'Comic Sans MS', cursive, sans-serif;
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
     text-align: center;
 }
 
-.text-top { font-size: 1.2rem; margin-bottom: 10px; }
-.text-main { font-size: 3rem; font-weight: bold; line-height: 1.2; }
+.text-top, .text-main {
+    font-family: 'Comic Sans MS', cursive, sans-serif !important;
+}
 /* Tambahkan ini di style.css jika belum ada */
 .celebration-wrap {
     text-align: center;
