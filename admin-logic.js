@@ -334,7 +334,6 @@ window.downloadStatistikGambar = () => {
         link.click();
     });
 );
-};
 
 window.resetLaporan = async () => {
     const { wilayah } = window.currentAdmin;
