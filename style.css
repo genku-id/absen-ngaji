@@ -103,7 +103,16 @@ input, select {
 
 .text-top { font-size: 1.2rem; margin-bottom: 10px; }
 .text-main { font-size: 3rem; font-weight: bold; line-height: 1.2; }
+/* Tambahkan ini di style.css jika belum ada */
+.celebration-wrap {
+    text-align: center;
+    animation: zoomIn 0.5s ease-out;
+}
 
+@keyframes zoomIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 /* --- UTILS --- */
 .hidden { display: none !important; }
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 5000; }
