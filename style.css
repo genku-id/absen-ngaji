@@ -75,6 +75,7 @@ input, select {
 }
 .primary-btn { background: #007bff; color: white; margin-top: 10px; }
 .scan-btn { background: #0056b3; color: white; margin-top: 20px; }
+.scan-btn:active { transform: scale(0.96); filter: brightness(0.9); }
 
 /* --- SUGGESTION BOX --- */
 .suggestion-container {
