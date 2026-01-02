@@ -66,11 +66,17 @@ window.showPageRegistrasi = () => {
             <input type="text" id="reg-nama" placeholder="Ketik Nama Lengkap..." autocomplete="off" disabled>
             <div id="suggestion-box" class="suggestion-container hidden"></div>
         </div>
-        <div style="margin:10px 0; text-align:left;">
-            <p style="font-size:13px; font-weight:bold;">Jenis Kelamin:</p>
-            <label><input type="radio" name="reg-gender" value="PUTRA"> Putra</label> &nbsp;
-            <label><input type="radio" name="reg-gender" value="PUTRI"> Putri</label>
-        </div>
+       <div style="margin:20px 0; text-align:left;">
+    <p style="font-size:14px; font-weight:bold; margin-bottom:10px; color:#333;">Jenis Kelamin:</p>
+    <div style="display: flex; gap: 20px; align-items: center;">
+        <label style="display: flex; align-items: center; cursor: pointer; font-size: 15px;">
+            <input type="radio" name="reg-gender" value="PUTRA" style="margin-right: 8px; width: 18px; height: 18px;"> Putra
+        </label>
+        <label style="display: flex; align-items: center; cursor: pointer; font-size: 15px;">
+            <input type="radio" name="reg-gender" value="PUTRI" style="margin-right: 8px; width: 18px; height: 18px;"> Putri
+        </label>
+    </div>
+</div>
         <button id="btn-login" class="primary-btn">MASUK SEKARANG</button>
     `;
 
