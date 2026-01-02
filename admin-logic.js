@@ -164,26 +164,32 @@ async function renderTabLaporan() {
 
         let dataLaporan = [];
         mSnap.forEach(doc => {
-            const j = doc.data();
-            const semuaAbsen = allAtt.filter(a => a.nama === j.nama);
-            const absenSini = semuaAbsen.find(a => a.wilayahEvent === wilayah);
-            const absenLuar = semuaAbsen.find(a => a.wilayahEvent !== wilayah);
+    const j = doc.data();
+    const semuaAbsen = allAtt.filter(a => a.nama === j.nama);
+    const absenSini = semuaAbsen.find(a => a.wilayahEvent === wilayah);
+    const absenLuar = semuaAbsen.find(a => a.wilayahEvent !== wilayah);
 
-            let res = { nama: j.nama, kelompok: j.kelompok, desa: j.desa, gender: j.gender, jam: "-", status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" };
+    let res = { 
+        nama: j.nama, kelompok: j.kelompok, desa: j.desa, gender: j.gender, 
+        jam: "-", status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" 
+    };
 
-            if (absenSini) {
-                res.jam = absenSini.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
-                res.status = absenSini.status === "hadir" ? "✅ HADIR" : "🙏🏻 IZIN";
-                res.color = absenSini.status === "hadir" ? "row-hadir" : "";
-                res.rawStatus = absenSini.status;
-            } else if (absenLuar) {
-                res.jam = absenLuar.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
-                res.status = `✅ HADIR (SB ${absenLuar.wilayahEvent})`; 
-                res.color = "row-hadir";
-                res.rawStatus = "hadir";
-            }
-            dataLaporan.push(res);
-        });
+    if (absenSini) {
+        // HADIR/IZIN DI LOKASI SENDIRI
+        res.jam = absenSini.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
+        res.status = absenSini.status === "hadir" ? "✅ HADIR" : "🙏🏻 IZIN";
+        res.color = absenSini.status === "hadir" ? "row-hadir" : "";
+        res.rawStatus = absenSini.status;
+    } else if (absenLuar) {
+        // ABSEN DI TEMPAT LAIN (SB LAIN)
+        res.jam = absenLuar.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
+        // Tampilkan simbol Roket dan keterangan SB LAIN
+        res.status = `🚀 SB ${absenLuar.wilayahEvent}`; 
+        res.color = "row-izin"; // Beri warna biru/kuning (sesuaikan CSS kamu)
+        res.rawStatus = "izin"; // <--- INI KUNCINYA: Di statistik wilayah ini, dia dianggap IZIN
+    }
+    dataLaporan.push(res);
+});
 
         window.currentReportData = dataLaporan;
         let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>`;
