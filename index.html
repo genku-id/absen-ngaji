@@ -11,35 +11,17 @@
     </header>
 
     <main id="app-content">
-        <div id="pendaftar-section">
+        <div id="pendaftar-section" class="card">
             <div id="loading">Memuat aplikasi...</div>
         </div>
 
-        <div id="admin-section" class="hidden">
+        <div id="admin-section" class="card hidden">
             <div id="admin-dynamic-content"></div>
         </div>
     </main>
 
     <div id="modal-pilih-admin" style="display:none;">
-        <div class="modal-content">
-            <h3 style="margin-bottom:20px;">Login Panel Utama</h3>
-            <p style="font-size: 12px; color: gray; margin-bottom: 15px;">
-                Gunakan akun resmi wilayah Anda untuk masuk.
-            </p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <input type="text" id="admin-user" placeholder="Username">
-                <input type="password" id="admin-pass" placeholder="Password">
-            </div>
-            <div style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
-                <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn" style="background:#2196F3;">
-                    MASUK SEKARANG
-                </button>
-                <button onclick="document.getElementById('modal-pilih-admin').style.display='none'" style="background:none; border:none; color:#777; cursor:pointer;">
-                    Batal
-                </button>
-            </div>
         </div>
-    </div>
 
     <div id="success-overlay" style="display: none;"></div>
 
