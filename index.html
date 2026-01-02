@@ -3,7 +3,7 @@
         <div class="logo">E-PRESENSI KU</div>
         <div class="menu-container">
             <button id="menu-btn" onclick="toggleMenu()">⋮</button>
-            <div id="menu-dropdown" class="hidden">
+            <div id="menu-dropdown">
                 <button onclick="location.reload()">LogOut</button>
                 <button onclick="bukaModalPilihAdmin()">Menu Admin</button>
             </div>
@@ -11,19 +11,37 @@
     </header>
 
     <main id="app-content">
-    <div id="pendaftar-section" class="card">
-        <div id="loading">Memuat aplikasi...</div>
-    </div>
+        <div id="pendaftar-section" class="card">
+            <div id="loading">Memuat aplikasi...</div>
+            </div>
 
-    <div id="admin-section" class="card hidden">
-        <div id="admin-dynamic-content"></div>
-    </div>
-</main>
+        <div id="admin-section" class="card hidden">
+            <div id="admin-dynamic-content"></div>
+        </div>
+    </main>
 
-    <div id="modal-pilih-admin" style="display:none;">
+    <div id="modal-pilih-admin" class="hidden">
         </div>
 
-    <div id="success-overlay" style="display: none;"></div>
+    <div id="success-overlay" class="hidden"></div>
+
+    <script>
+        // Fungsi sederhana untuk buka-tutup menu dropdown
+        function toggleMenu() {
+            const dropdown = document.getElementById('menu-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Menutup dropdown jika klik di luar menu
+        window.onclick = function(event) {
+            if (!event.target.matches('#menu-btn')) {
+                const dropdown = document.getElementById('menu-dropdown');
+                if (dropdown.classList.contains('show')) {
+                    dropdown.classList.remove('show');
+                }
+            }
+        }
+    </script>
 
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="admin-logic.js"></script>
