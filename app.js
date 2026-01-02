@@ -195,14 +195,55 @@ async function prosesAbsensi(eventId, user) {
     } catch (e) { alert("Gagal absen!"); showDashboard(user); }
 }
 
-// Global Nav Listeners
+// --- GLOBAL NAV LISTENERS (Akses dari Header) ---
+
+// 1. Klik Titik 3 (Toggle Menu)
 document.getElementById('menu-btn').onclick = (e) => {
     e.stopPropagation();
-    document.getElementById('menu-dropdown').classList.toggle('hidden');
+    const dropdown = document.getElementById('menu-dropdown');
+    dropdown.classList.toggle('hidden');
 };
-document.getElementById('btn-logout-nav').onclick = () => window.showPageRegistrasi();
-window.onclick = () => document.getElementById('menu-dropdown').classList.add('hidden');
 
-// Init
-const current = JSON.parse(localStorage.getItem('currentUser'));
-if (current) showDashboard(current); else showPageRegistrasi();
+// 2. Klik Menu Admin di dalam Dropdown
+const btnAdminNav = document.getElementById('btn-admin-nav');
+if (btnAdminNav) {
+    btnAdminNav.onclick = (e) => {
+        e.stopPropagation();
+        // Sembunyikan dropdown dulu
+        document.getElementById('menu-dropdown').classList.add('hidden');
+        // Panggil fungsi modal dari admin-logic.js
+        if (typeof window.bukaModalPilihAdmin === 'function') {
+            window.bukaModalPilihAdmin();
+        } else {
+            console.error("Fungsi bukaModalPilihAdmin belum termuat.");
+        }
+    };
+}
+
+// 3. Klik LogOut di dalam Dropdown
+const btnLogoutNav = document.getElementById('btn-logout-nav');
+if (btnLogoutNav) {
+    btnLogoutNav.onclick = () => {
+        document.getElementById('menu-dropdown').classList.add('hidden');
+        window.showPageRegistrasi();
+    };
+}
+
+// 4. Tutup dropdown jika klik di mana saja (di luar menu)
+window.onclick = () => {
+    const menu = document.getElementById('menu-dropdown');
+    if (menu) menu.classList.add('hidden');
+};
+
+// --- INIT APP (Jalankan saat aplikasi pertama dibuka) ---
+const initApp = () => {
+    const current = JSON.parse(localStorage.getItem('currentUser'));
+    // Jika ada akun tersimpan di session, langsung masuk dashboard
+    if (current) {
+        window.showDashboard(current);
+    } else {
+        window.showPageRegistrasi();
+    }
+};
+
+initApp();
