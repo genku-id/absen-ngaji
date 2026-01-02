@@ -177,30 +177,83 @@ async function prosesAbsensi(eventId, user) {
     try {
         const cleanId = eventId.replace("_IZIN", "");
         const evSnap = await getDoc(doc(db, "events", cleanId));
+        
         if (!evSnap.exists()) return alert("Event tidak aktif!");
-
+        
         const ev = evSnap.data();
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
-        
-        await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g,'')}`), {
-            nama: user.nama, desa: user.desa, kelompok: user.kelompok,
-            eventId: cleanId, wilayahEvent: ev.wilayah || "SEMUA",
-            status: status, waktu: serverTimestamp()
+
+        // Simpan data ke Firestore
+        await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
+            nama: user.nama,
+            desa: user.desa,
+            kelompok: user.kelompok,
+            gender: user.gender, // Pastikan master_jamaah ada field gender
+            eventId: cleanId,
+            wilayahEvent: ev.wilayah || "SEMUA",
+            status: status,
+            waktu: serverTimestamp()
         });
 
-        // Overlay Animasi
+        // --- MULAI OVERLAY SELEBRASI (Sesuai Code Awal Kamu) ---
         const overlay = document.getElementById('success-overlay');
-        overlay.innerHTML = `
-            <div class="celebration-wrap">
-                <p>Alhamdulillah Jazaa Kumullahu Khoiroo</p>
-                <div class="text-main">LANCAR<br>BAROKAH!</div>
-            </div>
-        `;
-        overlay.classList.remove('hidden');
-        setTimeout(() => { overlay.classList.add('hidden'); showDashboard(user); }, 4000);
 
-    } catch (e) { alert("Gagal absen!"); showDashboard(user); }
+        if (overlay) {
+            overlay.style.display = 'flex';
+            overlay.innerHTML = `
+                <div class="celebration-wrap">
+                    <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
+                    <div class="text-main">LANCAR<br>BAROKAH!</div>
+                    <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
+                </div>
+            `;
+
+            // Efek Partikel
+            if (typeof createParticle === 'function') {
+                for (let i = 0; i < 50; i++) {
+                    createParticle(overlay);
+                }
+            }
+
+            // Putar Suara
+            const sound = document.getElementById('success-sound');
+            if(sound) sound.play().catch(e => console.log("Audio blocked"));
+
+            // Tunggu 4 Detik (Sesuai Keinginanmu)
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                showDashboard(user);
+            }, 4000);
+
+        } else { alert("LANCAR BAROKAH!"); showDashboard(user); }
+
+    } catch (e) {
+        console.error(e);
+        alert("Gagal absen: " + e.message);
+    }
 }
+
+window.createParticle = (parent) => {
+    const p = document.createElement('div');
+    p.style.position = 'fixed';
+    p.style.width = '8px';
+    p.style.height = '8px';
+    p.style.backgroundColor = ['#FFD700', '#FFFFFF', '#ADFF2F', '#FF69B4'][Math.floor(Math.random() * 4)];
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.top = '-10px';
+    p.style.borderRadius = '50%';
+    p.style.zIndex = '10000';
+    p.style.transition = `transform ${Math.random() * 2 + 2}s linear, opacity 2s`;
+    
+    parent.appendChild(p);
+    
+    setTimeout(() => {
+        p.style.transform = `translateY(110vh) translateX(${Math.random() * 100 - 50}px)`;
+        p.style.opacity = '0';
+    }, 100);
+    
+    setTimeout(() => p.remove(), 4000);
+};
 
 // --- GLOBAL NAV LISTENERS (Ganti dari baris 198 ke bawah) ---
 
@@ -276,6 +329,5 @@ const initApp = () => {
         window.showPageRegistrasi();
     }
 };
-
 // Jalankan aplikasi
 initApp();
