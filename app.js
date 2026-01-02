@@ -227,11 +227,15 @@ const setupNav = () => {
 
     // 3. Klik Logout
     if (btnLogout) {
-        btnLogout.onclick = () => {
-            dropdown.classList.add('hidden');
-            window.showPageRegistrasi();
-        };
-    }
+    btnLogout.onclick = () => {
+        // 1. Sembunyikan Dropdown
+        dropdown.classList.add('hidden');
+        // 2. Hapus status admin jika sedang login admin
+        window.currentAdmin = null;
+        // 3. Panggil fungsi sakti untuk kembali ke halaman awal
+        window.showPageRegistrasi();
+    };
+}
 };
 
 // Tutup dropdown jika klik di luar area menu
