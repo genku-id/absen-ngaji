@@ -19,6 +19,7 @@ body {
 /* --- HEADER --- */
 header {
     width: 100%;
+    height: 70px;
     background: linear-gradient(rgba(0, 86, 179, 0.7), rgba(0, 86, 179, 0.7)), url('logo1.png');
     background-size: cover;
     background-position: center;
@@ -59,16 +60,19 @@ header {
 
 #menu-dropdown {
     position: absolute;
-    right: 0;
-    top: 40px;
+    right: 10px;
+    top: 60px; /* Sesuaikan dengan tinggi header */
     background: white;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     border-radius: 8px;
     width: 180px;
-    z-index: 1000;
-    display: flex;
+    z-index: 2000;
+    display: none; /* Default sembunyi */
     flex-direction: column;
-    overflow: hidden;
+}
+
+#menu-dropdown.show {
+    display: flex; /* Gunakan class .show untuk memunculkan */
 }
 
 #menu-dropdown button {
