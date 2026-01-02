@@ -1,19 +1,30 @@
-body {
+/* --- DASAR & BODY --- */
+html, body {
+    height: 100%;
     margin: 0;
     padding: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #f0f2f5;
-    overflow-x: hidden; /* Mencegah geser kanan-kiri */
+    touch-action: manipulation; 
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f0f2f5;
+    overflow-x: hidden;
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* --- HEADER --- */
 header {
     width: 100%;
-    /* Menggunakan overlay biru tua (rgba 0, 86, 179) agar teks putih menonjol */
     background: linear-gradient(rgba(0, 86, 179, 0.7), rgba(0, 86, 179, 0.7)), url('logo1.png');
     background-size: cover;
     background-position: center;
     color: white;
-    padding: 12px 15px; /* Dikecilkan sedikit agar lebih tipis */
+    padding: 12px 15px;
+    padding-top: env(safe-area-inset-top);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -35,127 +46,15 @@ header {
     background: none;
     border: none;
     color: white;
-    /* Menyesuaikan ukuran titik 3 agar pas dengan header kecil */
-    font-size: 20px; 
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.card {
-    background: white;
-    width: 100%; /* Full lebar layar */
-    max-width: 500px; /* Batas maksimal kalau dibuka di laptop */
-    margin: 0 auto; /* Supaya tetap di tengah kalau layar sangat lebar */
-    padding: 20px;
-    box-sizing: border-box; /* Penting! Supaya padding tidak menambah lebar kotak */
-    min-height: calc(100vh - 60px); /* Minimal tinggi se-layar dikurangi header */
-    border-radius: 0; /* Menghilangkan lengkungan di pojok agar benar-benar full */
-    display: flex;
-    flex-direction: column;
-}
-
-input, select, button {
-    width: 100%;
-    padding: 12px;
-    margin: 10px 0;
-    border-radius: 5px;
-    border: 1px solid #ccc;
-    box-sizing: border-box;
-}
-
-.primary-btn {
-    background-color: #007bff; /* Warna Biru Utama */
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    width: 100%;
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
-}
-
-.hidden { display: none; }
-
-#menu-dropdown {
-    position: absolute;
-    right: 10px;
-    background: white;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    border-radius: 5px;
-}
-
-#menu-dropdown button {
-    color: black;
-    border: none;
-    background: none;
-    text-align: left;
-}
-
-#success-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: #075e54; /* Hijau tua senada header baru */
-    color: white;
-    display: none; /* Awalnya tersembunyi */
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999; /* Pastikan berada di paling atas */
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-.admin-card { max-width: 600px; }
-/* Container Tombol Admin menyamping */
-.admin-actions { 
-    display: flex; 
-    flex-wrap: nowrap; 
-    gap: 5px; 
-    margin-bottom: 20px;
-}
-
-/* Tombol Admin Default (Abu-abu) */
-.admin-btn {
-    flex: 1;
-    background-color: #666; /* Abu-abu */
-    color: white;
-    border: none;
-    padding: 10px 5px;
-    font-size: 11px; /* Ukuran teks lebih kecil agar muat */
-    font-weight: bold;
-    cursor: pointer;
-    border-radius: 5px;
-    transition: 0.3s;
-}
-
-/* Tombol Saat Aktif (Hijau) */
-.admin-btn.active {
-    background-color: #00aaff !important; /* Biru yang lebih muda */
-}
-
-/* Tabel agar tidak memakan tempat */
-.table-responsive {
-    overflow-x: auto;
-    margin-top: 10px;
-}
-.qr-result { margin-top: 20px; text-align: center; }
-.qr-item { margin: 20px 0; padding: 10px; border: 1px dashed #ccc; }
-#qrcode-absen img, #qrcode-izin img { margin: 0 auto; border: 5px solid white; }
-.secondary-btn { background: #666; color: white; border: none; }
-.menu-container {
-    position: relative;
-}
-
-#menu-btn {
-    background: none;
-    border: none;
-    color: white;
     font-size: 24px;
+    font-weight: bold;
     cursor: pointer;
     padding: 0 10px;
+}
+
+/* --- NAVIGASI DROPDOWN --- */
+.menu-container {
+    position: relative;
 }
 
 #menu-dropdown {
@@ -188,40 +87,41 @@ input, select, button {
     background-color: #f5f5f5;
 }
 
-.hidden {
-    display: none !important;
-}
-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 12px; }
-th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-th { 
-    background-color: #0056b3; /* Biru Tua */
-    color: white; 
-}
-.row-alfa { background-color: #ffebee; color: #c62828; }
-.row-hadir { background-color: #e8f5e9; color: #2e7d32; }
-.filter-box { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-/* List Akun Tersimpan */
-.account-list { margin-bottom: 15px; text-align: left; }
-.account-item {
+/* --- KARTU & KONTEN --- */
+.card {
+    background: white;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 20px;
+    box-sizing: border-box;
+    min-height: calc(100vh - 60px);
+    border-radius: 0;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #f9f9f9;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    border: 1px solid #eee;
-}
-.acc-info { flex-grow: 1; cursor: pointer; }
-.btn-x { 
-    background: none; border: none; color: #ff5252; 
-    font-size: 18px; cursor: pointer; padding: 5px 10px; 
+    flex-direction: column;
 }
 
-/* Dashboard Sapaan */
-.salam-box { padding: 20px 0; text-align: center; }
-.scan-btn {
-    background-color: #007bff; /* Warna Biru Utama */
+.card h1 {
+    color: #0056b3;
+}
+
+.salam-box {
+    padding: 20px 0;
+    text-align: center;
+}
+
+/* --- FORM & TOMBOL --- */
+input, select, button {
+    width: 100%;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+}
+
+.primary-btn, .scan-btn {
+    background-color: #007bff;
     color: white;
     border: none;
     padding: 15px;
@@ -232,90 +132,64 @@ th {
     box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
 }
 
-/* Success Overlay Full Screen */
-#success-overlay {
-    background-color: #0056b3; /* Ubah dari Hijau ke Biru Tua */
-    font-family: 'Comic Sans MS', cursive, sans-serif; /* Supaya lebih ramah */
-}
-#reader {
-    width: 100% !important; /* Paksa lebar 100% */
-    margin: 10px 0;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #000;
+.secondary-btn {
+    background: #666;
+    color: white;
+    border: none;
 }
 
-/* Memperbaiki ukuran gambar di dalam scanner agar tidak kecil */
-#reader video {
-    width: 100% !important;
-    height: auto !important;
-    object-fit: cover; /* Kamera akan memenuhi kotak */
-}
-
-/* Tabel Admin agar tidak meluber ke samping */
+/* --- TABEL --- */
 .table-responsive {
     width: 100%;
-    overflow-x: auto; /* Bisa digeser kiri kanan jika tabel kepanjangan */
+    overflow-x: auto;
     margin-top: 15px;
 }
 
 table {
     width: 100%;
-    min-width: 300px; /* Menjamin isi tabel tidak dempet */
+    min-width: 300px;
+    border-collapse: collapse;
+    font-size: 12px;
 }
 
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-    /* Mencegah zoom saat double tap dan scrolling liar */
-    touch-action: manipulation; 
-    user-select: none; /* Mencegah teks terpilih/keblok */
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
 }
 
-/* Pastikan header tetap di atas saat mode Standalone PWA */
-header {
-    padding-top: env(safe-area-inset-top); /* Menyesuaikan poni HP modern */
-}
-/* Menghilangkan seleksi biru saat tombol diklik di HP */
-* {
-    -webkit-tap-highlight-color: transparent;
+th { 
+    background-color: #0056b3;
+    color: white; 
 }
 
-/* Mengatur area aman untuk HP berponi (Notch) */
-body {
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-}
-.card h1 {
-    color: #0056b3; /* Biru Tua untuk Nama Jamaah */
-}
-/* Overlay Latar Belakang */
-.modal-overlay {
+.row-alfa { background-color: #ffebee; color: #c62828; }
+.row-hadir { background-color: #e8f5e9; color: #2e7d32; }
+
+/* --- MODAL & OVERLAY --- */
+.modal-overlay, #modal-pilih-admin {
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    display: flex;
+    display: flex; /* Memastikan isi di tengah */
     justify-content: center;
     align-items: center;
     z-index: 10000;
 }
 
-/* Kotak Modal */
 .modal-content {
     background: white;
     padding: 25px;
     border-radius: 15px;
     width: 85%;
-    max-width: 320px;
+    max-width: 400px; /* Ukuran lebih pas untuk login */
     text-align: center;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.3);
 }
 
 .modal-content h3 { color: #0056b3; margin-top: 0; }
 
-/* Tombol di dalam Modal */
 .modal-buttons {
     display: flex;
     gap: 10px;
@@ -323,11 +197,40 @@ body {
 }
 
 .modal-buttons button { margin: 0; flex: 1; }
+
+#success-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: #0056b3;
+    color: white;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    font-family: 'Comic Sans MS', cursive, sans-serif;
+}
+
+/* --- SCANNER --- */
+#reader {
+    width: 100% !important;
+    margin: 10px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    background: #000;
+}
+
+#reader video {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: cover;
+}
+
+/* --- SUGGESTION BOX --- */
 .suggestion-container {
     position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    top: 100%; left: 0; right: 0;
     background: white;
     border: 1px solid #ddd;
     border-radius: 0 0 8px 8px;
@@ -351,47 +254,14 @@ body {
     color: white;
 }
 
-window.prosesLoginAdmin = async () => {
-    const inputUser = document.getElementById('admin-user').value.trim();
-    const inputPass = document.getElementById('admin-pass').value.trim();
-    const btn = document.getElementById('btn-login-admin');
+/* --- UTILS --- */
+.hidden {
+    display: none !important;
+}
 
-    if (!inputUser || !inputPass) return alert("Username & Password wajib diisi!");
-
-    // Ubah status tombol agar user tahu proses sedang berjalan
-    btn.innerText = "Memverifikasi...";
-    btn.disabled = true;
-    btn.style.opacity = "0.7";
-
-    try {
-        const q = query(collection(db, "admins"), where("username", "==", inputUser));
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
-            alert("Username tidak terdaftar!");
-        } else {
-            const adminData = snap.docs[0].data();
-            // Gunakan String() untuk antisipasi jika di Firebase pass adalah tipe Number
-            if (String(adminData.password) === inputPass) {
-                window.currentAdmin = {
-                    role: adminData.role,
-                    wilayah: adminData.wilayah,
-                    username: adminData.username
-                };
-                alert("Login Berhasil!");
-                document.getElementById('modal-pilih-admin').style.display = 'none';
-                if (typeof window.bukaPanelAdmin === 'function') window.bukaPanelAdmin();
-                return;
-            } else {
-                alert("Password salah!");
-            }
-        }
-    } catch (e) {
-        alert("Error: " + e.message);
-    }
-
-    // Jika sampai sini berarti GAGAL, kembalikan tombol ke normal
-    btn.innerText = "MASUK SEKARANG";
-    btn.disabled = false;
-    btn.style.opacity = "1";
-};
+.filter-box {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 10px;
+}
