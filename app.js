@@ -34,6 +34,9 @@ window.hapusAkun = (nama) => {
 // --- HALAMAN LOGIN/REGISTRASI ---
 window.showPageRegistrasi = () => {
     localStorage.removeItem('currentUser');
+    document.getElementById('pendaftar-section').classList.remove('hidden');
+    document.getElementById('dashboard-section').classList.add('hidden');
+    document.getElementById('admin-section').classList.add('hidden');
     const content = document.getElementById('pendaftar-section');
     const accounts = getSavedAccounts();
 
