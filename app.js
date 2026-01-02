@@ -227,13 +227,25 @@ const setupNav = () => {
     }
 
     // 3. Klik Logout
-    if (btnLogout) {
+    // Di dalam file app.js bagian setupNav
+if (btnLogout) {
     btnLogout.onclick = () => {
-        // 1. Sembunyikan Dropdown
+        // 1. Sembunyikan dropdown menu
         dropdown.classList.add('hidden');
-        // 2. Hapus status admin jika sedang login admin
+        
+        // 2. BERSIHKAN LAYAR (Sembunyikan semua section secara manual)
+        const secAdmin = document.getElementById('admin-section');
+        const secDash = document.getElementById('dashboard-section');
+        const secReg = document.getElementById('pendaftar-section');
+        
+        if (secAdmin) secAdmin.classList.add('hidden');
+        if (secDash) secDash.classList.add('hidden');
+        if (secReg) secReg.classList.remove('hidden');
+
+        // 3. Reset data admin di memori
         window.currentAdmin = null;
-        // 3. Panggil fungsi sakti untuk kembali ke halaman awal
+
+        // 4. Jalankan fungsi registrasi untuk menampilkan list akun
         window.showPageRegistrasi();
     };
 }
