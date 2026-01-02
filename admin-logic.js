@@ -5,31 +5,25 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 // --- LOGIN & MODAL ADMIN ---
+// Di awal file admin-logic.js
 window.bukaModalPilihAdmin = () => {
-    console.log("Membuka modal admin..."); // Untuk cek di console F12
     const modal = document.getElementById('modal-pilih-admin');
-    
-    if (!modal) {
-        alert("Error: Element modal-pilih-admin tidak ditemukan di HTML!");
-        return;
-    }
+    if (!modal) return console.error("Elemen modal-pilih-admin tidak ditemukan!");
 
     modal.innerHTML = `
-        <div class="card" style="width:92%; max-width:400px; padding:30px; text-align:center; position:relative;">
+        <div class="card" style="width:90%; max-width:400px; padding:30px; text-align:center;">
             <h2 style="color:#0056b3; margin-top:0;">Login Admin</h2>
-            <p style="font-size:12px; color:gray; margin-bottom:20px;">Masuk sesuai wilayah tugas Anda.</p>
-            <input type="text" id="admin-user" placeholder="Username" autocomplete="username">
-            <input type="password" id="admin-pass" placeholder="Password" autocomplete="current-password">
-            <button onclick="prosesLoginAdmin()" id="btn-login-admin" class="primary-btn">MASUK PANEL</button>
-            <button onclick="window.tutupModalAdmin()" style="background:none; border:none; color:red; margin-top:15px; cursor:pointer; font-weight:bold;">Batal</button>
+            <input type="text" id="admin-user" placeholder="Username">
+            <input type="password" id="admin-pass" placeholder="Password">
+            <button onclick="window.prosesLoginAdmin()" id="btn-login-admin" class="primary-btn">MASUK PANEL</button>
+            <button onclick="window.tutupModalAdmin()" style="background:none; border:none; color:red; margin-top:15px; cursor:pointer;">Batal</button>
         </div>
     `;
-
-    // Pastikan class 'hidden' dihapus dan display diset ke flex
     modal.classList.remove('hidden');
-    modal.style.display = 'flex'; 
+    modal.style.display = 'flex';
 };
 
+// Daftarkan juga fungsi pendukung lainnya ke window
 window.tutupModalAdmin = () => {
     const modal = document.getElementById('modal-pilih-admin');
     modal.classList.add('hidden');
