@@ -136,9 +136,20 @@ window.simpanEvent = async () => {
 };
 
 window.tutupEvent = async (id) => {
-    if (confirm("Tutup event ini?")) {
-        await deleteDoc(doc(db, "events", id));
-        renderTabEvent();
+    if (confirm("Apakah Anda yakin ingin menutup event ini? Data absensi yang sudah masuk akan tetap tersimpan di laporan.")) {
+        try {
+            // Kita ubah status event menjadi 'closed' alih-alih menghapusnya 
+            // Agar relasi data di laporan tetap kuat
+            await setDoc(doc(db, "events", id), { 
+                status: "closed",
+                closedAt: serverTimestamp() 
+            }, { merge: true });
+            
+            alert("Event Berhasil Ditutup!");
+            renderTabEvent();
+        } catch (e) {
+            alert("Gagal menutup event: " + e.message);
+        }
     }
 };
 
@@ -168,27 +179,45 @@ async function renderTabLaporan() {
         const mSnap = await getDocs(qM);
 
         let dataLaporan = [];
+       // Ganti bagian logika di dalam mSnap.forEach pada renderTabLaporan:
+
         mSnap.forEach(doc => {
             const j = doc.data();
-            // 1. Cek absen di wilayah sendiri
-            const myEvIds = activeEvents.filter(e => e.wilayah === wilayah).map(e => e.id);
-            const absenSini = allAtt.find(a => a.nama === j.nama && myEvIds.includes(a.eventId));
+            
+            // Cari semua absensi milik jamaah ini (baik di wilayah sendiri maupun luar)
+            const semuaAbsenJamaah = allAtt.filter(a => a.nama === j.nama);
+            
+            // 1. Cari yang absen di wilayah admin ini (Hadir Lokal)
+            const absenSini = semuaAbsenJamaah.find(a => a.wilayahEvent === wilayah);
 
-            // 2. Cek absen di wilayah lain (SB LAIN)
-            const absenLain = allAtt.find(a => a.nama === j.nama && !myEvIds.includes(a.eventId));
+            // 2. Cari yang absen di wilayah lain (SB LAIN)
+            // Hanya diambil jika dia TIDAK absen di wilayah sendiri
+            const absenLuar = semuaAbsenJamaah.find(a => a.wilayahEvent !== wilayah);
 
-            let res = { nama: j.nama, kelompok: j.kelompok, jam: "-", status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" };
+            let res = { 
+                nama: j.nama, 
+                kelompok: j.kelompok, 
+                jam: "-", 
+                status: "❌ ALFA", 
+                color: "row-alfa", 
+                rawStatus: "alfa" 
+            };
 
             if (absenSini) {
+                // TETAP HADIR (LOKAL)
                 res.jam = absenSini.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
                 res.status = absenSini.status === "hadir" ? "✅ HADIR" : "🙏🏻 IZIN";
                 res.color = absenSini.status === "hadir" ? "row-hadir" : "";
                 res.rawStatus = absenSini.status;
-            } else if (absenLain) {
-                res.status = `🚀 IKUT ${absenLain.wilayahEvent}`;
-                res.color = "";
-                res.rawStatus = "hadir"; // Terhitung hadir di statistik
+            } else if (absenLuar) {
+                // TETAP DIHITUNG HADIR (TAPI ADA KETERANGAN SB LAIN)
+                res.jam = absenLuar.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
+                // KUNCI: Status teksnya tetap mengandung kata "HADIR" agar tidak membingungkan
+                res.status = `✅ HADIR (SB ${absenLuar.wilayahEvent})`; 
+                res.color = "row-hadir"; // Warna hijau
+                res.rawStatus = "hadir"; // Masuk hitungan statistik hadir
             }
+            
             dataLaporan.push(res);
         });
 
@@ -234,12 +263,32 @@ window.bukaStatistik = () => {
 };
 
 window.resetLaporan = async () => {
-    if (confirm("Hapus semua laporan wilayah ini?")) {
-        const q = query(collection(db, "attendance"), where("wilayahEvent", "==", window.currentAdmin.wilayah));
-        const snap = await getDocs(q);
-        await Promise.all(snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-        alert("Data Bersih!");
-        renderTabLaporan();
+    const { wilayah } = window.currentAdmin;
+    
+    if (confirm(`PERINGATAN: Menghapus SEMUA laporan dan QR Code untuk wilayah ${wilayah}? Data yang sudah dihapus tidak bisa dikembalikan.`)) {
+        try {
+            // 1. Cari dan Hapus Event (QR Code) milik wilayah ini
+            const qEv = query(collection(db, "events"), where("wilayah", "==", wilayah));
+            const snapEv = await getDocs(qEv);
+            const deleteEvents = snapEv.docs.map(d => deleteDoc(doc(db, "events", d.id)));
+
+            // 2. Cari dan Hapus Semua Data Absensi (Attendance) milik wilayah ini
+            // Kita hapus berdasarkan 'wilayahEvent' agar tepat sasaran
+            const qAtt = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
+            const snapAtt = await getDocs(qAtt);
+            const deleteAtt = snapAtt.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
+
+            // Jalankan semua proses penghapusan secara bersamaan
+            await Promise.all([...deleteEvents, ...deleteAtt]);
+
+            alert(`Berhasil! QR Code dan Laporan wilayah ${wilayah} telah dibersihkan.`);
+            
+            // Refresh tampilan
+            window.switchTab('ev'); // Kembali ke tab event untuk buat baru
+        } catch (e) {
+            console.error(e);
+            alert("Gagal mereset data: " + e.message);
+        }
     }
 };
 
@@ -268,4 +317,23 @@ window.hapusJamaah = async (id) => {
         await deleteDoc(doc(db, "master_jamaah", id));
         renderTabDatabase();
     }
+};
+window.downloadCSV = () => {
+    const data = window.currentReportData;
+    if (!data || data.length === 0) return alert("Tidak ada data untuk didownload");
+
+    let csvContent = "data:text/csv;charset=utf-8,Nama,Kelompok,Jam,Status\n";
+    data.forEach(row => {
+        // Hilangkan simbol emoji dan tag HTML untuk CSV yang bersih
+        const cleanStatus = row.status.replace(/<\/?[^>]+(>|$)/g, "").replace(/[^\x00-\x7F]/g, "");
+        csvContent += `${row.nama},${row.kelompok},${row.jam},${cleanStatus}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Laporan_Absensi_${window.currentAdmin.wilayah}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 };
