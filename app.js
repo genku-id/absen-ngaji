@@ -195,50 +195,58 @@ async function prosesAbsensi(eventId, user) {
     } catch (e) { alert("Gagal absen!"); showDashboard(user); }
 }
 
-// --- GLOBAL NAV LISTENERS (Akses dari Header) ---
+// --- GLOBAL NAV LISTENERS (Ganti dari baris 198 ke bawah) ---
 
-// 1. Klik Titik 3 (Toggle Menu)
-document.getElementById('menu-btn').onclick = (e) => {
-    e.stopPropagation();
+const setupNav = () => {
+    const btnMenu = document.getElementById('menu-btn');
     const dropdown = document.getElementById('menu-dropdown');
-    dropdown.classList.toggle('hidden');
+    const btnAdmin = document.getElementById('btn-admin-nav');
+    const btnLogout = document.getElementById('btn-logout-nav');
+
+    // 1. Klik Titik 3
+    if (btnMenu) {
+        btnMenu.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('hidden');
+        };
+    }
+
+    // 2. Klik Menu Admin
+    if (btnAdmin) {
+        btnAdmin.onclick = (e) => {
+            e.stopPropagation();
+            dropdown.classList.add('hidden');
+            // Memanggil fungsi dari admin-logic.js
+            if (typeof window.bukaModalPilihAdmin === 'function') {
+                window.bukaModalPilihAdmin();
+            } else {
+                alert("Sistem Admin belum siap, coba sesaat lagi.");
+            }
+        };
+    }
+
+    // 3. Klik Logout
+    if (btnLogout) {
+        btnLogout.onclick = () => {
+            dropdown.classList.add('hidden');
+            window.showPageRegistrasi();
+        };
+    }
 };
 
-// 2. Klik Menu Admin di dalam Dropdown
-const btnAdminNav = document.getElementById('btn-admin-nav');
-if (btnAdminNav) {
-    btnAdminNav.onclick = (e) => {
-        e.stopPropagation();
-        // Sembunyikan dropdown dulu
-        document.getElementById('menu-dropdown').classList.add('hidden');
-        // Panggil fungsi modal dari admin-logic.js
-        if (typeof window.bukaModalPilihAdmin === 'function') {
-            window.bukaModalPilihAdmin();
-        } else {
-            console.error("Fungsi bukaModalPilihAdmin belum termuat.");
-        }
-    };
-}
-
-// 3. Klik LogOut di dalam Dropdown
-const btnLogoutNav = document.getElementById('btn-logout-nav');
-if (btnLogoutNav) {
-    btnLogoutNav.onclick = () => {
-        document.getElementById('menu-dropdown').classList.add('hidden');
-        window.showPageRegistrasi();
-    };
-}
-
-// 4. Tutup dropdown jika klik di mana saja (di luar menu)
+// Tutup dropdown jika klik di luar area menu
 window.onclick = () => {
-    const menu = document.getElementById('menu-dropdown');
-    if (menu) menu.classList.add('hidden');
+    const dropdown = document.getElementById('menu-dropdown');
+    if (dropdown) dropdown.classList.add('hidden');
 };
 
-// --- INIT APP (Jalankan saat aplikasi pertama dibuka) ---
+// --- INIT APP (Inisialisasi Aplikasi) ---
 const initApp = () => {
+    // Jalankan setup navigasi
+    setupNav();
+    
+    // Cek status login user
     const current = JSON.parse(localStorage.getItem('currentUser'));
-    // Jika ada akun tersimpan di session, langsung masuk dashboard
     if (current) {
         window.showDashboard(current);
     } else {
@@ -246,4 +254,5 @@ const initApp = () => {
     }
 };
 
+// Jalankan aplikasi
 initApp();
