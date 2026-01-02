@@ -14,153 +14,195 @@ const dataWilayah = {
 
 let html5QrCode;
 
+// --- FUNGSI AKUN (GOOGLE STYLE) ---
 const getSavedAccounts = () => JSON.parse(localStorage.getItem('saved_accounts')) || [];
 
+const saveAccount = (user) => {
+    let accounts = getSavedAccounts();
+    if (!accounts.find(a => a.nama === user.nama && a.kelompok === user.kelompok)) {
+        accounts.push(user);
+        localStorage.setItem('saved_accounts', JSON.stringify(accounts));
+    }
+};
+
+window.hapusAkun = (nama) => {
+    let accounts = getSavedAccounts().filter(a => a.nama !== nama);
+    localStorage.setItem('saved_accounts', JSON.stringify(accounts));
+    showPageRegistrasi();
+};
+
+// --- HALAMAN LOGIN/REGISTRASI ---
 window.showPageRegistrasi = () => {
     localStorage.removeItem('currentUser');
     const content = document.getElementById('pendaftar-section');
     const accounts = getSavedAccounts();
-    
-    let htmlList = "";
+
+    let htmlAccounts = "";
     if (accounts.length > 0) {
-        htmlList = `
-            <div class="account-list" style="margin-bottom:20px; text-align:left;">
-                <p style="font-size: 11px; color: #888; font-weight:bold;">AKUN TERDAFTAR:</p>
+        htmlAccounts = `
+            <div style="margin-bottom:20px; text-align:left;">
+                <p style="font-size:11px; color:#888; font-weight:bold; margin-bottom:10px;">AKUN TERSIMPAN:</p>
                 ${accounts.map(acc => `
-                    <div class="account-card" onclick='pilihAkun(${JSON.stringify(acc)})' style="background:#f9f9f9; padding:10px; border-radius:10px; margin-bottom:5px; display:flex; justify-content:space-between; border:1px solid #eee; cursor:pointer;">
-                        <span><b>${acc.nama}</b><br><small>${acc.kelompok}</small></span>
+                    <div class="account-card" onclick='pilihAkun(${JSON.stringify(acc)})'>
+                        <div><b>${acc.nama}</b><br><small>${acc.desa} • ${acc.kelompok}</small></div>
+                        <button onclick="event.stopPropagation(); hapusAkun('${acc.nama}')" style="background:none; border:none; color:red; font-weight:bold;">✕</button>
                     </div>
                 `).join('')}
+                <div style="text-align:center; margin:15px 0; color:#ccc;">— ATAU MASUK BARU —</div>
             </div>
         `;
     }
 
     content.innerHTML = `
         <h2 style="margin-top:0;">LogIn Peserta</h2>
-        ${htmlList}
+        ${htmlAccounts}
         <select id="reg-desa">
             <option value="">Pilih Desa</option>
-            ${Object.keys(dataWilayah).map(desa => `<option value="${desa}">${desa}</option>`).join('')}
+            ${Object.keys(dataWilayah).map(d => `<option value="${d}">${d}</option>`).join('')}
         </select>
         <select id="reg-kelompok" disabled><option value="">Pilih Kelompok</option></select>
-        <div style="position: relative; width: 100%;">
-            <input type="text" id="reg-nama" placeholder="Ketik Nama Anda..." autocomplete="off" disabled>
+        <div style="position:relative;">
+            <input type="text" id="reg-nama" placeholder="Ketik Nama Lengkap..." autocomplete="off" disabled>
             <div id="suggestion-box" class="suggestion-container hidden"></div>
         </div>
-        <div style="margin: 15px 0; text-align: left;">
-            <p style="font-size: 13px; font-weight: bold; margin-bottom:5px;">Jenis Kelamin:</p>
+        <div style="margin:10px 0; text-align:left;">
+            <p style="font-size:13px; font-weight:bold;">Jenis Kelamin:</p>
             <label><input type="radio" name="reg-gender" value="PUTRA"> Putra</label> &nbsp;
             <label><input type="radio" name="reg-gender" value="PUTRI"> Putri</label>
         </div>
-        <button id="btn-login-peserta" class="primary-btn" style="width:100%;">MASUK</button>
+        <button id="btn-login" class="primary-btn">MASUK SEKARANG</button>
     `;
 
-    // Logic Dropdown & Sugesti
-    const desaSel = document.getElementById('reg-desa');
-    const kelSel = document.getElementById('reg-kelompok');
-    const namaInp = document.getElementById('reg-nama');
-    const suggestBox = document.getElementById('suggestion-box');
+    // Dropdown Logic
+    const dSel = document.getElementById('reg-desa');
+    const kSel = document.getElementById('reg-kelompok');
+    const nInp = document.getElementById('reg-nama');
+    const sBox = document.getElementById('suggestion-box');
 
-    desaSel.onchange = () => {
-        const kel = dataWilayah[desaSel.value] || [];
-        kelSel.innerHTML = '<option value="">Pilih Kelompok</option>' + kel.map(k => `<option value="${k}">${k}</option>`).join('');
-        kelSel.disabled = false;
+    dSel.onchange = () => {
+        const kls = dataWilayah[dSel.value] || [];
+        kSel.innerHTML = '<option value="">Pilih Kelompok</option>' + kls.map(k => `<option value="${k}">${k}</option>`).join('');
+        kSel.disabled = false;
     };
 
-    kelSel.onchange = () => { namaInp.disabled = false; };
+    kSel.onchange = () => nInp.disabled = false;
 
-    namaInp.oninput = async () => {
-        const val = namaInp.value.toUpperCase();
-        if (val.length < 2) { suggestBox.classList.add('hidden'); return; }
+    nInp.oninput = async () => {
+        const val = nInp.value.toUpperCase();
+        if (val.length < 2) { sBox.classList.add('hidden'); return; }
 
-        const q = query(collection(db, "master_jamaah"), 
-                  where("desa", "==", desaSel.value), 
-                  where("kelompok", "==", kelSel.value));
+        const q = query(collection(db, "master_jamaah"), where("desa", "==", dSel.value), where("kelompok", "==", kSel.value));
         const snap = await getDocs(q);
         let matches = [];
-        snap.forEach(d => {
-            const n = d.data().nama;
-            if (n.includes(val)) matches.push(n);
-        });
+        snap.forEach(d => { if (d.data().nama.includes(val)) matches.push(d.data().nama); });
 
         if (matches.length > 0) {
-            suggestBox.innerHTML = matches.map(name => `<div class="suggest-item" onclick="pilihSaranNama('${name}')">${name}</div>`).join('');
-            suggestBox.classList.remove('hidden');
-        } else { suggestBox.classList.add('hidden'); }
+            sBox.innerHTML = matches.map(m => `<div class="suggest-item" onclick="pilihSaran('${m}')">${m}</div>`).join('');
+            sBox.classList.remove('hidden');
+        } else { sBox.classList.add('hidden'); }
     };
 
-    document.getElementById('btn-login-peserta').onclick = prosesLogin;
+    document.getElementById('btn-login').onclick = prosesLogin;
 };
 
-window.pilihSaranNama = (nama) => {
-    document.getElementById('reg-nama').value = nama;
+window.pilihSaran = (n) => {
+    document.getElementById('reg-nama').value = n;
     document.getElementById('suggestion-box').classList.add('hidden');
+};
+
+window.pilihAkun = (user) => {
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    showDashboard(user);
 };
 
 window.prosesLogin = async () => {
     const nama = document.getElementById('reg-nama').value.trim().toUpperCase();
     const desa = document.getElementById('reg-desa').value;
     const kelompok = document.getElementById('reg-kelompok').value;
-    const genderRad = document.querySelector('input[name="reg-gender"]:checked');
+    const gender = document.querySelector('input[name="reg-gender"]:checked')?.value;
 
-    if (!nama || !desa || !kelompok || !genderRad) return alert("Lengkapi data!");
+    if (!nama || !desa || !kelompok || !gender) return alert("Mohon lengkapi data!");
 
-    const gender = genderRad.value;
     try {
-        const q = query(collection(db, "master_jamaah"), 
-                  where("desa", "==", desa), 
-                  where("kelompok", "==", kelompok), 
-                  where("nama", "==", nama));
+        const q = query(collection(db, "master_jamaah"), where("desa", "==", desa), where("kelompok", "==", kelompok), where("nama", "==", nama));
         const snap = await getDocs(q);
-        let userData;
+        let user;
 
         if (!snap.empty) {
-            userData = snap.docs[0].data();
+            user = snap.docs[0].data();
         } else {
-            // FITUR AUTO-REGISTER JIKA TIDAK ADA DI DB
             if (confirm(`Nama "${nama}" belum terdaftar. Daftarkan baru?`)) {
-                userData = { nama, desa, kelompok, gender };
-                await addDoc(collection(db, "master_jamaah"), userData);
+                user = { nama, desa, kelompok, gender };
+                await addDoc(collection(db, "master_jamaah"), user);
             } else return;
         }
 
-        let accounts = getSavedAccounts();
-        if(!accounts.find(a => a.nama === nama)) {
-            accounts.push(userData);
-            localStorage.setItem('saved_accounts', JSON.stringify(accounts));
-        }
-        localStorage.setItem('currentUser', JSON.stringify(userData));
-        showDashboard(userData);
+        saveAccount(user);
+        localStorage.setItem('currentUser', JSON.stringify(user));
+        showDashboard(user);
     } catch (e) { alert(e.message); }
 };
 
-window.pilihAkun = (acc) => {
-    localStorage.setItem('currentUser', JSON.stringify(acc));
-    showDashboard(acc);
-};
-
+// --- DASHBOARD & SCANNER ---
 window.showDashboard = (user) => {
     const content = document.getElementById('pendaftar-section');
     content.innerHTML = `
         <div class="salam-box">
             <p>Assalaamualaikum,</p>
-            <h1 style="margin:10px 0;">${user.nama}</h1>
-            <p style="color:#007bff;">${user.desa} - ${user.kelompok}</p>
+            <h1 style="color:#0056b3;">${user.nama}</h1>
+            <p><b>${user.desa} - ${user.kelompok}</b></p>
         </div>
-        <button onclick='mulaiScanner(${JSON.stringify(user)})' class="scan-btn" style="width:100%; padding:20px; font-size:18px;">
-            📸 MULAI SCAN BARCODE
-        </button>
+        <button onclick='mulaiScanner(${JSON.stringify(user)})' class="scan-btn">📸 MULAI SCAN BARCODE</button>
     `;
 };
 
-// ... Logika Scanner (mulaiScanner & prosesAbsensi) sama seperti kode sebelumnya ...
+window.mulaiScanner = (user) => {
+    const content = document.getElementById('pendaftar-section');
+    content.innerHTML = `<h3>Scan Barcode</h3><div id="reader"></div><button onclick='showDashboard(${JSON.stringify(user)})' class="primary-btn" style="background:#666;">BATAL</button>`;
+    html5QrCode = new Html5Qrcode("reader");
+    html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (txt) => {
+        await html5QrCode.stop();
+        prosesAbsensi(txt, user);
+    }).catch(e => alert("Kamera error!"));
+};
 
-// LOGIKA TITIK 3 (HEADER)
+async function prosesAbsensi(eventId, user) {
+    try {
+        const cleanId = eventId.replace("_IZIN", "");
+        const evSnap = await getDoc(doc(db, "events", cleanId));
+        if (!evSnap.exists()) return alert("Event tidak aktif!");
+
+        const ev = evSnap.data();
+        const status = eventId.includes("_IZIN") ? "izin" : "hadir";
+        
+        await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g,'')}`), {
+            nama: user.nama, desa: user.desa, kelompok: user.kelompok,
+            eventId: cleanId, wilayahEvent: ev.wilayah || "SEMUA",
+            status: status, waktu: serverTimestamp()
+        });
+
+        // Overlay Animasi
+        const overlay = document.getElementById('success-overlay');
+        overlay.innerHTML = `
+            <div class="celebration-wrap">
+                <p>Alhamdulillah Jazaa Kumullahu Khoiroo</p>
+                <div class="text-main">LANCAR<br>BAROKAH!</div>
+            </div>
+        `;
+        overlay.classList.remove('hidden');
+        setTimeout(() => { overlay.classList.add('hidden'); showDashboard(user); }, 4000);
+
+    } catch (e) { alert("Gagal absen!"); showDashboard(user); }
+}
+
+// Global Nav Listeners
 document.getElementById('menu-btn').onclick = (e) => {
     e.stopPropagation();
     document.getElementById('menu-dropdown').classList.toggle('hidden');
 };
+document.getElementById('btn-logout-nav').onclick = () => window.showPageRegistrasi();
 window.onclick = () => document.getElementById('menu-dropdown').classList.add('hidden');
 
-// Start App
-window.showPageRegistrasi();
+// Init
+const current = JSON.parse(localStorage.getItem('currentUser'));
+if (current) showDashboard(current); else showPageRegistrasi();
