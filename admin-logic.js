@@ -99,13 +99,13 @@ async function renderTabEvent() {
         sub.innerHTML = `
             <div style="display:flex; flex-direction:column; align-items:center; gap:20px; padding:10px;">
                 <div style="display:flex; gap:10px; width:100%; max-width:320px;">
-                    <button id="btn-pilih-hadir" onclick="window.switchQRIS('hadir', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#0056b3; color:white; font-weight:bold; cursor:pointer;">TIPE: HADIR</button>
-                    <button id="btn-pilih-izin" onclick="window.switchQRIS('izin', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#666; color:white; font-weight:bold; cursor:pointer;">TIPE: IZIN</button>
+                    <button id="btn-pilih-hadir" onclick="window.switchQRIS('hadir', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#0056b3; color:white; font-weight:bold; cursor:pointer;">HADIR</button>
+                    <button id="btn-pilih-izin" onclick="window.switchQRIS('izin', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#666; color:white; font-weight:bold; cursor:pointer;">IZIN</button>
                 </div>
 
                 <div id="qris-box" style="width: 300px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #0056b3; text-align: center; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
                     <div id="qris-header-bg" style="background: #0056b3; color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -20px -20px 20px -20px;">
-                        <h3 id="qris-title-text" style="margin: 0; letter-spacing: 2px; font-size: 16px;">QRIS HADIR</h3>
+                        <h3 id="qris-title-text" style="margin: 0; letter-spacing: 2px; font-size: 16px;">QR HADIR</h3>
                     </div>
                     
                     <div style="font-weight: 900; color: #333; margin-bottom: 15px; font-size: 18px; text-transform: uppercase;">
@@ -151,13 +151,13 @@ window.switchQRIS = (tipe, id, nama) => {
     const finalId = (tipe === 'izin') ? id + "_IZIN" : id;
 
     if (tipe === 'izin') {
-        title.innerText = "QRIS IZIN";
+        title.innerText = "QR IZIN";
         footer.innerText = "SCAN UNTUK IZIN (SB LAIN)";
         header.style.background = "#6c757d"; 
         btnI.style.background = "#6c757d";
         btnH.style.background = "#ccc";
     } else {
-        title.innerText = "QRIS HADIR";
+        title.innerText = "QR HADIR";
         footer.innerText = "SCAN UNTUK KEHADIRAN & SHODAQOH";
         header.style.background = "#0056b3";
         btnH.style.background = "#0056b3";
