@@ -183,59 +183,61 @@ async function prosesAbsensi(eventId, user) {
         const ev = evSnap.data();
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
 
+        // --- PANGGIL MODAL SHODAQOH ---
         window.tampilkanModalShodaqoh(async (nominal) => {
-        // Simpan data ke Firestore
-        await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
-            nama: user.nama,
-            desa: user.desa,
-            kelompok: user.kelompok,
-            gender: user.gender, 
-            eventId: cleanId,
-            wilayahEvent: ev.wilayah || "SEMUA",
-            status: status,
-            shodaqoh: nominal,
-            waktu: serverTimestamp()
-        });
+            try {
+                // Simpan data ke Firestore (Sekarang di dalam callback agar dapat nilai nominal)
+                await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
+                    nama: user.nama,
+                    desa: user.desa,
+                    kelompok: user.kelompok,
+                    gender: user.gender, 
+                    eventId: cleanId,
+                    wilayahEvent: ev.wilayah || "SEMUA",
+                    status: status,
+                    shodaqoh: nominal, // Menyimpan nominal dari modal
+                    waktu: serverTimestamp()
+                });
 
-        // --- MULAI OVERLAY SELEBRASI (Sesuai Code Awal Kamu) ---
-        const overlay = document.getElementById('success-overlay');
+                // --- TAMPILKAN SELEBRASI ---
+                const overlay = document.getElementById('success-overlay');
+                if (overlay) {
+                    overlay.style.display = 'flex';
+                    overlay.innerHTML = `
+                        <div class="celebration-wrap">
+                            <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
+                            <div class="text-main">LANCAR<br>BAROKAH!</div>
+                            ${nominal > 0 ? `<p style="margin-top:10px; font-weight:bold;">Shodaqoh Rp ${nominal.toLocaleString('id-ID')} telah dicatat</p>` : ''}
+                            <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
+                        </div>
+                    `;
 
-        if (overlay) {
-            overlay.style.display = 'flex';
-            overlay.innerHTML = `
-                <div class="celebration-wrap">
-                    <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
-                    <div class="text-main">LANCAR<br>BAROKAH!</div>
-                    ${nominal > 0 ? `<p style="margin-top:10px;">Shodaqoh Rp ${nominal.toLocaleString('id-ID')} diterima</p>` : ''}
-                    <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
-                </div>
-            `;
+                    if (typeof createParticle === 'function') {
+                        for (let i = 0; i < 50; i++) {
+                            createParticle(overlay);
+                        }
+                    }
 
-            // Efek Partikel
-            if (typeof createParticle === 'function') {
-                for (let i = 0; i < 50; i++) {
-                    createParticle(overlay);
+                    const sound = document.getElementById('success-sound');
+                    if(sound) sound.play().catch(e => console.log("Audio blocked"));
+
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        showDashboard(user);
+                    }, 4000);
+                } else {
+                    alert("LANCAR BAROKAH!");
+                    showDashboard(user);
                 }
-            }
-
-            // Putar Suara
-            const sound = document.getElementById('success-sound');
-            if(sound) sound.play().catch(e => console.log("Audio blocked"));
-
-            // Tunggu 4 Detik (Sesuai Keinginanmu)
-            setTimeout(() => {
-                overlay.style.display = 'none';
-                showDashboard(user);
-            }, 4000);
-
-        } else { alert("LANCAR BAROKAH!"); showDashboard(user); }
+            } catch (err) { alert("Gagal menyimpan: " + err.message);
+                }
+            }); 
 
     } catch (e) {
         console.error(e);
         alert("Gagal absen: " + e.message);
     }
 }
-
 window.createParticle = (parent) => {
     const p = document.createElement('div');
     p.style.position = 'fixed';
