@@ -306,26 +306,30 @@ window.bukaStatistik = () => {
 
     const sDarah = hitung(data);
 
-    let htmlStat = `
-        <div id="capture-area" style="background:white; padding:20px; color:black; width:800px; font-family:Arial;">
-            <h2 style="text-align:center; margin-bottom:5px;">LAPORAN STATISTIK KEHADIRAN</h2>
-            <p style="text-align:center; margin-top:0;">Wilayah: ${wilayah} | ${new Date().toLocaleDateString('id-ID')}</p>
-            
-            <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black;">
-                <tr style="background:#f0f0f0;">
-                    <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">UANG</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
-                </tr>
-                <tr style="background:#f0f0f0;">
-                    <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
-                </tr>
-                <tr style="font-weight:bold; text-align:center; font-size:16px; background:#e8f5e9;">
-                    <td>TOTAL</td><td>${sDarah.P}%</td><td style="color:#28a745;">${sDarah.totalUang.toLocaleString('id-ID')}</td><td>${sDarah.T}</td>
-                    <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
-                    <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
-                    <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
-                </tr>
-            </table>
+    // --- LOGIKA FILTER TABEL BERDASARKAN ROLE ---
+    
+    // 1. Tabel Utama (Selalu Muncul untuk semua role)
+    let tableUtama = `
+        <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black;">
+            <tr style="background:#f0f0f0;">
+                <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">UANG</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
+            </tr>
+            <tr style="background:#f0f0f0;">
+                <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
+            </tr>
+            <tr style="font-weight:bold; text-align:center; font-size:16px; background:#e8f5e9;">
+                <td>TOTAL</td><td>${sDarah.P}%</td><td style="color:#28a745;">${sDarah.totalUang.toLocaleString('id-ID')}</td><td>${sDarah.T}</td>
+                <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
+                <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
+                <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
+            </tr>
+        </table>
+    `;
 
+    // 2. Tabel Ringkasan Desa (Hanya untuk DAERAH)
+    let tableDesa = "";
+    if (role === "DAERAH") {
+        tableDesa = `
             <h4 style="margin: 10px 0 5px 0;">RINGKASAN PER DESA</h4>
             <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; margin-bottom:20px;">
                 <thead>
@@ -340,7 +344,13 @@ window.bukaStatistik = () => {
                     }).join('')}
                 </tbody>
             </table>
+        `;
+    }
 
+    // 3. Tabel Detail Kelompok (Untuk DAERAH dan DESA)
+    let tableKelompok = "";
+    if (role === "DAERAH" || role === "DESA") {
+        tableKelompok = `
             <h4 style="margin: 10px 0 5px 0;">DETAIL PER KELOMPOK</h4>
             ${Object.keys(detailKelompok).map(namaDesa => `
                 <div style="margin-bottom:15px; border:1px solid #ddd;">
@@ -356,6 +366,16 @@ window.bukaStatistik = () => {
                     </table>
                 </div>
             `).join('')}
+        `;
+    }
+
+    let htmlStat = `
+        <div id="capture-area" style="background:white; padding:20px; color:black; width:800px; font-family:Arial;">
+            <h2 style="text-align:center; margin-bottom:5px;">LAPORAN STATISTIK KEHADIRAN</h2>
+            <p style="text-align:center; margin-top:0;">Wilayah: ${wilayah} | ${new Date().toLocaleDateString('id-ID')}</p>
+            ${tableUtama}
+            ${tableDesa}
+            ${tableKelompok}
         </div>
     `;
 
