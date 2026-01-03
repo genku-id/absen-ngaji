@@ -202,34 +202,23 @@ window.tutupEvent = async (id) => {
 };
 
 // --- TAB LAPORAN ---
-// --- TAB LAPORAN (VERSI RAPI & TERFILTER EVENT AKTIF) ---
 async function renderTabLaporan() {
     const sub = document.getElementById('admin-sub-content');
     const { wilayah, role } = window.currentAdmin;
     sub.innerHTML = `<div id="laporan-table" class="table-responsive">Memproses data...</div>`;
 
     try {
-        // 1. CARI EVENT YANG SEDANG 'OPEN' DI WILAYAH INI
-        const qEv = query(
-            collection(db, "events"), 
-            where("status", "==", "open"), 
-            where("wilayah", "==", wilayah)
-        );
+        const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
         const evSnap = await getDocs(qEv);
 
         if (evSnap.empty) {
-            sub.innerHTML = `
-                <div style="text-align:center; padding:20px; color:#666;">
-                    <p>⚠️ Tidak ada Event yang sedang dibuka.</p>
-                    <p style="font-size:12px;">Buka Event di tab "EVENT" untuk melihat laporan.</p>
-                </div>`;
+            sub.innerHTML = `<div style="text-align:center; padding:20px; color:#666;"><p>⚠️ Tidak ada Event yang sedang dibuka.</p></div>`;
             return;
         }
 
         const activeEventId = evSnap.docs[0].id;
         const activeEventName = evSnap.docs[0].data().namaEvent;
 
-        // Tambahkan header tombol
         sub.innerHTML = `
             <div style="margin-bottom:15px; background:#f8f9fa; padding:10px; border-radius:10px; border-left:5px solid #007bff;">
                 <small>Laporan Aktif:</small><br><b>${activeEventName}</b>
@@ -239,15 +228,13 @@ async function renderTabLaporan() {
                 <button onclick="window.bukaStatistik()" class="primary-btn" style="background:#17a2b8; font-size:12px;">Statistik</button>
                 <button onclick="window.resetLaporan()" class="primary-btn" style="background:#dc3545; font-size:12px;">Reset</button>
             </div>
-            <div id="laporan-table" class="table-responsive">Memuat data jamaah...</div>
+            <div id="laporan-table" class="table-responsive">Memuat data...</div>
         `;
 
-        // 2. AMBIL DATA ABSEN HANYA UNTUK EVENT INI
         const qAtt = query(collection(db, "attendance"), where("eventId", "==", activeEventId));
         const attSnap = await getDocs(qAtt);
         const allAtt = attSnap.docs.map(d => d.data());
 
-        // 3. AMBIL DATA MASTER JAMAAH (Sesuai wilayah admin)
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
         else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
@@ -257,12 +244,10 @@ async function renderTabLaporan() {
         mSnap.forEach(doc => {
             const j = doc.data();
             const absen = allAtt.find(a => a.nama === j.nama);
-
             let res = { 
                 nama: j.nama, kelompok: j.kelompok, desa: j.desa, gender: j.gender, 
                 jam: "-", shodaqoh: 0, status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" 
             };
-
             if (absen) {
                 res.jam = absen.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
                 res.shodaqoh = absen.shodaqoh || 0;
@@ -273,24 +258,45 @@ async function renderTabLaporan() {
             dataLaporan.push(res);
         });
 
-        // 4. URUTKAN BERDASARKAN NAMA (A-Z)
-        dataLaporan.sort((a, b) => a.nama.localeCompare(b.nama));
+        // --- LOGIKA PENGURUTAN SAKTI ---
+        dataLaporan.sort((a, b) => {
+            // 1. Urut berdasarkan Desa
+            if (a.desa !== b.desa) return a.desa.localeCompare(b.desa);
+            // 2. Jika Desa sama, urut berdasarkan Kelompok
+            if (a.kelompok !== b.kelompok) return a.kelompok.localeCompare(b.kelompok);
+            // 3. Jika Kelompok sama, urut berdasarkan Nama (A-Z)
+            return a.nama.localeCompare(b.nama);
+        });
 
         window.currentReportData = dataLaporan;
-        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Uang</th><th>Status</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nama & Wilayah</th><th>Jam</th><th>Uang</th><th>Status</th></tr></thead><tbody>`;
+        
+        let lastDesa = "";
+        let lastKelompok = "";
+
         dataLaporan.forEach(d => {
+            // Tambahkan Header Desa jika ganti Desa (Hanya untuk Admin Daerah)
+            if (role === "DAERAH" && d.desa !== lastDesa) {
+                html += `<tr style="background:#333; color:white;"><td colspan="4" style="padding:5px 10px; font-weight:bold;">DESA: ${d.desa}</td></tr>`;
+                lastDesa = d.desa;
+            }
+            // Tambahkan Header Kelompok jika ganti Kelompok
+            if (d.kelompok !== lastKelompok) {
+                html += `<tr style="background:#e9ecef;"><td colspan="4" style="padding:5px 10px; font-weight:bold; color:#0056b3;">KELOMPOK: ${d.kelompok}</td></tr>`;
+                lastKelompok = d.kelompok;
+            }
+
             const txtUang = d.shodaqoh > 0 ? `<b>${d.shodaqoh.toLocaleString('id-ID')}</b>` : `-`;
             html += `<tr class="${d.color}">
-                <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                <td><b>${d.nama}</b></td>
                 <td align="center">${d.jam}</td>
                 <td align="right" style="color:#28a745;">${txtUang}</td>
                 <td>${d.status}</td>
             </tr>`;
         });
         document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
-    } catch (e) { console.error(e); alert("Gagal muat laporan: " + e.message); }
+    } catch (e) { console.error(e); alert("Error: " + e.message); }
 }
-
 // --- STATISTIK ---
 window.bukaStatistik = () => {
     const data = window.currentReportData;
