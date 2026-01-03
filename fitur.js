@@ -61,3 +61,66 @@ window.tampilkanModalShodaqoh = (callback) => {
 
     btnSkip.onclick = () => tutupDanLanjut(0);
 };
+
+// fitur.js (Tambahkan di bagian bawah)
+
+window.renderRiwayatBeranda = async (user, db, collection, query, where, getDocs, limit, orderBy) => {
+    const historyBox = document.getElementById('riwayat-absen-box');
+    if (!historyBox) return;
+
+    try {
+        // Ambil 1 data absen terbaru milik user ini
+        const q = query(
+            collection(db, "attendance"),
+            where("nama", "==", user.nama),
+            orderBy("waktu", "desc"),
+            limit(1)
+        );
+        
+        const snap = await getDocs(q);
+        if (snap.empty) {
+            historyBox.innerHTML = `<p style="font-size:12px; color:#888;">Belum ada riwayat absen terbaru.</p>`;
+            return;
+        }
+
+        const dataAbsen = snap.docs[0].data();
+        const evId = dataAbsen.eventId;
+
+        // Ambil data event untuk tahu jam mulainya
+        // Catatan: Pastikan di Firestore data event punya field "jamMulai" (contoh: "19:30")
+        const evSnap = await getDocs(query(collection(db, "events"))); 
+        const eventDoc = evSnap.docs.find(d => d.id === evId);
+        
+        let infoTelat = "";
+        let jamMulaiStr = "00:00";
+
+        if (eventDoc && eventDoc.data().jamMulai) {
+            jamMulaiStr = eventDoc.data().jamMulai;
+            const [jamM, minM] = jamMulaiStr.split(':').map(Number);
+            const waktuScan = dataAbsen.waktu.toDate();
+            
+            const menitScan = (waktuScan.getHours() * 60) + waktuScan.getMinutes();
+            const menitMulai = (jamM * 60) + minM;
+
+            // Logika: Jika telat lebih dari 10 menit
+            if (menitScan > (menitMulai + 10)) {
+                infoTelat = `<div style="margin-top:10px; color:#dc3545; font-weight:bold; background:#fff1f0; padding:8px; border-radius:8px; border:1px solid #ffa39e;">
+                                ⚠️ TERLAMBAT! Amshol Istigfar 10x
+                             </div>`;
+            }
+        }
+
+        const jamScan = dataAbsen.waktu.toDate().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+
+        historyBox.innerHTML = `
+            <div style="background:#f8f9fa; border:1.5px solid #eee; padding:15px; border-radius:12px; text-align:left; margin-bottom:15px;">
+                <p style="margin:0 0 5px 0; font-size:11px; font-weight:bold; color:#0056b3;">ABSEN TERAKHIR:</p>
+                <div style="font-size:14px; font-weight:bold;">${evId} (${dataAbsen.wilayahEvent})</div>
+                <div style="font-size:12px; color:#666;">Scan: ${jamScan} | Mulai: ${jamMulaiStr}</div>
+                ${infoTelat}
+            </div>
+        `;
+    } catch (e) {
+        console.error("Gagal muat riwayat:", e);
+    }
+};
