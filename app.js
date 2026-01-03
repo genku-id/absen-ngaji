@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import { 
     collection, getDocs, query, where, addDoc, 
-    doc, setDoc, getDoc, serverTimestamp 
+    doc, setDoc, getDoc, serverTimestamp, limit, orderBy 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
 const dataWilayah = {
@@ -154,13 +154,16 @@ window.prosesLogin = async () => {
 window.showDashboard = (user) => {
     const content = document.getElementById('pendaftar-section');
     content.innerHTML = `
-        <div class="salam-box">
+        <div class="salam-box" style="margin-bottom:20px;">
             <p>Assalaamualaikum,</p>
-            <h1 style="color:#0056b3;">${user.nama}</h1>
+            <h1 style="color:#0056b3; margin:5px 0;">${user.nama}</h1>
             <p><b>${user.desa} - ${user.kelompok}</b></p>
         </div>
+        <div id="riwayat-absen-box">Memuat riwayat...</div>
         <button onclick='mulaiScanner(${JSON.stringify(user)})' class="scan-btn">📸 MULAI SCAN BARCODE</button>
     `;
+   
+    window.renderRiwayatBeranda(user, db, collection, query, where, getDocs, limit, orderBy);
 };
 
 window.mulaiScanner = (user) => {
