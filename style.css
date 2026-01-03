@@ -150,3 +150,26 @@ th { background: #f8f9fa; color: #333; }
 .gender-option { display: flex; align-items: center; cursor: pointer; font-size: 15px; color: #444; }
 /* Memberi sedikit jarak antara bulatan radio dan teksnya */
 .gender-option input[type="radio"] { margin-right: 8px; width: 18px; height: 18px; cursor: pointer; }
+
+/* Style Bingkai QRIS */
+.qris-container {
+    width: 350px;
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    border: 2px solid #0056b3;
+    text-align: center;
+    position: relative;
+    font-family: 'Montserrat', sans-serif;
+}
+.qris-header {
+    background: #0056b3;
+    color: white;
+    padding: 10px;
+    border-radius: 10px 10px 0 0;
+    margin: -20px -20px 20px -20px;
+}
+.qris-header h3 { margin: 0; font-size: 18px; letter-spacing: 2px; }
+.qris-event-name { font-weight: 900; color: #333; margin-bottom: 15px; text-transform: uppercase; }
+.qris-footer { margin-top: 15px; border-top: 5px solid #ffc107; padding-top: 10px; }
+.qris-footer p { font-size: 12px; font-weight: bold; color: #555; margin: 0; }
