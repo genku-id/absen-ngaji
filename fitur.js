@@ -1,3 +1,7 @@
+import { db } from './firebase-config.js';
+import { 
+    collection, query, where, getDocs, limit, orderBy 
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 // Fungsi untuk memformat angka ke Rupiah saat mengetik
 window.formatRupiah = (input) => {
     let value = input.value.replace(/[^,\d]/g, '').toString();
@@ -62,37 +66,31 @@ window.tampilkanModalShodaqoh = (callback) => {
     btnSkip.onclick = () => tutupDanLanjut(0);
 };
 
-// fitur.js (Tambahkan di bagian bawah)
-
-window.renderRiwayatBeranda = async (user, db, collection, query, where, getDocs, limit, orderBy) => {
+window.renderRiwayatBeranda = async (user) => {
     const historyBox = document.getElementById('riwayat-absen-box');
     if (!historyBox) return;
-
     try {
-        // Ambil 1 data absen terbaru milik user ini
         const q = query(
             collection(db, "attendance"),
             where("nama", "==", user.nama),
             orderBy("waktu", "desc"),
             limit(1)
         );
-        
         const snap = await getDocs(q);
         if (snap.empty) {
-            historyBox.innerHTML = `<p style="font-size:12px; color:#888;">Belum ada riwayat absen terbaru.</p>`;
+            historyBox.innerHTML = `<p style="font-size:12px; color:#888;">Belum ada riwayat absen.</p>`;
             return;
         }
 
         const dataAbsen = snap.docs[0].data();
         const evId = dataAbsen.eventId;
 
-        // Ambil data event untuk tahu jam mulainya
-        // Catatan: Pastikan di Firestore data event punya field "jamMulai" (contoh: "19:30")
-        const evSnap = await getDocs(query(collection(db, "events"))); 
+        // Ambil data event untuk cek jamMulai
+        const evSnap = await getDocs(collection(db, "events")); 
         const eventDoc = evSnap.docs.find(d => d.id === evId);
         
         let infoTelat = "";
-        let jamMulaiStr = "00:00";
+        let jamMulaiStr = "--:--";
 
         if (eventDoc && eventDoc.data().jamMulai) {
             jamMulaiStr = eventDoc.data().jamMulai;
@@ -102,10 +100,10 @@ window.renderRiwayatBeranda = async (user, db, collection, query, where, getDocs
             const menitScan = (waktuScan.getHours() * 60) + waktuScan.getMinutes();
             const menitMulai = (jamM * 60) + minM;
 
-            // Logika: Jika telat lebih dari 10 menit
+            // Jika telat lebih dari 10 menit
             if (menitScan > (menitMulai + 10)) {
-                infoTelat = `<div style="margin-top:10px; color:#dc3545; font-weight:bold; background:#fff1f0; padding:8px; border-radius:8px; border:1px solid #ffa39e;">
-                                ⚠️ TERLAMBAT! Amshol Istigfar 10x
+                infoTelat = `<div style="margin-top:10px; color:#dc3545; font-weight:bold; background:#fff1f0; padding:10px; border-radius:8px; border:1px solid #ffa39e; font-size:13px;">
+                                ⚠️ TERLAMBAT!<br>Amshol Istigfar 10x
                              </div>`;
             }
         }
@@ -113,14 +111,17 @@ window.renderRiwayatBeranda = async (user, db, collection, query, where, getDocs
         const jamScan = dataAbsen.waktu.toDate().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
 
         historyBox.innerHTML = `
-            <div style="background:#f8f9fa; border:1.5px solid #eee; padding:15px; border-radius:12px; text-align:left; margin-bottom:15px;">
-                <p style="margin:0 0 5px 0; font-size:11px; font-weight:bold; color:#0056b3;">ABSEN TERAKHIR:</p>
-                <div style="font-size:14px; font-weight:bold;">${evId} (${dataAbsen.wilayahEvent})</div>
-                <div style="font-size:12px; color:#666;">Scan: ${jamScan} | Mulai: ${jamMulaiStr}</div>
+            <div style="background:#f8f9fa; border:1.5px solid #eee; padding:15px; border-radius:12px; text-align:left; margin-bottom:15px; animation: zoomIn 0.3s ease-out;">
+                <p style="margin:0 0 5px 0; font-size:11px; font-weight:bold; color:#0056b3; letter-spacing:1px;">ABSEN TERAKHIR:</p>
+                <div style="font-size:15px; font-weight:bold; color:#333;">${evId}</div>
+                <div style="font-size:12px; color:#666; margin-top:2px;">
+                    Scan: <b>${jamScan}</b> | Jadwal: <b>${jamMulaiStr}</b>
+                </div>
                 ${infoTelat}
             </div>
         `;
     } catch (e) {
-        console.error("Gagal muat riwayat:", e);
+        console.error(e);
+        historyBox.innerHTML = `<p style="font-size:12px; color:red;">Gagal memuat data.</p>`;
     }
 };
