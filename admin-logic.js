@@ -164,43 +164,47 @@ async function renderTabLaporan() {
 
         let dataLaporan = [];
         mSnap.forEach(doc => {
-    const j = doc.data();
-    const semuaAbsen = allAtt.filter(a => a.nama === j.nama);
-    const absenSini = semuaAbsen.find(a => a.wilayahEvent === wilayah);
-    const absenLuar = semuaAbsen.find(a => a.wilayahEvent !== wilayah);
+            const j = doc.data();
+            const semuaAbsen = allAtt.filter(a => a.nama === j.nama);
+            const absenSini = semuaAbsen.find(a => a.wilayahEvent === wilayah);
+            const absenLuar = semuaAbsen.find(a => a.wilayahEvent !== wilayah);
 
-    let res = { 
-        nama: j.nama, kelompok: j.kelompok, desa: j.desa, gender: j.gender, 
-        jam: "-", status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" 
-    };
+            let res = { 
+                nama: j.nama, kelompok: j.kelompok, desa: j.desa, gender: j.gender, 
+                jam: "-", shodaqoh: 0, status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" 
+            };
 
-    if (absenSini) {
-        // HADIR/IZIN DI LOKASI SENDIRI
-        res.jam = absenSini.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
-        res.status = absenSini.status === "hadir" ? "✅ HADIR" : "🙏🏻 IZIN";
-        res.color = absenSini.status === "hadir" ? "row-hadir" : "";
-        res.rawStatus = absenSini.status;
-    } else if (absenLuar) {
-        // ABSEN DI TEMPAT LAIN (SB LAIN)
-        res.jam = absenLuar.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
-        // Tampilkan simbol Roket dan keterangan SB LAIN
-        res.status = `🚀 SB ${absenLuar.wilayahEvent}`; 
-        res.color = "row-izin"; // Beri warna biru/kuning (sesuaikan CSS kamu)
-        res.rawStatus = "izin"; // <--- INI KUNCINYA: Di statistik wilayah ini, dia dianggap IZIN
-    }
-    dataLaporan.push(res);
-});
+            if (absenSini) {
+                res.jam = absenSini.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
+                res.shodaqoh = absenSini.shodaqoh || 0;
+                res.status = absenSini.status === "hadir" ? "✅ HADIR" : "🙏🏻 IZIN";
+                res.color = absenSini.status === "hadir" ? "row-hadir" : "";
+                res.rawStatus = absenSini.status;
+            } else if (absenLuar) {
+                res.jam = absenLuar.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
+                res.shodaqoh = absenLuar.shodaqoh || 0;
+                res.status = `🚀 SB ${absenLuar.wilayahEvent}`; 
+                res.color = "row-izin"; 
+                res.rawStatus = "izin"; 
+            }
+            dataLaporan.push(res);
+        });
 
         window.currentReportData = dataLaporan;
-        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Status</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Uang</th><th>Status</th></tr></thead><tbody>`;
         dataLaporan.forEach(d => {
-            html += `<tr class="${d.color}"><td><b>${d.nama}</b><br><small>${d.kelompok}</small></td><td align="center">${d.jam}</td><td>${d.status}</td></tr>`;
+            const txtUang = d.shodaqoh > 0 ? `<b>${d.shodaqoh.toLocaleString('id-ID')}</b>` : `<span style="color:#ccc;">-</span>`;
+            html += `<tr class="${d.color}">
+                <td><b>${d.nama}</b><br><small>${d.kelompok}</small></td>
+                <td align="center">${d.jam}</td>
+                <td align="right" style="color:#28a745;">${txtUang}</td>
+                <td>${d.status}</td>
+            </tr>`;
         });
         document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
     } catch (e) { alert(e.message); }
 }
 
-// --- STATISTIK ---
 window.bukaStatistik = () => {
     const data = window.currentReportData;
     const { wilayah, role } = window.currentAdmin;
@@ -211,6 +215,7 @@ window.bukaStatistik = () => {
         const H = list.filter(d => d.rawStatus === 'hadir').length;
         const I = list.filter(d => d.rawStatus === 'izin').length;
         const A = list.filter(d => d.rawStatus === 'alfa').length;
+        const totalUang = list.reduce((acc, curr) => acc + (curr.shodaqoh || 0), 0);
         
         const isG = (d, g) => d.gender && d.gender.trim().toUpperCase() === g;
 
@@ -223,10 +228,9 @@ window.bukaStatistik = () => {
         const A_Pi = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRI')).length;
 
         const P = T > 0 ? Math.round((H / T) * 100) : 0;
-        return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi };
+        return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi, totalUang };
     };
 
-    // Kelompokkan data untuk tampilan berjenjang
     let rekapDesa = {};
     let detailKelompok = {}; 
     data.forEach(d => {
@@ -240,7 +244,6 @@ window.bukaStatistik = () => {
 
     const sDarah = hitung(data);
 
-    // MULAI BANGUN HTML (Pastikan semua tabel masuk ke dalam variabel htmlStat)
     let htmlStat = `
         <div id="capture-area" style="background:white; padding:20px; color:black; width:800px; font-family:Arial;">
             <h2 style="text-align:center; margin-bottom:5px;">LAPORAN STATISTIK KEHADIRAN</h2>
@@ -248,13 +251,13 @@ window.bukaStatistik = () => {
             
             <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black;">
                 <tr style="background:#f0f0f0;">
-                    <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
+                    <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">UANG</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
                 </tr>
                 <tr style="background:#f0f0f0;">
                     <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
                 </tr>
-                <tr style="font-weight:bold; text-align:center; font-size:16px;">
-                    <td>TOTAL</td><td>${sDarah.P}%</td><td>${sDarah.T}</td>
+                <tr style="font-weight:bold; text-align:center; font-size:16px; background:#e8f5e9;">
+                    <td>TOTAL</td><td>${sDarah.P}%</td><td style="color:#28a745;">${sDarah.totalUang.toLocaleString('id-ID')}</td><td>${sDarah.T}</td>
                     <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
                     <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
                     <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
@@ -265,13 +268,13 @@ window.bukaStatistik = () => {
             <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; margin-bottom:20px;">
                 <thead>
                     <tr style="background:#eee;">
-                        <th>DESA</th><th>%</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
+                        <th>DESA</th><th>%</th><th>UANG</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
                     </tr>
                 </thead>
                 <tbody>
                     ${Object.keys(rekapDesa).map(namaDesa => {
                         const s = hitung(rekapDesa[namaDesa]);
-                        return `<tr style="border-bottom:1px solid #ccc;"><td style="text-align:left; font-weight:bold;">${namaDesa}</td><td>${s.P}%</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
+                        return `<tr style="border-bottom:1px solid #ccc;"><td style="text-align:left; font-weight:bold;">${namaDesa}</td><td>${s.P}%</td><td style="color:#28a745; font-weight:bold;">${s.totalUang.toLocaleString('id-ID')}</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
                     }).join('')}
                 </tbody>
             </table>
@@ -282,11 +285,11 @@ window.bukaStatistik = () => {
                     <div style="background:#28a745; color:white; padding:5px; font-weight:bold;">DESA: ${namaDesa}</div>
                     <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; font-size:12px;">
                         <tr style="background:#f9f9f9;">
-                            <th style="text-align:left;">KELOMPOK</th><th>%</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
+                            <th style="text-align:left;">KELOMPOK</th><th>%</th><th>UANG</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
                         </tr>
                         ${Object.keys(detailKelompok[namaDesa]).map(namaKel => {
                             const s = hitung(detailKelompok[namaDesa][namaKel]);
-                            return `<tr style="border-top:1px solid #eee;"><td style="text-align:left;">${namaKel}</td><td>${s.P}%</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
+                            return `<tr style="border-top:1px solid #eee;"><td style="text-align:left;">${namaKel}</td><td>${s.P}%</td><td style="color:#28a745; font-weight:bold;">${s.totalUang.toLocaleString('id-ID')}</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
                         }).join('')}
                     </table>
                 </div>
@@ -294,7 +297,6 @@ window.bukaStatistik = () => {
         </div>
     `;
 
-    // Tampilkan ke Modal
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'modal-stat';
