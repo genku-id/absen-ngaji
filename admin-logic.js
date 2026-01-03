@@ -84,7 +84,7 @@ window.switchTab = (tab) => {
     else if (tab === 'db') renderTabDatabase();
 };
 
-// --- TAB EVENT (DENGAN BINGKAI QRIS PROFESIONAL) ---
+// --- TAB EVENT ---
 async function renderTabEvent() {
     const sub = document.getElementById('admin-sub-content');
     sub.innerHTML = "<p>Memeriksa event aktif...</p>";
@@ -201,7 +201,7 @@ window.tutupEvent = async (id) => {
     }
 };
 
-// --- TAB LAPORAN (TIDAK BERUBAH) ---
+// --- TAB LAPORAN ---
 async function renderTabLaporan() {
     const sub = document.getElementById('admin-sub-content');
     const { wilayah, role } = window.currentAdmin;
@@ -266,7 +266,7 @@ async function renderTabLaporan() {
     } catch (e) { alert(e.message); }
 }
 
-// --- STATISTIK (TIDAK BERUBAH) ---
+// --- STATISTIK ---
 window.bukaStatistik = () => {
     const data = window.currentReportData;
     const { wilayah, role } = window.currentAdmin;
@@ -306,9 +306,6 @@ window.bukaStatistik = () => {
 
     const sDarah = hitung(data);
 
-    // --- LOGIKA FILTER TABEL BERDASARKAN ROLE ---
-    
-    // 1. Tabel Utama (Selalu Muncul untuk semua role)
     let tableUtama = `
         <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black;">
             <tr style="background:#f0f0f0;">
@@ -326,7 +323,6 @@ window.bukaStatistik = () => {
         </table>
     `;
 
-    // 2. Tabel Ringkasan Desa (Hanya untuk DAERAH)
     let tableDesa = "";
     if (role === "DAERAH") {
         tableDesa = `
@@ -347,7 +343,6 @@ window.bukaStatistik = () => {
         `;
     }
 
-    // 3. Tabel Detail Kelompok (Untuk DAERAH dan DESA)
     let tableKelompok = "";
     if (role === "DAERAH" || role === "DESA") {
         tableKelompok = `
@@ -387,7 +382,6 @@ window.bukaStatistik = () => {
             <div style="overflow-x:auto;">${htmlStat}</div>
             <div style="padding:15px; display:flex; flex-direction:column; gap:10px;">
                 <button onclick="window.downloadStatistikGambar()" class="primary-btn" style="background:#17a2b8;">📸 DOWNLOAD GAMBAR (PNG)</button>
-                <button onclick="window.resetLaporan()" class="primary-btn" style="background:#dc3545;">🗑️ RESET DATA WILAYAH</button>
                 <button onclick="document.body.removeChild(document.getElementById('modal-stat'))" class="secondary-btn">TUTUP</button>
             </div>
         </div>
@@ -423,7 +417,7 @@ window.resetLaporan = async () => {
     }
 };
 
-// --- TAB DATABASE JAMAAH (TIDAK BERUBAH) ---
+// --- TAB DATABASE JAMAAH ---
 async function renderTabDatabase() {
     const sub = document.getElementById('admin-sub-content');
     sub.innerHTML = `<input type="text" id="db-search" placeholder="Cari Nama..." oninput="filterDB()"><div id="db-list"></div>`;
