@@ -192,14 +192,16 @@ async function prosesAbsensi(eventId, user) {
     try {
         const cleanId = eventId.replace("_IZIN", "");
         const evSnap = await getDoc(doc(db, "events", cleanId));
+        
         if (!evSnap.exists()) return alert("Event tidak aktif!");
         
         const ev = evSnap.data();
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
 
-        // Kirim ev.role (dari admin pembuat event) ke modal
+        // Panggil modal dengan mengirimkan ev.role
         window.tampilkanModalShodaqoh(ev.role, async (hasil) => {
             try {
+                // Gunakan hasil.nominal dan hasil.kelas
                 await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
                     nama: user.nama,
                     desa: user.desa,
@@ -209,26 +211,25 @@ async function prosesAbsensi(eventId, user) {
                     wilayahEvent: ev.wilayah || "SEMUA",
                     status: status,
                     shodaqoh: hasil.nominal,
-                    kelas: hasil.kelas, // FIELD BARU TERSIMPAN!
+                    kelas: hasil.kelas, 
                     waktu: serverTimestamp()
                 });
 
                 const overlay = document.getElementById('success-overlay');
                 if (overlay) {
                     overlay.style.display = 'flex';
+                    // Kita bersihkan dulu isinya sebelum diisi baru
                     overlay.innerHTML = `
                         <div class="celebration-wrap">
                             <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
                             <div class="text-main">LANCAR<br>BAROKAH!</div>
-                            ${nominal > 0 ? `<p style="margin-top:10px; font-weight:bold;">Shodaqoh Rp ${nominal.toLocaleString('id-ID')} telah dicatat</p>` : ''}
+                            ${hasil.nominal > 0 ? `<p style="margin-top:10px; font-weight:bold; color:white;">Shodaqoh Rp ${hasil.nominal.toLocaleString('id-ID')} dicatat</p>` : ''}
                             <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
                         </div>
                     `;
 
                     if (typeof window.createParticle === 'function') {
-                        for (let i = 0; i < 50; i++) {
-                            window.createParticle(overlay);
-                        }
+                        for (let i = 0; i < 50; i++) { window.createParticle(overlay); }
                     }
 
                     const sound = document.getElementById('success-sound');
@@ -238,16 +239,16 @@ async function prosesAbsensi(eventId, user) {
                         overlay.style.display = 'none';
                         showDashboard(user);
                     }, 4000);
-                } else {
-                    alert("LANCAR BAROKAH!");
-                    showDashboard(user);
                 }
-            } catch (err) { alert("Gagal menyimpan: " + err.message); }
+            } catch (err) { 
+                console.error(err);
+                alert("Gagal menyimpan ke Firestore: " + err.message); 
+            }
         }); 
 
     } catch (e) {
         console.error(e);
-        alert("Gagal absen: " + e.message);
+        alert("Gagal memproses event: " + e.message);
     }
 }
 
