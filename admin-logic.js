@@ -269,7 +269,7 @@ async function renderTabLaporan() {
         });
 
         window.currentReportData = dataLaporan;
-        let html = `<table><thead><tr><th>Nama & Wilayah</th><th>Jam</th><th>Uang</th><th>Status</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nama & Wilayah</th><th>Jam</th><th>SHODAQOH</th><th>Status</th></tr></thead><tbody>`;
         
         let lastDesa = "";
         let lastKelompok = "";
@@ -340,7 +340,7 @@ window.bukaStatistik = () => {
     let tableUtama = `
         <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black;">
             <tr style="background:#f0f0f0;">
-                <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">UANG</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
+                <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">SHODAQOH</th><th rowspan="2">T</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
             </tr>
             <tr style="background:#f0f0f0;">
                 <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
@@ -361,7 +361,7 @@ window.bukaStatistik = () => {
             <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; margin-bottom:20px;">
                 <thead>
                     <tr style="background:#eee;">
-                        <th>DESA</th><th>%</th><th>UANG</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
+                        <th>DESA</th><th>%</th><th>SHODAQOH</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -383,7 +383,7 @@ window.bukaStatistik = () => {
                     <div style="background:#28a745; color:white; padding:5px; font-weight:bold;">DESA: ${namaDesa}</div>
                     <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; font-size:12px;">
                         <tr style="background:#f9f9f9;">
-                            <th style="text-align:left;">KELOMPOK</th><th>%</th><th>UANG</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
+                            <th style="text-align:left;">KELOMPOK</th><th>%</th><th>SHODAQOH</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th>
                         </tr>
                         ${Object.keys(detailKelompok[namaDesa]).map(namaKel => {
                             const s = hitung(detailKelompok[namaDesa][namaKel]);
