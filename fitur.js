@@ -17,33 +17,54 @@ window.formatRupiah = (input) => {
 };
 
 // Fungsi untuk menampilkan Modal Shodaqoh
-window.tampilkanModalShodaqoh = (callback) => {
+window.tampilkanModalShodaqoh = (roleAdmin, callback) => {
     const modal = document.createElement('div');
     modal.className = 'modal-overlay';
     modal.id = 'modal-shodaqoh';
     modal.style.zIndex = "10001";
+
+    // Cek apakah ini event kelompok
+    const isKelompok = roleAdmin === "KELOMPOK";
+
     modal.innerHTML = `
-        <div class="card" style="max-width:400px; text-align:center; padding:30px;">
-            <h2 style="margin:0; color:#0056b3;">Infaq / Shodaqoh</h2>
-            <div style="position:relative; margin:20px 0;">
-                <span style="position:absolute; left:15px; top:14px; font-weight:bold; color:#28a745;">Rp</span>
-                <input type="text" id="input-shodaqoh" style="padding-left:45px; font-size:20px; font-weight:bold;" placeholder="0" oninput="window.formatRupiah(this)" inputmode="numeric">
+        <div class="card" style="max-width:400px; text-align:center; padding:25px; border-top: 5px solid #0056b3;">
+            <h2 style="margin:0 0 10px 0; color:#0056b3;">Form Absensi</h2>
+            <p style="font-size:12px; color:#666; margin-bottom:20px;">Silakan lengkapi data kehadiran Anda</p>
+            
+            ${isKelompok ? `
+            <div style="text-align:left; margin-bottom:15px;">
+                <label style="font-size:13px; font-weight:bold; color:#333;">Pilih Kelas:</label>
+                <select id="pilih-kelas" style="width:100%; padding:12px; margin-top:5px; border-radius:8px; border:1px solid #ccc; font-size:15px;">
+                    <option value="PRA-REMAJA">PRA-REMAJA</option>
+                    <option value="REMAJA">REMAJA</option>
+                    <option value="PRA-NIKAH">PRA-NIKAH</option>
+                    <option value="UMUM/LAINNYA">UMUM/LAINNYA</option>
+                </select>
+            </div>` : ''}
+
+            <div style="text-align:left; margin-bottom:20px;">
+                <label style="font-size:13px; font-weight:bold; color:#333;">Infaq / Shodaqoh (Opsional):</label>
+                <div style="position:relative; margin-top:5px;">
+                    <span style="position:absolute; left:15px; top:12px; font-weight:bold; color:#28a745;">Rp</span>
+                    <input type="text" id="input-shodaqoh" style="padding-left:45px; font-size:18px; font-weight:bold;" placeholder="0" oninput="window.formatRupiah(this)" inputmode="numeric">
+                </div>
             </div>
-            <button id="btn-konf" class="primary-btn" style="background:#28a745;">KONFIRMASI</button>
-            <button id="btn-skip" style="background:none; border:none; color:#888; margin-top:15px; cursor:pointer;">LEWATI</button>
+
+            <button id="btn-konf" class="primary-btn" style="background:#28a745; width:100%; padding:15px;">KONFIRMASI ABSEN</button>
+            <button id="btn-skip" style="background:none; border:none; color:#888; margin-top:15px; cursor:pointer; font-size:13px;">Batal</button>
         </div>
     `;
     document.body.appendChild(modal);
-    const input = document.getElementById('input-shodaqoh');
-    setTimeout(() => input.focus(), 300);
+
+    const inputUang = document.getElementById('input-shodaqoh');
     document.getElementById('btn-konf').onclick = () => {
-        const nominal = parseInt(input.value.replace(/\./g, '')) || 0;
+        const nominal = parseInt(inputUang.value.replace(/\./g, '')) || 0;
+        const kelas = isKelompok ? document.getElementById('pilih-kelas').value : "-";
         document.body.removeChild(modal);
-        callback(nominal);
+        callback({ nominal, kelas }); // Kirim dua data sekaligus
     };
     document.getElementById('btn-skip').onclick = () => {
         document.body.removeChild(modal);
-        callback(0);
     };
 };
 
