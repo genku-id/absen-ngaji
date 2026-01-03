@@ -192,13 +192,13 @@ async function prosesAbsensi(eventId, user) {
     try {
         const cleanId = eventId.replace("_IZIN", "");
         const evSnap = await getDoc(doc(db, "events", cleanId));
-        
         if (!evSnap.exists()) return alert("Event tidak aktif!");
         
         const ev = evSnap.data();
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
 
-        window.tampilkanModalShodaqoh(async (nominal) => {
+        // Kirim ev.role (dari admin pembuat event) ke modal
+        window.tampilkanModalShodaqoh(ev.role, async (hasil) => {
             try {
                 await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
                     nama: user.nama,
@@ -208,7 +208,8 @@ async function prosesAbsensi(eventId, user) {
                     eventId: cleanId,
                     wilayahEvent: ev.wilayah || "SEMUA",
                     status: status,
-                    shodaqoh: nominal,
+                    shodaqoh: hasil.nominal,
+                    kelas: hasil.kelas, // FIELD BARU TERSIMPAN!
                     waktu: serverTimestamp()
                 });
 
