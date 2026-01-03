@@ -162,8 +162,8 @@ window.showDashboard = (user) => {
         <div id="riwayat-absen-box">Memuat riwayat...</div>
         <button onclick='mulaiScanner(${JSON.stringify(user)})' class="scan-btn">📸 MULAI SCAN BARCODE</button>
     `;
-   
-    window.renderRiwayatBeranda(user, db, collection, query, where, getDocs, limit, orderBy);
+   if (typeof window.renderRiwayatBeranda === 'function') {
+        window.renderRiwayatBeranda(user); }
 };
 
 window.mulaiScanner = (user) => {
