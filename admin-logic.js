@@ -84,7 +84,7 @@ window.switchTab = (tab) => {
     else if (tab === 'db') renderTabDatabase();
 };
 
-// --- TAB EVENT (DENGAN BINGKAI QRIS) ---
+// --- TAB EVENT (DENGAN BINGKAI QRIS PROFESIONAL) ---
 async function renderTabEvent() {
     const sub = document.getElementById('admin-sub-content');
     sub.innerHTML = "<p>Memeriksa event aktif...</p>";
@@ -96,29 +96,37 @@ async function renderTabEvent() {
         const ev = snap.docs[0].data();
         const evId = snap.docs[0].id;
         
-        // TAMPILAN BINGKAI PROFESIONAL
         sub.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
-                <div id="qris-frame" style="width:300px; background:white; padding:20px; border-radius:20px; border:3px solid #0056b3; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
-                    <div style="background:#0056b3; color:white; padding:10px; border-radius:12px 12px 0 0; margin:-20px -20px 15px -20px;">
-                        <h4 style="margin:0; letter-spacing:1px;">E-PRESENSI DIGITAL</h4>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:20px; padding:10px;">
+                <div style="display:flex; gap:10px; width:100%; max-width:320px;">
+                    <button id="btn-pilih-hadir" onclick="window.switchQRIS('hadir', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#0056b3; color:white; font-weight:bold; cursor:pointer;">TIPE: HADIR</button>
+                    <button id="btn-pilih-izin" onclick="window.switchQRIS('izin', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#666; color:white; font-weight:bold; cursor:pointer;">TIPE: IZIN</button>
+                </div>
+
+                <div id="qris-box" style="width: 300px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #0056b3; text-align: center; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
+                    <div id="qris-header-bg" style="background: #0056b3; color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -20px -20px 20px -20px;">
+                        <h3 id="qris-title-text" style="margin: 0; letter-spacing: 2px; font-size: 16px;">QRIS HADIR</h3>
                     </div>
-                    <h3 style="margin:0 0 10px 0; color:#333; text-transform:uppercase;">${ev.namaEvent}</h3>
-                    <div id="qrcode-canvas" style="display:flex; justify-content:center; padding:10px; border:1px solid #eee; border-radius:10px;"></div>
-                    <div style="margin-top:15px; border-top:4px solid #ffc107; padding-top:10px;">
-                        <p style="font-size:11px; font-weight:bold; color:#555; margin:0;">SCAN UNTUK HADIR & SHODAQOH</p>
-                        <small style="color:#0056b3; font-weight:bold;">ID: ${evId}</small>
+                    
+                    <div style="font-weight: 900; color: #333; margin-bottom: 15px; font-size: 18px; text-transform: uppercase;">
+                        ${ev.namaEvent}
+                    </div>
+                    
+                    <div id="qrcode-target" style="display:flex; justify-content:center; padding:10px; background:white; border: 1px solid #eee; border-radius: 10px;"></div>
+                    
+                    <div style="margin-top:15px; border-top: 4px solid #ffc107; padding-top:10px;">
+                        <p id="qris-footer-text" style="font-size: 11px; font-weight: bold; color: #555; margin: 0;">SCAN UNTUK KEHADIRAN & SHODAQOH</p>
+                        <small id="qris-id-text" style="color: #0056b3; font-weight: bold; font-size: 10px;">ID: ${evId}</small>
                     </div>
                 </div>
                 
-                <div style="width:100%; max-width:300px; display:flex; flex-direction:column; gap:8px;">
-                    <button onclick="window.downloadQRIS('${ev.namaEvent}')" class="primary-btn" style="background:#28a745;">📥 SIMPAN KE GALERI</button>
+                <div style="width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="window.downloadQRIS('${ev.namaEvent}')" class="primary-btn" style="background: #28a745;">📥 SIMPAN KE GALERI</button>
                     <button onclick="window.tutupEvent('${evId}')" class="primary-btn" style="background:#dc3545;">TUTUP EVENT</button>
                 </div>
             </div>
         `;
-        // Generate satu QR saja (ID Event), status Hadir/Izin diatur oleh tombol scanner user
-        new QRCode(document.getElementById("qrcode-canvas"), { text: evId, width: 200, height: 200 });
+        window.switchQRIS('hadir', evId, ev.namaEvent);
 
     } else {
         sub.innerHTML = `
@@ -129,6 +137,36 @@ async function renderTabEvent() {
         `;
     }
 }
+
+window.switchQRIS = (tipe, id, nama) => {
+    const target = document.getElementById("qrcode-target");
+    const title = document.getElementById("qris-title-text");
+    const footer = document.getElementById("qris-footer-text");
+    const idTxt = document.getElementById("qris-id-text");
+    const header = document.getElementById("qris-header-bg");
+    const btnH = document.getElementById("btn-pilih-hadir");
+    const btnI = document.getElementById("btn-pilih-izin");
+
+    target.innerHTML = ""; 
+    const finalId = (tipe === 'izin') ? id + "_IZIN" : id;
+
+    if (tipe === 'izin') {
+        title.innerText = "QRIS IZIN";
+        footer.innerText = "SCAN UNTUK IZIN (SB LAIN)";
+        header.style.background = "#6c757d"; 
+        btnI.style.background = "#6c757d";
+        btnH.style.background = "#ccc";
+    } else {
+        title.innerText = "QRIS HADIR";
+        footer.innerText = "SCAN UNTUK KEHADIRAN & SHODAQOH";
+        header.style.background = "#0056b3";
+        btnH.style.background = "#0056b3";
+        btnI.style.background = "#ccc";
+    }
+
+    idTxt.innerText = "ID: " + finalId;
+    new QRCode(target, { text: finalId, width: 220, height: 220, correctLevel : QRCode.CorrectLevel.H });
+};
 
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
@@ -144,7 +182,7 @@ window.simpanEvent = async () => {
 };
 
 window.downloadQRIS = (nama) => {
-    const frame = document.getElementById('qris-frame');
+    const frame = document.getElementById('qris-box');
     html2canvas(frame, { scale: 3, backgroundColor: "#ffffff" }).then(canvas => {
         const link = document.createElement('a');
         link.download = `QR_Absen_${nama.replace(/\s+/g, '_')}.png`;
