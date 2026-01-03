@@ -183,15 +183,17 @@ async function prosesAbsensi(eventId, user) {
         const ev = evSnap.data();
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
 
+        window.tampilkanModalShodaqoh(async (nominal) => {
         // Simpan data ke Firestore
         await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
             nama: user.nama,
             desa: user.desa,
             kelompok: user.kelompok,
-            gender: user.gender, // Pastikan master_jamaah ada field gender
+            gender: user.gender, 
             eventId: cleanId,
             wilayahEvent: ev.wilayah || "SEMUA",
             status: status,
+            shodaqoh: nominal,
             waktu: serverTimestamp()
         });
 
@@ -204,6 +206,7 @@ async function prosesAbsensi(eventId, user) {
                 <div class="celebration-wrap">
                     <div class="text-top">Alhamdulillah Jazaa Kumullahu Khoiroo</div>
                     <div class="text-main">LANCAR<br>BAROKAH!</div>
+                    ${nominal > 0 ? `<p style="margin-top:10px;">Shodaqoh Rp ${nominal.toLocaleString('id-ID')} diterima</p>` : ''}
                     <audio id="success-sound" src="https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3" preload="auto"></audio>
                 </div>
             `;
