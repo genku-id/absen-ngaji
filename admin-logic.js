@@ -191,7 +191,7 @@ async function renderTabLaporan() {
         });
 
         window.currentReportData = dataLaporan;
-        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Uang</th><th>Status</th></tr></thead><tbody>`;
+        let html = `<table><thead><tr><th>Nama</th><th>Jam</th><th>Shodaqoh</th><th>Status</th></tr></thead><tbody>`;
         dataLaporan.forEach(d => {
             const txtUang = d.shodaqoh > 0 ? `<b>${d.shodaqoh.toLocaleString('id-ID')}</b>` : `<span style="color:#ccc;">-</span>`;
             html += `<tr class="${d.color}">
