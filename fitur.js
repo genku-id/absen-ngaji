@@ -70,22 +70,26 @@ window.renderRiwayatBeranda = async (user) => {
     const historyBox = document.getElementById('riwayat-absen-box');
     if (!historyBox) return;
     try {
+        // Hapus orderBy("waktu", "desc") dari query agar tidak error Indeks
         const q = query(
             collection(db, "attendance"),
-            where("nama", "==", user.nama),
-            orderBy("waktu", "desc"),
-            limit(1)
+            where("nama", "==", user.nama)
         );
+        
         const snap = await getDocs(q);
         if (snap.empty) {
             historyBox.innerHTML = `<p style="font-size:12px; color:#888;">Belum ada riwayat absen.</p>`;
             return;
         }
 
-        const dataAbsen = snap.docs[0].data();
+        // Urutkan manual di sini: Ambil yang paling baru (waktu paling besar)
+        const docs = snap.docs.map(d => d.data());
+        docs.sort((a, b) => b.waktu.toMillis() - a.waktu.toMillis());
+        
+        const dataAbsen = docs[0]; // Ambil data paling baru setelah diurutkan
         const evId = dataAbsen.eventId;
 
-        // Ambil data event untuk cek jamMulai
+        // --- Sisanya sama seperti kodemu ---
         const evSnap = await getDocs(collection(db, "events")); 
         const eventDoc = evSnap.docs.find(d => d.id === evId);
         
@@ -96,11 +100,9 @@ window.renderRiwayatBeranda = async (user) => {
             jamMulaiStr = eventDoc.data().jamMulai;
             const [jamM, minM] = jamMulaiStr.split(':').map(Number);
             const waktuScan = dataAbsen.waktu.toDate();
-            
             const menitScan = (waktuScan.getHours() * 60) + waktuScan.getMinutes();
             const menitMulai = (jamM * 60) + minM;
 
-            // Jika telat lebih dari 10 menit
             if (menitScan > (menitMulai + 10)) {
                 infoTelat = `<div style="margin-top:10px; color:#dc3545; font-weight:bold; background:#fff1f0; padding:10px; border-radius:8px; border:1px solid #ffa39e; font-size:13px;">
                                 ⚠️ TERLAMBAT!<br>Amshol Istigfar 10x
@@ -111,7 +113,7 @@ window.renderRiwayatBeranda = async (user) => {
         const jamScan = dataAbsen.waktu.toDate().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
 
         historyBox.innerHTML = `
-            <div style="background:#f8f9fa; border:1.5px solid #eee; padding:15px; border-radius:12px; text-align:left; margin-bottom:15px; animation: zoomIn 0.3s ease-out;">
+            <div style="background:#f8f9fa; border:1.5px solid #eee; padding:15px; border-radius:12px; text-align:left; margin-bottom:15px;">
                 <p style="margin:0 0 5px 0; font-size:11px; font-weight:bold; color:#0056b3; letter-spacing:1px;">ABSEN TERAKHIR:</p>
                 <div style="font-size:15px; font-weight:bold; color:#333;">${evId}</div>
                 <div style="font-size:12px; color:#666; margin-top:2px;">
@@ -122,6 +124,6 @@ window.renderRiwayatBeranda = async (user) => {
         `;
     } catch (e) {
         console.error(e);
-        historyBox.innerHTML = `<p style="font-size:12px; color:red;">Gagal memuat data.</p>`;
+        historyBox.innerHTML = `<p style="font-size:12px; color:red;">Gagal memuat data: ${e.message}</p>`;
     }
 };
