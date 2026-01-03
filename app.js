@@ -80,7 +80,6 @@ window.showPageRegistrasi = () => {
         <button id="btn-login" class="primary-btn">MASUK SEKARANG</button>
     `;
 
-    // Dropdown Logic
     const dSel = document.getElementById('reg-desa');
     const kSel = document.getElementById('reg-kelompok');
     const nInp = document.getElementById('reg-nama');
@@ -150,9 +149,10 @@ window.prosesLogin = async () => {
     } catch (e) { alert(e.message); }
 };
 
-// --- DASHBOARD & SCANNER ---
+// --- DASHBOARD & SCANNER (GAYA QRIS) ---
 window.showDashboard = (user) => {
     const content = document.getElementById('pendaftar-section');
+    window.currentUserData = user; // Simpan ke global untuk scan galeri
     content.innerHTML = `
         <div class="salam-box" style="margin-bottom:20px;">
             <p>Assalaamualaikum,</p>
@@ -160,20 +160,32 @@ window.showDashboard = (user) => {
             <p><b>${user.desa} - ${user.kelompok}</b></p>
         </div>
         <div id="riwayat-absen-box">Memuat riwayat...</div>
-        <button onclick='mulaiScanner(${JSON.stringify(user)})' class="scan-btn">📸 MULAI SCAN BARCODE</button>
+        <button onclick='mulaiScanner()' class="scan-btn">📸 MULAI SCAN BARCODE</button>
     `;
    if (typeof window.renderRiwayatBeranda === 'function') {
         window.renderRiwayatBeranda(user); }
 };
 
-window.mulaiScanner = (user) => {
-    const content = document.getElementById('pendaftar-section');
-    content.innerHTML = `<h3>Scan Barcode</h3><div id="reader"></div><button onclick='showDashboard(${JSON.stringify(user)})' class="primary-btn" style="background:#666;">BATAL</button>`;
+window.mulaiScanner = () => {
+    const scanSec = document.getElementById('scanner-section');
+    scanSec.classList.remove('hidden');
+    
     html5QrCode = new Html5Qrcode("reader");
     html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, async (txt) => {
-        await html5QrCode.stop();
-        prosesAbsensi(txt, user);
-    }).catch(e => alert("Kamera error!"));
+        window.stopScanner();
+        prosesAbsensi(txt, window.currentUserData);
+    }).catch(e => {
+        alert("Kamera error!");
+        window.stopScanner();
+    });
+};
+
+window.stopScanner = async () => {
+    const scanSec = document.getElementById('scanner-section');
+    if (html5QrCode) {
+        try { await html5QrCode.stop(); } catch (e) {}
+    }
+    scanSec.classList.add('hidden');
 };
 
 async function prosesAbsensi(eventId, user) {
@@ -186,10 +198,8 @@ async function prosesAbsensi(eventId, user) {
         const ev = evSnap.data();
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
 
-        // --- PANGGIL MODAL SHODAQOH ---
         window.tampilkanModalShodaqoh(async (nominal) => {
             try {
-                // Simpan data ke Firestore (Sekarang di dalam callback agar dapat nilai nominal)
                 await setDoc(doc(db, "attendance", `${cleanId}_${user.nama.replace(/\s/g, '')}`), {
                     nama: user.nama,
                     desa: user.desa,
@@ -198,11 +208,10 @@ async function prosesAbsensi(eventId, user) {
                     eventId: cleanId,
                     wilayahEvent: ev.wilayah || "SEMUA",
                     status: status,
-                    shodaqoh: nominal, // Menyimpan nominal dari modal
+                    shodaqoh: nominal,
                     waktu: serverTimestamp()
                 });
 
-                // --- TAMPILKAN SELEBRASI ---
                 const overlay = document.getElementById('success-overlay');
                 if (overlay) {
                     overlay.style.display = 'flex';
@@ -215,9 +224,9 @@ async function prosesAbsensi(eventId, user) {
                         </div>
                     `;
 
-                    if (typeof createParticle === 'function') {
+                    if (typeof window.createParticle === 'function') {
                         for (let i = 0; i < 50; i++) {
-                            createParticle(overlay);
+                            window.createParticle(overlay);
                         }
                     }
 
@@ -232,15 +241,15 @@ async function prosesAbsensi(eventId, user) {
                     alert("LANCAR BAROKAH!");
                     showDashboard(user);
                 }
-            } catch (err) { alert("Gagal menyimpan: " + err.message);
-                }
-            }); 
+            } catch (err) { alert("Gagal menyimpan: " + err.message); }
+        }); 
 
     } catch (e) {
         console.error(e);
         alert("Gagal absen: " + e.message);
     }
 }
+
 window.createParticle = (parent) => {
     const p = document.createElement('div');
     p.style.position = 'fixed';
@@ -250,7 +259,7 @@ window.createParticle = (parent) => {
     p.style.left = Math.random() * 100 + 'vw';
     p.style.top = '-10px';
     p.style.borderRadius = '50%';
-    p.style.zIndex = '10000';
+    p.style.zIndex = '10001';
     p.style.transition = `transform ${Math.random() * 2 + 2}s linear, opacity 2s`;
     
     parent.appendChild(p);
@@ -263,13 +272,13 @@ window.createParticle = (parent) => {
     setTimeout(() => p.remove(), 4000);
 };
 
-// --- GLOBAL NAV LISTENERS (Ganti dari baris 198 ke bawah) ---
-
+// --- GLOBAL NAV LISTENERS ---
 const setupNav = () => {
     const btnMenu = document.getElementById('menu-btn');
     const dropdown = document.getElementById('menu-dropdown');
     const btnAdmin = document.getElementById('btn-admin-nav');
     const btnLogout = document.getElementById('btn-logout-nav');
+    const inputGaleri = document.getElementById('input-qr-galeri');
 
     // 1. Klik Titik 3
     if (btnMenu) {
@@ -284,52 +293,46 @@ const setupNav = () => {
         btnAdmin.onclick = (e) => {
             e.stopPropagation();
             dropdown.classList.add('hidden');
-            // Memanggil fungsi dari admin-logic.js
             if (typeof window.bukaModalPilihAdmin === 'function') {
                 window.bukaModalPilihAdmin();
             } else {
-                alert("Sistem Admin belum siap, coba sesaat lagi.");
+                alert("Sistem Admin belum siap.");
             }
         };
     }
 
     // 3. Klik Logout
-    // Di dalam file app.js bagian setupNav
-if (btnLogout) {
-    btnLogout.onclick = () => {
-        // 1. Sembunyikan dropdown menu
-        dropdown.classList.add('hidden');
-        
-        // 2. BERSIHKAN LAYAR (Sembunyikan semua section secara manual)
-        const secAdmin = document.getElementById('admin-section');
-        const secDash = document.getElementById('dashboard-section');
-        const secReg = document.getElementById('pendaftar-section');
-        
-        if (secAdmin) secAdmin.classList.add('hidden');
-        if (secDash) secDash.classList.add('hidden');
-        if (secReg) secReg.classList.remove('hidden');
+    if (btnLogout) {
+        btnLogout.onclick = () => {
+            dropdown.classList.add('hidden');
+            const secAdmin = document.getElementById('admin-section');
+            const secReg = document.getElementById('pendaftar-section');
+            if (secAdmin) secAdmin.classList.add('hidden');
+            if (secReg) secReg.classList.remove('hidden');
+            window.currentAdmin = null;
+            window.showPageRegistrasi();
+        };
+    }
 
-        // 3. Reset data admin di memori
-        window.currentAdmin = null;
-
-        // 4. Jalankan fungsi registrasi untuk menampilkan list akun
-        window.showPageRegistrasi();
-    };
-}
+    // 4. Listener Input Galeri
+    if (inputGaleri) {
+        inputGaleri.addEventListener('change', async (e) => {
+            if (typeof window.prosesScanGaleri === 'function') {
+                // Matikan kamera dulu kalau sedang nyala
+                await window.stopScanner();
+                window.prosesScanGaleri(e, window.currentUserData);
+            }
+        });
+    }
 };
 
-// Tutup dropdown jika klik di luar area menu
 window.onclick = () => {
     const dropdown = document.getElementById('menu-dropdown');
     if (dropdown) dropdown.classList.add('hidden');
 };
 
-// --- INIT APP (Inisialisasi Aplikasi) ---
 const initApp = () => {
-    // Jalankan setup navigasi
     setupNav();
-    
-    // Cek status login user
     const current = JSON.parse(localStorage.getItem('currentUser'));
     if (current) {
         window.showDashboard(current);
@@ -337,5 +340,5 @@ const initApp = () => {
         window.showPageRegistrasi();
     }
 };
-// Jalankan aplikasi
+
 initApp();
