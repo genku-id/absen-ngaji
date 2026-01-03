@@ -84,7 +84,7 @@ window.switchTab = (tab) => {
     else if (tab === 'db') renderTabDatabase();
 };
 
-// --- TAB EVENT ---
+// --- TAB EVENT (DENGAN BINGKAI QRIS) ---
 async function renderTabEvent() {
     const sub = document.getElementById('admin-sub-content');
     sub.innerHTML = "<p>Memeriksa event aktif...</p>";
@@ -95,22 +95,35 @@ async function renderTabEvent() {
     if (!snap.empty) {
         const ev = snap.docs[0].data();
         const evId = snap.docs[0].id;
+        
+        // TAMPILAN BINGKAI PROFESIONAL
         sub.innerHTML = `
-            <div style="text-align:center;">
-                <h3>${ev.namaEvent}</h3>
-                <div id="qr-hadir" style="display:inline-block; padding:10px; background:white; margin:10px;"></div>
-                <p><b>SCAN HADIR</b></p>
-                <div id="qr-izin" style="display:inline-block; padding:10px; background:white; margin:10px;"></div>
-                <p><b>SCAN IZIN</b></p>
-                <button onclick="window.tutupEvent('${evId}')" class="primary-btn" style="background:#dc3545;">TUTUP EVENT</button>
+            <div style="display:flex; flex-direction:column; align-items:center; gap:20px;">
+                <div id="qris-frame" style="width:300px; background:white; padding:20px; border-radius:20px; border:3px solid #0056b3; text-align:center; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
+                    <div style="background:#0056b3; color:white; padding:10px; border-radius:12px 12px 0 0; margin:-20px -20px 15px -20px;">
+                        <h4 style="margin:0; letter-spacing:1px;">E-PRESENSI DIGITAL</h4>
+                    </div>
+                    <h3 style="margin:0 0 10px 0; color:#333; text-transform:uppercase;">${ev.namaEvent}</h3>
+                    <div id="qrcode-canvas" style="display:flex; justify-content:center; padding:10px; border:1px solid #eee; border-radius:10px;"></div>
+                    <div style="margin-top:15px; border-top:4px solid #ffc107; padding-top:10px;">
+                        <p style="font-size:11px; font-weight:bold; color:#555; margin:0;">SCAN UNTUK HADIR & SHODAQOH</p>
+                        <small style="color:#0056b3; font-weight:bold;">ID: ${evId}</small>
+                    </div>
+                </div>
+                
+                <div style="width:100%; max-width:300px; display:flex; flex-direction:column; gap:8px;">
+                    <button onclick="window.downloadQRIS('${ev.namaEvent}')" class="primary-btn" style="background:#28a745;">📥 SIMPAN KE GALERI</button>
+                    <button onclick="window.tutupEvent('${evId}')" class="primary-btn" style="background:#dc3545;">TUTUP EVENT</button>
+                </div>
             </div>
         `;
-        new QRCode(document.getElementById("qr-hadir"), { text: evId, width: 150, height: 150 });
-        new QRCode(document.getElementById("qr-izin"), { text: evId + "_IZIN", width: 150, height: 150 });
+        // Generate satu QR saja (ID Event), status Hadir/Izin diatur oleh tombol scanner user
+        new QRCode(document.getElementById("qrcode-canvas"), { text: evId, width: 200, height: 200 });
+
     } else {
         sub.innerHTML = `
             <h3>Buat Event Baru</h3>
-            <input type="text" id="ev-nama" placeholder="Nama Acara">
+            <input type="text" id="ev-nama" placeholder="Nama Acara (Misal: Pengajian Mumi)">
             <input type="datetime-local" id="ev-tgl">
             <button onclick="window.simpanEvent()" class="primary-btn">BUKA ABSENSI</button>
         `;
@@ -130,6 +143,16 @@ window.simpanEvent = async () => {
     renderTabEvent();
 };
 
+window.downloadQRIS = (nama) => {
+    const frame = document.getElementById('qris-frame');
+    html2canvas(frame, { scale: 3, backgroundColor: "#ffffff" }).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `QR_Absen_${nama.replace(/\s+/g, '_')}.png`;
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+    });
+};
+
 window.tutupEvent = async (id) => {
     if (confirm("Tutup event ini? Laporan tetap tersimpan.")) {
         try {
@@ -140,7 +163,7 @@ window.tutupEvent = async (id) => {
     }
 };
 
-// --- TAB LAPORAN ---
+// --- TAB LAPORAN (TIDAK BERUBAH) ---
 async function renderTabLaporan() {
     const sub = document.getElementById('admin-sub-content');
     const { wilayah, role } = window.currentAdmin;
@@ -205,6 +228,7 @@ async function renderTabLaporan() {
     } catch (e) { alert(e.message); }
 }
 
+// --- STATISTIK (TIDAK BERUBAH) ---
 window.bukaStatistik = () => {
     const data = window.currentReportData;
     const { wilayah, role } = window.currentAdmin;
@@ -341,7 +365,7 @@ window.resetLaporan = async () => {
     }
 };
 
-// --- TAB DATABASE JAMAAH ---
+// --- TAB DATABASE JAMAAH (TIDAK BERUBAH) ---
 async function renderTabDatabase() {
     const sub = document.getElementById('admin-sub-content');
     sub.innerHTML = `<input type="text" id="db-search" placeholder="Cari Nama..." oninput="filterDB()"><div id="db-list"></div>`;
@@ -367,13 +391,13 @@ window.hapusJamaah = async (id) => {
         renderTabDatabase();
     }
 };
+
 window.downloadCSV = () => {
     const data = window.currentReportData;
     if (!data || data.length === 0) return alert("Tidak ada data untuk didownload");
 
     let csvContent = "data:text/csv;charset=utf-8,Nama,Kelompok,Jam,Status\n";
     data.forEach(row => {
-        // Hilangkan simbol emoji dan tag HTML untuk CSV yang bersih
         const cleanStatus = row.status.replace(/<\/?[^>]+(>|$)/g, "").replace(/[^\x00-\x7F]/g, "");
         csvContent += `${row.nama},${row.kelompok},${row.jam},${cleanStatus}\n`;
     });
