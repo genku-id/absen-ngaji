@@ -52,6 +52,7 @@ window.prosesLoginAdmin = async () => {
 
 // --- PANEL ADMIN DINAMIS ---
 window.bukaPanelAdmin = () => {
+    if (!window.currentAdmin) return;
     document.getElementById('pendaftar-section').classList.add('hidden');
     const adminSec = document.getElementById('admin-section');
     adminSec.classList.remove('hidden');
@@ -87,7 +88,6 @@ window.switchTab = (tab) => {
 // --- TAB EVENT ---
 async function renderTabEvent() {
     const sub = document.getElementById('admin-sub-content');
-    // Cek keamanan: Jika admin hilang, paksa login ulang
     if (!window.currentAdmin) {
         sub.innerHTML = "<button onclick='window.bukaModalPilihAdmin()' class='primary-btn'>Sesi Habis, Silakan Login Admin Kembali</button>";
         return;
@@ -102,14 +102,47 @@ async function renderTabEvent() {
     const snap = await getDocs(q);
 
     if (!snap.empty) {
-        // ... (Kode tampilan QR tetap sama)
+        const ev = snap.docs[0].data();
+        const evId = snap.docs[0].id;
+        
+        sub.innerHTML = `
+            <div style="display:flex; flex-direction:column; align-items:center; gap:20px; padding:10px;">
+                <div style="display:flex; gap:10px; width:100%; max-width:320px;">
+                    <button id="btn-pilih-hadir" onclick="window.switchQRIS('hadir', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#0056b3; color:white; font-weight:bold; cursor:pointer;">HADIR</button>
+                    <button id="btn-pilih-izin" onclick="window.switchQRIS('izin', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#666; color:white; font-weight:bold; cursor:pointer;">IZIN</button>
+                </div>
+
+                <div id="qris-box" style="width: 300px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #0056b3; text-align: center; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
+                    <div id="qris-header-bg" style="background: #0056b3; color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -20px -20px 20px -20px;">
+                        <h3 id="qris-title-text" style="margin: 0; letter-spacing: 2px; font-size: 16px;">QR HADIR</h3>
+                    </div>
+                    
+                    <div style="font-weight: 900; color: #333; margin-bottom: 15px; font-size: 18px; text-transform: uppercase;">
+                        ${ev.namaEvent}
+                    </div>
+                    
+                    <div id="qrcode-target" style="display:flex; justify-content:center; padding:10px; background:white; border: 1px solid #eee; border-radius: 10px;"></div>
+                    
+                    <div style="margin-top:15px; border-top: 4px solid #ffc107; padding-top:10px;">
+                        <p id="qris-footer-text" style="font-size: 11px; font-weight: bold; color: #555; margin: 0;">SCAN UNTUK KEHADIRAN & SHODAQOH</p>
+                        <small id="qris-id-text" style="color: #0056b3; font-weight: bold; font-size: 10px;">ID: ${evId}</small>
+                    </div>
+                </div>
+                
+                <div style="width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px;">
+                    <button onclick="window.downloadQRIS('${ev.namaEvent}')" class="primary-btn" style="background: #28a745;">📥 SIMPAN KE GALERI</button>
+                    <button onclick="window.tutupEvent('${evId}')" class="primary-btn" style="background:#dc3545;">TUTUP EVENT</button>
+                </div>
+            </div>
+        `;
+        window.switchQRIS('hadir', evId, ev.namaEvent);
+
     } else {
-        // TAMPILAN FORM DENGAN CHECKBOX KELAS
         sub.innerHTML = `
             <div style="text-align:left; background:#fdfdfd; padding:15px; border-radius:10px; border:1px solid #eee;">
                 <h3 style="margin-top:0; color:#0056b3;">Buka Absensi Baru</h3>
                 <label style="font-size:12px; font-weight:bold;">Nama Acara:</label>
-                <input type="text" id="ev-nama" placeholder="Misal: Pengajian Rutin">
+                <input type="text" id="ev-nama" placeholder="Misal: Pengajian">
                 
                 <label style="font-size:12px; font-weight:bold;">Waktu Mulai:</label>
                 <input type="datetime-local" id="ev-tgl">
@@ -126,6 +159,7 @@ async function renderTabEvent() {
         `;
     }
 }
+
 window.switchQRIS = (tipe, id, nama) => {
     const target = document.getElementById("qrcode-target");
     const title = document.getElementById("qris-title-text");
@@ -135,6 +169,7 @@ window.switchQRIS = (tipe, id, nama) => {
     const btnH = document.getElementById("btn-pilih-hadir");
     const btnI = document.getElementById("btn-pilih-izin");
 
+    if (!target) return;
     target.innerHTML = ""; 
     const finalId = (tipe === 'izin') ? id + "_IZIN" : id;
 
@@ -157,10 +192,10 @@ window.switchQRIS = (tipe, id, nama) => {
 };
 
 window.simpanEvent = async () => {
+    if (!window.currentAdmin) return alert("Sesi Admin Hilang!");
     const nama = document.getElementById('ev-nama').value;
     const tgl = document.getElementById('ev-tgl').value;
     
-    // Ambil checkbox yang dicentang
     const selectedKelas = Array.from(document.querySelectorAll('.target-kelas:checked'))
                                .map(cb => cb.value);
 
@@ -179,9 +214,7 @@ window.simpanEvent = async () => {
             createdAt: serverTimestamp()
         });
         renderTabEvent();
-    } catch (e) {
-        alert("Gagal simpan: " + e.message);
-    }
+    } catch (e) { alert("Gagal simpan: " + e.message); }
 };
 
 window.downloadQRIS = (nama) => {
@@ -208,8 +241,9 @@ window.tutupEvent = async (id) => {
 async function renderTabLaporan() {
     const sub = document.getElementById('admin-sub-content');
     if (!window.currentAdmin) {
-        sub.innerHTML = "<p>Sesi Admin tidak ditemukan. Silakan Login ulang.</p>";
-        return; }
+        sub.innerHTML = "<p>Sesi Admin Hilang. Silakan Login ulang.</p>";
+        return; 
+    }
     const { wilayah, role } = window.currentAdmin;
 
     sub.innerHTML = `<div id="laporan-table" class="table-responsive">Memproses data...</div>`;
@@ -233,7 +267,7 @@ async function renderTabLaporan() {
             <div style="display:flex; gap:5px; margin-bottom:15px;">
                 <button onclick="window.downloadCSV()" class="primary-btn" style="background:#28a745; font-size:12px;">CSV</button>
                 <button onclick="window.bukaStatistik()" class="primary-btn" style="background:#17a2b8; font-size:12px;">Statistik</button>
-                <button onclick="window.resetLaporan()" class="primary-btn" style="background:#dc3545; font-size:12px;">Reset</button>
+                <button onclick="window.handleResetLaporan()" class="primary-btn" style="background:#dc3545; font-size:12px;">Reset</button>
             </div>
             <div id="laporan-table" class="table-responsive">Memuat data...</div>
         `;
@@ -265,13 +299,9 @@ async function renderTabLaporan() {
             dataLaporan.push(res);
         });
 
-        // --- LOGIKA PENGURUTAN SAKTI ---
         dataLaporan.sort((a, b) => {
-            // 1. Urut berdasarkan Desa
             if (a.desa !== b.desa) return a.desa.localeCompare(b.desa);
-            // 2. Jika Desa sama, urut berdasarkan Kelompok
             if (a.kelompok !== b.kelompok) return a.kelompok.localeCompare(b.kelompok);
-            // 3. Jika Kelompok sama, urut berdasarkan Nama (A-Z)
             return a.nama.localeCompare(b.nama);
         });
 
@@ -282,12 +312,10 @@ async function renderTabLaporan() {
         let lastKelompok = "";
 
         dataLaporan.forEach(d => {
-            // Tambahkan Header Desa jika ganti Desa (Hanya untuk Admin Daerah)
             if (role === "DAERAH" && d.desa !== lastDesa) {
                 html += `<tr style="background:#333; color:white;"><td colspan="4" style="padding:5px 10px; font-weight:bold;">DESA: ${d.desa}</td></tr>`;
                 lastDesa = d.desa;
             }
-            // Tambahkan Header Kelompok jika ganti Kelompok
             if (d.kelompok !== lastKelompok) {
                 html += `<tr style="background:#e9ecef;"><td colspan="4" style="padding:5px 10px; font-weight:bold; color:#0056b3;">KELOMPOK: ${d.kelompok}</td></tr>`;
                 lastKelompok = d.kelompok;
@@ -304,17 +332,17 @@ async function renderTabLaporan() {
         document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
     } catch (e) { console.error(e); alert("Error: " + e.message); }
 }
-// --- FUNGSI STATISTIK LENGKAP (HARIAN + BULANAN) ---
+
+// --- FUNGSI STATISTIK LENGKAP ---
 window.bukaStatistik = async () => {
     const data = window.currentReportData;
+    if (!window.currentAdmin) return;
     const { wilayah, role } = window.currentAdmin;
     if (!data) return alert("Data belum tersedia!");
 
-    // 1. Ambil Data Pendukung dari mesin fitur.js
     const rekapLalu = await window.getStatistikBulanLalu(wilayah);
     const totalAnggota = await window.getTotalAnggotaPerKelas(wilayah, role);
 
-    // 2. Fungsi Hitung Statistik (Live)
     const hitung = (list) => {
         const T = list.length;
         const H = list.filter(d => d.rawStatus === 'hadir').length;
@@ -323,22 +351,25 @@ window.bukaStatistik = async () => {
         const totalUang = list.reduce((acc, curr) => acc + (curr.shodaqoh || 0), 0);
         
         const isG = (d, g) => d.gender && d.gender.trim().toUpperCase() === g;
-        const H_Pa = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRA')).length;
-        const H_Pi = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRI')).length;
 
-        return { 
-            T, H, I, A, 
-            P: T > 0 ? Math.round((H / T) * 100) : 0, 
-            H_Pa, H_Pi, totalUang 
-        };
+        const H_Pa = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRA')).length;
+        const I_Pa = list.filter(d => d.rawStatus === 'izin' && isG(d, 'PUTRA')).length;
+        const A_Pa = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRA')).length;
+
+        const H_Pi = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRI')).length;
+        const I_Pi = list.filter(d => d.rawStatus === 'izin' && isG(d, 'PUTRI')).length;
+        const A_Pi = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRI')).length;
+
+        const P = T > 0 ? Math.round((H / T) * 100) : 0;
+        return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi, totalUang };
     };
 
-    // 3. Kelompokkan Data untuk Tabel Desa/Kelompok (Khusus Admin Daerah/Desa)
     let rekapDesa = {};
     let detailKelompok = {}; 
     data.forEach(d => {
         if (!rekapDesa[d.desa]) rekapDesa[d.desa] = [];
         rekapDesa[d.desa].push(d);
+
         if (!detailKelompok[d.desa]) detailKelompok[d.desa] = {};
         if (!detailKelompok[d.desa][d.kelompok]) detailKelompok[d.desa][d.kelompok] = [];
         detailKelompok[d.desa][d.kelompok].push(d);
@@ -346,26 +377,24 @@ window.bukaStatistik = async () => {
 
     const sDarah = hitung(data);
 
-    // --- BAGIAN A: TABEL HARIAN (LIVE) ---
     let tableUtama = `
         <h3 style="text-align:center; color:#28a745; margin-bottom:10px;">REKAP HARIAN (LIVE)</h3>
         <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black; text-align:center;">
             <tr style="background:#f0f0f0;">
-                <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">SHODAQOH</th><th colspan="3">TOTAL</th><th colspan="2">GENDER</th>
+                <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">SHODAQOH</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
             </tr>
             <tr style="background:#f0f0f0;">
-                <th>H</th><th>I</th><th>A</th><th>Pa</th><th>Pi</th>
+                <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
             </tr>
-            <tr style="font-weight:bold; font-size:16px; background:#e8f5e9;">
-                <td>${sDarah.T}</td><td>${sDarah.P}%</td>
-                <td style="color:#28a745;">${sDarah.totalUang.toLocaleString('id-ID')}</td>
+            <tr style="font-weight:bold; text-align:center; font-size:16px; background:#e8f5e9;">
+                <td>TOTAL</td><td>${sDarah.P}%</td><td style="color:#28a745;">${sDarah.totalUang.toLocaleString('id-ID')}</td><td>${sDarah.T}</td>
                 <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
-                <td>${sDarah.H_Pa}</td><td>${sDarah.H_Pi}</td>
+                <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
+                <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
             </tr>
         </table>
     `;
 
-    // --- BAGIAN B: TABEL REKAP KELAS (BULAN LALU) ---
     let tableBulanan = "";
     if (rekapLalu) {
         const hitungP = (hadir, total) => {
@@ -388,16 +417,15 @@ window.bukaStatistik = async () => {
         `;
     }
 
-    // --- BAGIAN C: TABEL PER WILAYAH (KHUSUS DAERAH/DESA) ---
     let tableDesa = "";
     if (role === "DAERAH") {
         tableDesa = `
             <h4 style="margin:20px 0 5px 0; border-bottom:1px solid #ccc;">RINGKASAN PER DESA</h4>
             <table class="stat-table" style="width:100%; border-collapse:collapse; text-align:center; font-size:11px;">
-                <tr style="background:#eee;"><th>DESA</th><th>%</th><th>H</th><th>I</th><th>A</th><th>Pa</th><th>Pi</th></tr>
+                <tr style="background:#eee;"><th>DESA</th><th>%</th><th>SHODAQOH</th><th>T</th><th>H</th><th>I</th><th>A</th><th>H(Pa)</th><th>I(Pa)</th><th>A(Pa)</th><th>H(Pi)</th><th>I(Pi)</th><th>A(Pi)</th></tr>
                 ${Object.keys(rekapDesa).map(namaDesa => {
                     const s = hitung(rekapDesa[namaDesa]);
-                    return `<tr><td align="left"><b>${namaDesa}</b></td><td>${s.P}%</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.H_Pi}</td></tr>`;
+                    return `<tr><td align="left"><b>${namaDesa}</b></td><td>${s.P}%</td><td style="color:#28a745; font-weight:bold;">${s.totalUang.toLocaleString('id-ID')}</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td><td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td><td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td></tr>`;
                 }).join('')}
             </table>
         `;
@@ -410,16 +438,18 @@ window.bukaStatistik = async () => {
             <div style="margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
                 <div style="background:#28a745; color:white; padding:3px 10px; font-size:11px;">DESA: ${namaDesa}</div>
                 <table style="width:100%; border-collapse:collapse; text-align:center; font-size:10px;">
+                    <tr style="background:#f9f9f9;">
+                        <th style="text-align:left;">KELOMPOK</th><th>%</th><th>Uang</th><th>T</th><th>H</th><th>I</th><th>A</th>
+                    </tr>
                     ${Object.keys(detailKelompok[namaDesa]).map(namaKel => {
                         const s = hitung(detailKelompok[namaDesa][namaKel]);
-                        return `<tr style="border-bottom:1px solid #eee;"><td align="left" style="padding-left:5px; width:40%;"><b>${namaKel}</b></td><td>${s.P}%</td><td>H:${s.H}</td><td>I:${s.I}</td><td>A:${s.A}</td></tr>`;
+                        return `<tr style="border-bottom:1px solid #eee;"><td align="left" style="padding-left:5px; width:40%;"><b>${namaKel}</b></td><td>${s.P}%</td><td>${s.totalUang.toLocaleString('id-ID')}</td><td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td></tr>`;
                     }).join('')}
                 </table>
             </div>
         `).join('');
     }
 
-    // --- RENDERING AKHIR KE MODAL ---
     const htmlFinal = `
         <div id="capture-area" style="background:white; padding:20px; color:black; width:800px; font-family:Arial;">
             <div style="text-align:center; margin-bottom:20px;">
@@ -462,22 +492,20 @@ window.downloadStatistikGambar = () => {
 };
 
 window.handleResetLaporan = async () => {
+    if (!window.currentAdmin) return;
     const konfirmasi = confirm("PERINGATAN: Reset akan menghapus semua data scan saat ini dan memasukannya ke Rekap Bulanan. Lanjutkan?");
     if (!konfirmasi) return;
 
-    // Tampilkan loading (opsional)
-    console.log("Sedang merekap dan menghapus data...");
-    
     const sukses = await window.prosesRekapDanReset(window.currentAdmin.wilayah, window.currentAdmin.role);
     
     if (sukses) {
         alert("Laporan berhasil di-reset dan data telah direkap.");
-        // Refresh tampilan laporan agar kembali kosong/alfa
         if (typeof renderTabLaporan === 'function') renderTabLaporan();
     } else {
         alert("Terjadi kesalahan saat mereset data.");
     }
 };
+
 // --- TAB DATABASE JAMAAH ---
 async function renderTabDatabase() {
     const sub = document.getElementById('admin-sub-content');
@@ -486,10 +514,10 @@ async function renderTabDatabase() {
 }
 
 window.filterDB = async () => {
+    if (!window.currentAdmin) return;
     const key = document.getElementById('db-search').value.toUpperCase();
     const { wilayah, role } = window.currentAdmin;
     
-    // Filter database sesuai wilayah Admin login
     let q = collection(db, "master_jamaah");
     if (role === "KELOMPOK") q = query(q, where("kelompok", "==", wilayah));
     else if (role === "DESA") q = query(q, where("desa", "==", wilayah));
@@ -498,7 +526,6 @@ window.filterDB = async () => {
     let listJamaah = [];
     snap.forEach(ds => listJamaah.push({id: ds.id, ...ds.data()}));
 
-    // Urutkan A-Z
     listJamaah.sort((a, b) => a.nama.localeCompare(b.nama));
 
     let html = `<table><thead><tr><th>Nama</th><th>Kelompok</th><th>Aksi</th></tr></thead><tbody>`;
