@@ -477,14 +477,32 @@ window.downloadStatistikGambar = () => {
 
 window.handleResetLaporan = async () => {
     if (!window.currentAdmin) return alert("Sesi Admin habis.");
-    const konfirmasi = confirm("PERINGATAN: Reset akan menghapus semua data scan saat ini dan memindahkannya ke Rekap Bulanan. Lanjutkan?");
+    
+    // Cari event yang sedang tampil di laporan (status open/closed)
+    const qEv = query(collection(db, "events"), 
+        where("wilayah", "==", window.currentAdmin.wilayah), 
+        where("status", "in", ["open", "closed"])
+    );
+    const evSnap = await getDocs(qEv);
+    
+    if (evSnap.empty) return alert("Tidak ada event aktif yang bisa di-reset.");
+    
+    const eventDoc = evSnap.docs[0];
+    const eventId = eventDoc.id;
+    const eventData = eventDoc.data();
+
+    const konfirmasi = confirm(`RESET EVENT: "${eventData.namaEvent}"?\n\nData scan event ini akan dipindahkan ke Rekap Bulanan dan dihapus dari daftar hadir.`);
     if (!konfirmasi) return;
-    try { const sukses = await window.prosesRekapDanReset(window.currentAdmin.wilayah, window.currentAdmin.role);
+
+    try { 
+        // Panggil proses rekap dengan menyertakan ID Event spesifik
+        const sukses = await window.prosesRekapDanReset(eventId, window.currentAdmin);
+        
         if (sukses) {
-            alert("Laporan berhasil di-reset. Data scan telah dibersihkan.");
+            alert(`Event "${eventData.namaEvent}" berhasil di-reset.`);
             renderTabLaporan();
         } else {
-            alert("Gagal melakukan reset. Silakan cek koneksi internet.");
+            alert("Gagal melakukan reset.");
         }
     } catch (e) {
         console.error("Error saat reset:", e);
