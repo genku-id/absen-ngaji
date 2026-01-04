@@ -59,10 +59,14 @@ window.bukaPanelAdmin = () => {
 
     const container = document.getElementById('admin-dynamic-content');
     container.innerHTML = `
-        <div style="text-align:center; padding-bottom:15px; border-bottom:2px solid #eee; margin-bottom:15px;">
-            <h2 style="margin:0; color:#0056b3;">Admin ${window.currentAdmin.wilayah}</h2>
-            <p style="margin:5px 0 0; font-size:12px; color:#666;">Level: <b>${window.currentAdmin.role}</b></p>
+       <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:15px; border-bottom:2px solid #eee; margin-bottom:15px;">
+            <div style="text-align:left;">
+                <h2 style="margin:0; color:#0056b3; font-size:18px;">Admin ${window.currentAdmin.wilayah}</h2>
+                <p style="margin:5px 0 0; font-size:12px; color:#666;">Level: <b>${window.currentAdmin.role}</b></p>
+            </div>
+            <button onclick="window.logoutAdmin()" style="background:#fff0f0; color:red; border:1px solid red; padding:5px 10px; border-radius:8px; font-size:11px; cursor:pointer; font-weight:bold;">🚪 KELUAR</button>
         </div>
+        
         <div style="display:flex; gap:5px; margin-bottom:20px;">
             <button onclick="switchTab('ev')" id="tab-ev" class="primary-btn" style="flex:1; font-size:12px;">EVENT</button>
             <button onclick="switchTab('lp')" id="tab-lp" class="primary-btn" style="flex:1; font-size:12px; background:#666;">LAPORAN</button>
