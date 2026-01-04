@@ -191,3 +191,24 @@ window.getStatistikBulanLalu = async (wilayah) => {
     }
     return null; // Jika belum ada rekap bulan lalu
 };
+
+// Fungsi untuk menghitung total jamaah per kelas di suatu wilayah
+window.getTotalAnggotaPerKelas = async (wilayah, role) => {
+    try {
+        let q = collection(db, "master_jamaah");
+        if (role === "KELOMPOK") q = query(q, where("kelompok", "==", wilayah));
+        else if (role === "DESA") q = query(q, where("desa", "==", wilayah));
+
+        const snap = await getDocs(q);
+        const data = snap.docs.map(d => d.data());
+
+        return {
+            totalPR: data.filter(j => j.kelas === "PRA-REMAJA").length,
+            totalR: data.filter(j => j.kelas === "REMAJA").length,
+            totalPN: data.filter(j => j.kelas === "PRA-NIKAH").length
+        };
+    } catch (e) {
+        console.error("Gagal hitung total anggota:", e);
+        return { totalPR: 0, totalR: 0, totalPN: 0 };
+    }
+};
