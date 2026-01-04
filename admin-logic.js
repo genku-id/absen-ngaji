@@ -430,24 +430,23 @@ window.downloadStatistikGambar = () => {
     }).catch(e => console.error(e));
 };
 
-window.resetLaporan = async () => {
-    const { wilayah } = window.currentAdmin;
-    if (confirm(`Hapus SEMUA data ${wilayah}?`)) {
-        try {
-            const qEv = query(collection(db, "events"), where("wilayah", "==", wilayah));
-            const snapEv = await getDocs(qEv);
-            await Promise.all(snapEv.docs.map(d => deleteDoc(doc(db, "events", d.id))));
+window.handleResetLaporan = async () => {
+    const konfirmasi = confirm("PERINGATAN: Reset akan menghapus semua data scan saat ini dan memasukannya ke Rekap Bulanan. Lanjutkan?");
+    if (!konfirmasi) return;
 
-            const qAtt = query(collection(db, "attendance"), where("wilayahEvent", "==", wilayah));
-            const snapAtt = await getDocs(qAtt);
-            await Promise.all(snapAtt.docs.map(d => deleteDoc(doc(db, "attendance", d.id))));
-
-            alert("Data wilayah " + wilayah + " bersih.");
-            renderTabEvent();
-        } catch (e) { alert(e.message); }
+    // Tampilkan loading (opsional)
+    console.log("Sedang merekap dan menghapus data...");
+    
+    const sukses = await window.prosesRekapDanReset(window.currentAdmin.wilayah, window.currentAdmin.role);
+    
+    if (sukses) {
+        alert("Laporan berhasil di-reset dan data telah direkap.");
+        // Refresh tampilan laporan agar kembali kosong/alfa
+        if (typeof renderTabLaporan === 'function') renderTabLaporan();
+    } else {
+        alert("Terjadi kesalahan saat mereset data.");
     }
 };
-
 // --- TAB DATABASE JAMAAH ---
 async function renderTabDatabase() {
     const sub = document.getElementById('admin-sub-content');
