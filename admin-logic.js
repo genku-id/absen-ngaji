@@ -338,51 +338,85 @@ window.bukaStatistik = async () => {
     const { wilayah, role } = window.currentAdmin;
     if (!data) return alert("Data belum tersedia!");
 
+    // --- TAMBAHAN: CEK TARGET EVENT ---
+    const qEv = query(collection(db, "events"), where("wilayah", "==", wilayah), where("status", "in", ["open", "closed"]));
+    const evSnap = await getDocs(qEv);
+    const eventAktif = evSnap.docs[0]?.data();
+    const targetKelasEvent = eventAktif?.targetKelas || [];
+
     const rekapLalu = await window.getStatistikBulanLalu(wilayah);
     const totalAnggota = await window.getTotalAnggotaPerKelas(wilayah, role);
 
-    // --- REKAYASA FUNGSI HITUNG ---
-    const hitung = (list, totalMaster = 0) => {
-        // T sekarang mengambil dari Master, bukan list.length
-        const T = totalMaster || list.length; 
+    // --- REKAYASA FUNGSI HITUNG (DITAMBAH isTargeted) ---
+    const hitung = (list, totalMaster = 0, isTargeted = true) => {
+        // T jadi 0 jika kelas tidak ditargetkan
+        const T = isTargeted ? (totalMaster || list.length) : 0; 
         const H = list.filter(d => d.status === 'hadir').length;
-        // SB LAIN otomatis terhitung karena di laporan statusnya sudah 'izin' atau 'SB LAIN'
         const I = list.filter(d => d.status === 'izin' || d.status === 'SB LAIN').length;
-        const A = T - (H + I); // Alfa adalah sisa dari Total Master
+        
+        // Alfa hanya dihitung jika kelas ditargetkan
+        const A = T > 0 ? Math.max(0, T - (H + I)) : 0;
         
         const totalUang = list.reduce((acc, curr) => acc + (curr.shodaqoh || 0), 0);
         const isG = (d, g) => d.gender && d.gender.trim().toUpperCase() === g;
 
         const H_Pa = list.filter(d => d.status === 'hadir' && isG(d, 'PUTRA')).length;
         const I_Pa = list.filter(d => (d.status === 'izin' || d.status === 'SB LAIN') && isG(d, 'PUTRA')).length;
-        const A_Pa = list.filter(d => d.status === 'alfa' && isG(d, 'PUTRA')).length;
+        // Alfa Putra/Pi jadi 0 jika tidak ditargetkan
+        const A_Pa = T > 0 ? list.filter(d => d.status === 'alfa' && isG(d, 'PUTRA')).length : 0;
 
         const H_Pi = list.filter(d => d.status === 'hadir' && isG(d, 'PUTRI')).length;
         const I_Pi = list.filter(d => (d.status === 'izin' || d.status === 'SB LAIN') && isG(d, 'PUTRI')).length;
-        const A_Pi = list.filter(d => d.status === 'alfa' && isG(d, 'PUTRI')).length;
+        const A_Pi = T > 0 ? list.filter(d => d.status === 'alfa' && isG(d, 'PUTRI')).length : 0;
 
-        const P = T > 0 ? Math.round((H / (T - I)) * 100) : 0; // Rumus Persentase Adil
+        const P = T > 0 ? Math.round((H / (T - I)) * 100) : 0; 
         return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi, totalUang };
     };
-    // --- REKAYASA TABEL UTAMA (DETAIL PER KELAS UNTUK KELOMPOK) ---
-    const sDarah = hitung(data, totalAnggota.totalSemua);
-    
+
+    // --- LOGIKA ROWS PER KELAS KHUSUS KELOMPOK ---
     let rowsKelas = "";
     if (role === "KELOMPOK") {
         const kelasList = ["PRA-REMAJA", "REMAJA", "PRA-NIKAH"];
         rowsKelas = kelasList.map(kls => {
+            const isTarget = targetKelasEvent.includes(kls);
             const dataKls = data.filter(d => d.kelas === kls);
             const masterKls = kls === "PRA-REMAJA" ? totalAnggota.totalPR : (kls === "REMAJA" ? totalAnggota.totalR : totalAnggota.totalPN);
-            const s = hitung(dataKls, masterKls);
+            const s = hitung(dataKls, masterKls, isTarget);
+            
+            // Jika bukan target, baris dibuat agak pudar dan Alfa jadi strip
+            const rowStyle = !isTarget ? 'style="color:#bbb; background:#f9f9f9;"' : '';
             return `
-                <tr style="font-size:12px;">
-                    <td align="left" style="padding-left:5px;">${kls}</td><td>${s.P}%</td><td>${s.totalUang.toLocaleString()}</td>
-                    <td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td>
-                    <td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td>
-                    <td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td>
+                <tr ${rowStyle}>
+                    <td align="left" style="padding-left:5px;"><b>${kls}</b> ${!isTarget ? '<br><small>(Bukan Target)</small>' : ''}</td>
+                    <td>${isTarget ? s.P + '%' : '-'}</td>
+                    <td align="right">${s.totalUang.toLocaleString()}</td>
+                    <td>${s.T || '-'}</td><td>${s.H}</td><td>${s.I}</td><td>${isTarget ? s.A : '-'}</td>
+                    <td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${isTarget ? s.A_Pa : '-'}</td>
+                    <td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${isTarget ? s.A_Pi : '-'}</td>
                 </tr>`;
         }).join('');
     }
+
+    // Hitung Total Utama (Hanya dari kelas yang ditargetkan)
+    const dataTargetSaja = data.filter(d => targetKelasEvent.includes(d.kelas));
+    const totalMasterTarget = targetKelasEvent.reduce((acc, kls) => {
+        if(kls === "PRA-REMAJA") return acc + totalAnggota.totalPR;
+        if(kls === "REMAJA") return acc + totalAnggota.totalR;
+        if(kls === "PRA-NIKAH") return acc + totalAnggota.totalPN;
+        return acc;
+    }, 0);
+    const sDarah = hitung(dataTargetSaja, totalMasterTarget, true);
+
+    // --- BAGIAN INI SAMA PERSIS DENGAN KODE ASLIMU ---
+    let rekapDesa = {};
+    let detailKelompok = {}; 
+    data.forEach(d => {
+        if (!rekapDesa[d.desa]) rekapDesa[d.desa] = [];
+        rekapDesa[d.desa].push(d);
+        if (!detailKelompok[d.desa]) detailKelompok[d.desa] = {};
+        if (!detailKelompok[d.desa][d.kelompok]) detailKelompok[d.desa][d.kelompok] = [];
+        detailKelompok[d.desa][d.kelompok].push(d);
+    });
 
     let tableUtama = `
         <h3 style="text-align:center; color:#28a745; margin-bottom:10px;">REKAP HARIAN (LIVE)</h3>
@@ -395,13 +429,14 @@ window.bukaStatistik = async () => {
             </tr>
             ${rowsKelas}
             <tr style="font-weight:bold; background:#e8f5e9;">
-                <td>TOTAL</td><td>${sDarah.P}%</td><td>${sDarah.totalUang.toLocaleString()}</td><td>${sDarah.T}</td>
+                <td>TOTAL TARGET</td><td>${sDarah.P}%</td><td align="right">${sDarah.totalUang.toLocaleString()}</td><td>${sDarah.T}</td>
                 <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
                 <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
                 <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
             </tr>
         </table>
     `;
+
     let tableBulanan = "";
     if (rekapLalu) {
         const hitungP = (hadir, total) => {
