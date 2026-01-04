@@ -105,8 +105,7 @@ window.prosesRekapDanReset = async (wilayah, role) => {
             // Admin Desa hanya melihat & menghapus orang di desanya sendiri
             q = query(collection(db, "attendance"), where("desa", "==", wilayah));
         } else if (role === "DAERAH") {
-            // Admin Daerah melihat semua data (atau bisa kamu filter per wilayah event jika perlu)
-            // Di sini kita asumsikan Daerah menghapus SEMUA data attendance saat ini
+            // Admin Daerah melihat semua data attendance
             q = collection(db, "attendance");
         }
 
@@ -117,26 +116,48 @@ window.prosesRekapDanReset = async (wilayah, role) => {
             // 2. LOGIKA REKAP KHUSUS ADMIN KELOMPOK
             if (role === "KELOMPOK") {
                 const docRekapId = `REKAP_${wilayah.replace(/\s/g, '')}_${tahunSekarang}_${bulanSekarang}`;
+                
+                // --- PENYESUAIAN LOGIKA: HADIR ---
                 const hitungHadir = (kls) => allAtt.filter(a => a.kelas === kls && a.status === 'hadir').length;
+                
+                // --- PENYESUAIAN LOGIKA: IZIN (Termasuk SB LAIN) ---
+                const hitungIzin = (kls) => allAtt.filter(a => a.kelas === kls && (a.status === 'izin' || a.status === 'SB LAIN')).length;
+
                 const uniqueEvents = [...new Set(allAtt.map(a => a.eventId))].length;
 
                 const rekapRef = doc(db, "rekap_bulanan", docRekapId);
                 const rekapSnap = await getDoc(rekapRef);
 
+                const dataRekap = {
+                    hadirPR: hitungHadir("PRA-REMAJA"),
+                    hadirR: hitungHadir("REMAJA"),
+                    hadirPN: hitungHadir("PRA-NIKAH"),
+                    izinPR: hitungIzin("PRA-REMAJA"), // Rekap Izin Baru
+                    izinR: hitungIzin("REMAJA"),      // Rekap Izin Baru
+                    izinPN: hitungIzin("PRA-NIKAH"),    // Rekap Izin Baru
+                    jumlahPertemuan: uniqueEvents,
+                    lastUpdate: serverTimestamp()
+                };
+
                 if (rekapSnap.exists()) {
                     const old = rekapSnap.data();
                     await setDoc(rekapRef, {
-                        hadirPR: (old.hadirPR || 0) + hitungHadir("PRA-REMAJA"),
-                        hadirR: (old.hadirR || 0) + hitungHadir("REMAJA"),
-                        hadirPN: (old.hadirPN || 0) + hitungHadir("PRA-NIKAH"),
-                        jumlahPertemuan: (old.jumlahPertemuan || 0) + uniqueEvents,
+                        hadirPR: (old.hadirPR || 0) + dataRekap.hadirPR,
+                        hadirR: (old.hadirR || 0) + dataRekap.hadirR,
+                        hadirPN: (old.hadirPN || 0) + dataRekap.hadirPN,
+                        izinPR: (old.izinPR || 0) + dataRekap.izinPR,
+                        izinR: (old.izinR || 0) + dataRekap.izinR,
+                        izinPN: (old.izinPN || 0) + dataRekap.izinPN,
+                        jumlahPertemuan: (old.jumlahPertemuan || 0) + dataRekap.jumlahPertemuan,
                         lastUpdate: serverTimestamp()
                     }, { merge: true });
                 } else {
                     await setDoc(rekapRef, {
-                        wilayah: wilayah, role: role, bulan: bulanSekarang, tahun: tahunSekarang,
-                        hadirPR: hitungHadir("PRA-REMAJA"), hadirR: hitungHadir("REMAJA"), hadirPN: hitungHadir("PRA-NIKAH"),
-                        jumlahPertemuan: uniqueEvents, lastUpdate: serverTimestamp()
+                        wilayah: wilayah,
+                        role: role,
+                        bulan: bulanSekarang,
+                        tahun: tahunSekarang,
+                        ...dataRekap
                     });
                 }
             }
