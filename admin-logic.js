@@ -569,3 +569,15 @@ window.downloadCSV = () => {
     link.click();
     document.body.removeChild(link);
 };
+
+window.logoutAdmin = () => {
+    window.currentAdmin = null;
+    const adminSec = document.getElementById('admin-section');
+    if (adminSec) adminSec.classList.add('hidden');
+    const pendaftarSec = document.getElementById('pendaftar-section');
+    if (pendaftarSec) pendaftarSec.classList.remove('hidden');
+    if (typeof window.cekUserLogin === 'function') {
+        window.cekUserLogin(); 
+    }
+    alert("Anda telah keluar dari Mode Admin.");
+};
