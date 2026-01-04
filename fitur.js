@@ -168,12 +168,19 @@ window.getTotalAnggotaPerKelas = async (wilayah, role) => {
         let q = collection(db, "master_jamaah");
         if (role === "KELOMPOK") q = query(q, where("kelompok", "==", wilayah));
         else if (role === "DESA") q = query(q, where("desa", "==", wilayah));
+        
         const snap = await getDocs(q);
         const data = snap.docs.map(d => d.data());
+        
+        const pr = data.filter(j => j.kelas === "PRA-REMAJA").length;
+        const r = data.filter(j => j.kelas === "REMAJA").length;
+        const pn = data.filter(j => j.kelas === "PRA-NIKAH").length;
+
         return {
-            totalPR: data.filter(j => j.kelas === "PRA-REMAJA").length,
-            totalR: data.filter(j => j.kelas === "REMAJA").length,
-            totalPN: data.filter(j => j.kelas === "PRA-NIKAH").length
+            totalPR: pr,
+            totalR: r,
+            totalPN: pn,
+            totalSemua: pr + r + pn 
         };
-    } catch (e) { return { totalPR: 0, totalR: 0, totalPN: 0 }; }
+    } catch (e) { return { totalPR: 0, totalR: 0, totalPN: 0, totalSemua: 0 }; }
 };
