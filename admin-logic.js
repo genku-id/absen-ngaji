@@ -492,17 +492,19 @@ window.downloadStatistikGambar = () => {
 };
 
 window.handleResetLaporan = async () => {
-    if (!window.currentAdmin) return;
-    const konfirmasi = confirm("PERINGATAN: Reset akan menghapus semua data scan saat ini dan memasukannya ke Rekap Bulanan. Lanjutkan?");
+    if (!window.currentAdmin) return alert("Sesi Admin habis.");
+    const konfirmasi = confirm("PERINGATAN: Reset akan menghapus semua data scan saat ini dan memindahkannya ke Rekap Bulanan. Lanjutkan?");
     if (!konfirmasi) return;
-
-    const sukses = await window.prosesRekapDanReset(window.currentAdmin.wilayah, window.currentAdmin.role);
-    
-    if (sukses) {
-        alert("Laporan berhasil di-reset dan data telah direkap.");
-        if (typeof renderTabLaporan === 'function') renderTabLaporan();
-    } else {
-        alert("Terjadi kesalahan saat mereset data.");
+    try { const sukses = await window.prosesRekapDanReset(window.currentAdmin.wilayah, window.currentAdmin.role);
+        if (sukses) {
+            alert("Laporan berhasil di-reset. Data scan telah dibersihkan.");
+            renderTabLaporan();
+        } else {
+            alert("Gagal melakukan reset. Silakan cek koneksi internet.");
+        }
+    } catch (e) {
+        console.error("Error saat reset:", e);
+        alert("Terjadi kesalahan: " + e.message);
     }
 };
 
@@ -544,8 +546,7 @@ window.filterDB = async () => {
 window.hapusJamaah = async (id) => {
     if (confirm("Hapus jamaah dari database?")) {
         await deleteDoc(doc(db, "master_jamaah", id));
-        renderTabDatabase();
-    }
+        renderTabDatabase(); }
 };
 
 window.downloadCSV = () => {
