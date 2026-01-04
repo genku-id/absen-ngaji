@@ -144,7 +144,7 @@ window.prosesRekapDanReset = async (eventId, admin) => {
         const batchPromises = localAtt.map(a => deleteDoc(doc(db, "attendance", a.id)));
         await Promise.all(batchPromises);
 
-        await setDoc(evRef, { status: "archived", archivedAt: serverTimestamp() }, { merge: true });
+        await deleteDoc(evRef);
 
         return true;
     } catch (e) {
