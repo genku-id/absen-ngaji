@@ -171,11 +171,22 @@ window.switchQRIS = (tipe, id, nama) => {
 window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const tgl = document.getElementById('ev-tgl').value;
-    if (!nama || !tgl) return alert("Isi data event!");
+    
+    // Ambil semua target kelas yang dicentang
+    const selectedKelas = Array.from(document.querySelectorAll('.target-kelas:checked'))
+                               .map(cb => cb.value);
+
+    if (!nama || !tgl || selectedKelas.length === 0) {
+        return alert("Isi data event dan pilih minimal satu Target Peserta!");
+    }
 
     await addDoc(collection(db, "events"), {
-        namaEvent: nama, waktu: tgl, status: "open",
-        wilayah: window.currentAdmin.wilayah, role: window.currentAdmin.role,
+        namaEvent: nama, 
+        waktu: tgl, 
+        status: "open",
+        targetKelas: selectedKelas, // Simpan array target kelas
+        wilayah: window.currentAdmin.wilayah, 
+        role: window.currentAdmin.role,
         createdAt: serverTimestamp()
     });
     renderTabEvent();
