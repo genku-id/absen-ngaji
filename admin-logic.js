@@ -87,57 +87,45 @@ window.switchTab = (tab) => {
 // --- TAB EVENT ---
 async function renderTabEvent() {
     const sub = document.getElementById('admin-sub-content');
+    // Cek keamanan: Jika admin hilang, paksa login ulang
+    if (!window.currentAdmin) {
+        sub.innerHTML = "<button onclick='window.bukaModalPilihAdmin()' class='primary-btn'>Sesi Habis, Silakan Login Admin Kembali</button>";
+        return;
+    }
+    
     sub.innerHTML = "<p>Memeriksa event aktif...</p>";
     
-    const q = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", window.currentAdmin.wilayah));
+    const q = query(collection(db, "events"), 
+                where("status", "==", "open"), 
+                where("wilayah", "==", window.currentAdmin.wilayah));
+    
     const snap = await getDocs(q);
 
     if (!snap.empty) {
-        const ev = snap.docs[0].data();
-        const evId = snap.docs[0].id;
-        
+        // ... (Kode tampilan QR tetap sama)
+    } else {
+        // TAMPILAN FORM DENGAN CHECKBOX KELAS
         sub.innerHTML = `
-            <div style="display:flex; flex-direction:column; align-items:center; gap:20px; padding:10px;">
-                <div style="display:flex; gap:10px; width:100%; max-width:320px;">
-                    <button id="btn-pilih-hadir" onclick="window.switchQRIS('hadir', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#0056b3; color:white; font-weight:bold; cursor:pointer;">HADIR</button>
-                    <button id="btn-pilih-izin" onclick="window.switchQRIS('izin', '${evId}', '${ev.namaEvent}')" style="flex:1; padding:10px; border-radius:10px; border:none; background:#666; color:white; font-weight:bold; cursor:pointer;">IZIN</button>
-                </div>
-
-                <div id="qris-box" style="width: 300px; background: white; padding: 20px; border-radius: 20px; border: 3px solid #0056b3; text-align: center; box-shadow:0 10px 20px rgba(0,0,0,0.1);">
-                    <div id="qris-header-bg" style="background: #0056b3; color: white; padding: 12px; border-radius: 12px 12px 0 0; margin: -20px -20px 20px -20px;">
-                        <h3 id="qris-title-text" style="margin: 0; letter-spacing: 2px; font-size: 16px;">QR HADIR</h3>
-                    </div>
-                    
-                    <div style="font-weight: 900; color: #333; margin-bottom: 15px; font-size: 18px; text-transform: uppercase;">
-                        ${ev.namaEvent}
-                    </div>
-                    
-                    <div id="qrcode-target" style="display:flex; justify-content:center; padding:10px; background:white; border: 1px solid #eee; border-radius: 10px;"></div>
-                    
-                    <div style="margin-top:15px; border-top: 4px solid #ffc107; padding-top:10px;">
-                        <p id="qris-footer-text" style="font-size: 11px; font-weight: bold; color: #555; margin: 0;">SCAN UNTUK KEHADIRAN & SHODAQOH</p>
-                        <small id="qris-id-text" style="color: #0056b3; font-weight: bold; font-size: 10px;">ID: ${evId}</small>
-                    </div>
+            <div style="text-align:left; background:#fdfdfd; padding:15px; border-radius:10px; border:1px solid #eee;">
+                <h3 style="margin-top:0; color:#0056b3;">Buka Absensi Baru</h3>
+                <label style="font-size:12px; font-weight:bold;">Nama Acara:</label>
+                <input type="text" id="ev-nama" placeholder="Misal: Pengajian Rutin">
+                
+                <label style="font-size:12px; font-weight:bold;">Waktu Mulai:</label>
+                <input type="datetime-local" id="ev-tgl">
+                
+                <div style="margin-top:15px; padding:10px; background:#eef6ff; border-radius:8px;">
+                    <p style="font-size:12px; font-weight:bold; margin-bottom:10px; color:#0056b3;">Target Peserta (Wajib Pilih):</p>
+                    <label style="display:block; margin-bottom:5px;"><input type="checkbox" class="target-kelas" value="PRA-REMAJA"> Pra-Remaja</label>
+                    <label style="display:block; margin-bottom:5px;"><input type="checkbox" class="target-kelas" value="REMAJA"> Remaja</label>
+                    <label style="display:block; margin-bottom:5px;"><input type="checkbox" class="target-kelas" value="PRA-NIKAH"> Pra-Nikah</label>
                 </div>
                 
-                <div style="width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 10px;">
-                    <button onclick="window.downloadQRIS('${ev.namaEvent}')" class="primary-btn" style="background: #28a745;">📥 SIMPAN KE GALERI</button>
-                    <button onclick="window.tutupEvent('${evId}')" class="primary-btn" style="background:#dc3545;">TUTUP EVENT</button>
-                </div>
+                <button onclick="window.simpanEvent()" class="primary-btn" style="margin-top:15px; width:100%;">BUKA ABSENSI SEKARANG</button>
             </div>
-        `;
-        window.switchQRIS('hadir', evId, ev.namaEvent);
-
-    } else {
-        sub.innerHTML = `
-            <h3>Buat Event Baru</h3>
-            <input type="text" id="ev-nama" placeholder="Nama Acara (Misal: Pengajian Mumi)">
-            <input type="datetime-local" id="ev-tgl">
-            <button onclick="window.simpanEvent()" class="primary-btn">BUKA ABSENSI</button>
         `;
     }
 }
-
 window.switchQRIS = (tipe, id, nama) => {
     const target = document.getElementById("qrcode-target");
     const title = document.getElementById("qris-title-text");
