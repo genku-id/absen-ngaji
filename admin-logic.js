@@ -160,7 +160,7 @@ window.simpanEvent = async () => {
     const nama = document.getElementById('ev-nama').value;
     const tgl = document.getElementById('ev-tgl').value;
     
-    // Ambil semua target kelas yang dicentang
+    // Ambil checkbox yang dicentang
     const selectedKelas = Array.from(document.querySelectorAll('.target-kelas:checked'))
                                .map(cb => cb.value);
 
@@ -168,16 +168,20 @@ window.simpanEvent = async () => {
         return alert("Isi data event dan pilih minimal satu Target Peserta!");
     }
 
-    await addDoc(collection(db, "events"), {
-        namaEvent: nama, 
-        waktu: tgl, 
-        status: "open",
-        targetKelas: selectedKelas, // Simpan array target kelas
-        wilayah: window.currentAdmin.wilayah, 
-        role: window.currentAdmin.role,
-        createdAt: serverTimestamp()
-    });
-    renderTabEvent();
+    try {
+        await addDoc(collection(db, "events"), {
+            namaEvent: nama, 
+            waktu: tgl, 
+            status: "open",
+            targetKelas: selectedKelas,
+            wilayah: window.currentAdmin.wilayah, 
+            role: window.currentAdmin.role,
+            createdAt: serverTimestamp()
+        });
+        renderTabEvent();
+    } catch (e) {
+        alert("Gagal simpan: " + e.message);
+    }
 };
 
 window.downloadQRIS = (nama) => {
@@ -203,7 +207,11 @@ window.tutupEvent = async (id) => {
 // --- TAB LAPORAN ---
 async function renderTabLaporan() {
     const sub = document.getElementById('admin-sub-content');
+    if (!window.currentAdmin) {
+        sub.innerHTML = "<p>Sesi Admin tidak ditemukan. Silakan Login ulang.</p>";
+        return; }
     const { wilayah, role } = window.currentAdmin;
+
     sub.innerHTML = `<div id="laporan-table" class="table-responsive">Memproses data...</div>`;
 
     try {
