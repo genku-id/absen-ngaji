@@ -192,29 +192,27 @@ window.switchQRIS = (tipe, id, nama) => {
 };
 
 window.simpanEvent = async () => {
-    if (!window.currentAdmin) return alert("Sesi Admin Hilang!");
+    if (!window.currentAdmin) return;
     const nama = document.getElementById('ev-nama').value;
     const tgl = document.getElementById('ev-tgl').value;
-    
-    const selectedKelas = Array.from(document.querySelectorAll('.target-kelas:checked'))
-                               .map(cb => cb.value);
+    const target = Array.from(document.querySelectorAll('.target-kelas:checked')).map(c => c.value);
 
-    if (!nama || !tgl || selectedKelas.length === 0) {
-        return alert("Isi data event dan pilih minimal satu Target Peserta!");
+    if (!nama || !tgl || target.length === 0) {
+        return alert("Lengkapi Nama, Waktu, dan pilih minimal satu Target Peserta!");
     }
 
     try {
         await addDoc(collection(db, "events"), {
             namaEvent: nama, 
             waktu: tgl, 
-            status: "open",
-            targetKelas: selectedKelas,
+            status: "open", 
+            targetKelas: target, // Kelas yang ditunjuk
             wilayah: window.currentAdmin.wilayah, 
             role: window.currentAdmin.role,
             createdAt: serverTimestamp()
         });
         renderTabEvent();
-    } catch (e) { alert("Gagal simpan: " + e.message); }
+    } catch (e) { alert(e.message); }
 };
 
 window.downloadQRIS = (nama) => {
@@ -240,30 +238,23 @@ window.tutupEvent = async (id) => {
 // --- TAB LAPORAN ---
 async function renderTabLaporan() {
     const sub = document.getElementById('admin-sub-content');
-    if (!window.currentAdmin) {
-        sub.innerHTML = "<p>Sesi Admin Hilang. Silakan Login ulang.</p>";
-        return; 
-    }
+    if (!window.currentAdmin) return;
     const { wilayah, role } = window.currentAdmin;
 
     sub.innerHTML = `<div id="laporan-table" class="table-responsive">Memproses data...</div>`;
 
     try {
-        const qEv = query(collection(db, "events"), where("status", "==", "open"), where("wilayah", "==", wilayah));
-        const evSnap = await getDocs(qEv);
+        // 1. Ambil data scan yang ada di wilayah ini (sebelum di-reset)
+        const qAtt = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
+        const attSnap = await getDocs(qAtt);
 
-        if (evSnap.empty) {
-            sub.innerHTML = `<div style="text-align:center; padding:20px; color:#666;"><p>⚠️ Tidak ada Event yang sedang dibuka.</p></div>`;
+        if (attSnap.empty) {
+            sub.innerHTML = `<div style="text-align:center; padding:20px; color:#666;"><p>⚠️ Belum ada yang absen/izin.</p></div>`;
             return;
         }
 
-        const activeEventId = evSnap.docs[0].id;
-        const activeEventName = evSnap.docs[0].data().namaEvent;
-
+        // 2. Tampilkan tombol kontrol
         sub.innerHTML = `
-            <div style="margin-bottom:15px; background:#f8f9fa; padding:10px; border-radius:10px; border-left:5px solid #007bff;">
-                <small>Laporan Aktif:</small><br><b>${activeEventName}</b>
-            </div>
             <div style="display:flex; gap:5px; margin-bottom:15px;">
                 <button onclick="window.downloadCSV()" class="primary-btn" style="background:#28a745; font-size:12px;">CSV</button>
                 <button onclick="window.bukaStatistik()" class="primary-btn" style="background:#17a2b8; font-size:12px;">Statistik</button>
@@ -272,65 +263,27 @@ async function renderTabLaporan() {
             <div id="laporan-table" class="table-responsive">Memuat data...</div>
         `;
 
-        const qAtt = query(collection(db, "attendance"), where("eventId", "==", activeEventId));
-        const attSnap = await getDocs(qAtt);
-        const allAtt = attSnap.docs.map(d => d.data());
-
-        let qM = collection(db, "master_jamaah");
-        if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
-        else if (role === "DESA") qM = query(qM, where("desa", "==", wilayah));
-        const mSnap = await getDocs(qM);
-
-        let dataLaporan = [];
-        mSnap.forEach(doc => {
-            const j = doc.data();
-            const absen = allAtt.find(a => a.nama === j.nama);
-            let res = { 
-                nama: j.nama, kelompok: j.kelompok, desa: j.desa, gender: j.gender, 
-                jam: "-", shodaqoh: 0, status: "❌ ALFA", color: "row-alfa", rawStatus: "alfa" 
-            };
-            if (absen) {
-                res.jam = absen.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
-                res.shodaqoh = absen.shodaqoh || 0;
-                res.status = absen.status === "hadir" ? "✅ HADIR" : "🙏🏻 IZIN";
-                res.color = absen.status === "hadir" ? "row-hadir" : "row-izin";
-                res.rawStatus = absen.status;
-            }
-            dataLaporan.push(res);
-        });
-
-        dataLaporan.sort((a, b) => {
-            if (a.desa !== b.desa) return a.desa.localeCompare(b.desa);
-            if (a.kelompok !== b.kelompok) return a.kelompok.localeCompare(b.kelompok);
-            return a.nama.localeCompare(b.nama);
-        });
-
+        // 3. Olah data hanya dari yang sudah scan (Hadir/Izin)
+        let dataLaporan = attSnap.docs.map(d => d.data());
+        dataLaporan.sort((a, b) => a.nama.localeCompare(b.nama));
         window.currentReportData = dataLaporan;
-        let html = `<table><thead><tr><th>Nama & Wilayah</th><th>Jam</th><th>SHODAQOH</th><th>Status</th></tr></thead><tbody>`;
+
+        let html = `<table><thead><tr><th>Nama Peserta</th><th>Jam</th><th>Shodaqoh</th><th>Status</th></tr></thead><tbody>`;
         
-        let lastDesa = "";
-        let lastKelompok = "";
-
         dataLaporan.forEach(d => {
-            if (role === "DAERAH" && d.desa !== lastDesa) {
-                html += `<tr style="background:#333; color:white;"><td colspan="4" style="padding:5px 10px; font-weight:bold;">DESA: ${d.desa}</td></tr>`;
-                lastDesa = d.desa;
-            }
-            if (d.kelompok !== lastKelompok) {
-                html += `<tr style="background:#e9ecef;"><td colspan="4" style="padding:5px 10px; font-weight:bold; color:#0056b3;">KELOMPOK: ${d.kelompok}</td></tr>`;
-                lastKelompok = d.kelompok;
-            }
-
-            const txtUang = d.shodaqoh > 0 ? `<b>${d.shodaqoh.toLocaleString('id-ID')}</b>` : `-`;
-            html += `<tr class="${d.color}">
-                <td><b>${d.nama}</b></td>
-                <td align="center">${d.jam}</td>
-                <td align="right" style="color:#28a745;">${txtUang}</td>
-                <td>${d.status}</td>
-            </tr>`;
+            const jamStr = d.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
+            const rowColor = d.status === "hadir" ? "row-hadir" : "row-izin";
+            html += `
+                <tr class="${rowColor}">
+                    <td><b>${d.nama}</b><br><small>${d.kelas}</small></td>
+                    <td align="center">${jamStr}</td>
+                    <td align="right">${(d.shodaqoh || 0).toLocaleString()}</td>
+                    <td align="center">${d.status === 'hadir' ? '✅' : '🙏🏻'}</td>
+                </tr>`;
         });
         document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
-    } catch (e) { console.error(e); alert("Error: " + e.message); }
+        
+    } catch (e) { alert("Error Laporan: " + e.message); }
 }
 
 // --- FUNGSI STATISTIK LENGKAP ---
