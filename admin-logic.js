@@ -241,51 +241,95 @@ async function renderTabLaporan() {
     if (!window.currentAdmin) return;
     const { wilayah, role } = window.currentAdmin;
 
-    sub.innerHTML = `<div id="laporan-table" class="table-responsive">Memproses data...</div>`;
+    // 1. Cari event aktif di wilayah ini
+    const qEv = query(collection(db, "events"), 
+        where("wilayah", "==", wilayah), 
+        where("status", "in", ["open", "closed"])
+    );
+    const evSnap = await getDocs(qEv);
+    const eventAktif = evSnap.docs[0]?.data();
+    const eventStatus = eventAktif?.status || "none";
+    const targetKelas = eventAktif?.targetKelas || [];
 
-    try {
-        // 1. Ambil data scan yang ada di wilayah ini (sebelum di-reset)
-        const qAtt = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
-        const attSnap = await getDocs(qAtt);
+    // 2. Ambil SEMUA attendance hari ini (lintas wilayah) untuk cek SB Lain
+    // Kita ambil data attendance yang dibuat hari ini
+    const qAllAtt = query(collection(db, "attendance")); 
+    const allAttSnap = await getDocs(qAllAtt);
+    const globalAttendance = allAttSnap.docs.map(d => d.data());
 
-        if (attSnap.empty) {
-            sub.innerHTML = `<div style="text-align:center; padding:20px; color:#666;"><p>⚠️ Belum ada yang absen/izin.</p></div>`;
-            return;
+    // Filter attendance khusus wilayah ini saja untuk tampilan awal
+    const localAttendance = globalAttendance.filter(a => a.kelompok === wilayah);
+
+    sub.innerHTML = `
+        <div style="display:flex; gap:5px; margin-bottom:15px;">
+            <button onclick="window.downloadCSV()" class="primary-btn" style="background:#28a745; font-size:11px;">CSV</button>
+            <button onclick="window.handleResetLaporan()" class="primary-btn" style="background:#dc3545; font-size:11px;">RESET</button>
+        </div>
+        <div id="laporan-table" class="table-responsive">Memuat data...</div>
+    `;
+
+    let dataFinal = [];
+
+    if (eventStatus === "closed") {
+        // --- LOGIKA EVENT TUTUP: CEK SIAPA YANG ALFA ATAU SB LAIN ---
+        const qMas = query(collection(db, "master_jamaah"), where("kelompok", "==", wilayah));
+        const masSnap = await getDocs(qMas);
+        
+        masSnap.forEach(doc => {
+            const m = doc.data();
+            if (targetKelas.includes(m.kelas)) {
+                // Cek apakah dia absen di kelompok sendiri
+                const sdhLocal = localAttendance.find(a => a.nama === m.nama);
+                // Cek apakah dia ternyata absen di tempat lain (SB Lain)
+                const sdhGlobal = globalAttendance.find(a => a.nama === m.nama && a.kelompok !== wilayah);
+
+                if (sdhLocal) {
+                    dataFinal.push(sdhLocal);
+                } else if (sdhGlobal) {
+                    // JIKA DIA ABSEN DI TEMPAT LAIN -> STATUS SB LAIN
+                    dataFinal.push({ 
+                        nama: m.nama, 
+                        kelas: m.kelas, 
+                        status: "SB LAIN", 
+                        shodaqoh: 0,
+                        ket: `Scan di ${sdhGlobal.kelompok}` 
+                    });
+                } else {
+                    dataFinal.push({ nama: m.nama, kelas: m.kelas, status: "alfa", shodaqoh: 0 });
+                }
+            }
+        });
+    } else {
+        // --- LOGIKA EVENT OPEN: TETAP SEMBUNYIKAN YANG BELUM SCAN ---
+        dataFinal = localAttendance;
+    }
+
+    dataFinal.sort((a, b) => a.nama.localeCompare(b.nama));
+
+    let html = `<table><thead><tr><th>Nama</th><th>Status</th><th>Ket</th></tr></thead><tbody>`;
+    dataFinal.forEach(d => {
+        let statusDisplay = d.status;
+        let rowStyle = "";
+        
+        if(d.status === 'hadir') statusDisplay = '✅ Hadir';
+        else if(d.status === 'izin') statusDisplay = '🙏🏻 Izin';
+        else if(d.status === 'SB LAIN') {
+            statusDisplay = '🕌 SB Lain';
+            rowStyle = 'style="background:#e3f2fd;"'; // Biru muda untuk SB Lain
+        } else if(d.status === 'alfa') {
+            statusDisplay = '<span style="color:red;">ALFA</span>';
+            rowStyle = 'style="background:#ffebee;"';
         }
 
-        // 2. Tampilkan tombol kontrol
-        sub.innerHTML = `
-            <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <button onclick="window.downloadCSV()" class="primary-btn" style="background:#28a745; font-size:12px;">CSV</button>
-                <button onclick="window.bukaStatistik()" class="primary-btn" style="background:#17a2b8; font-size:12px;">Statistik</button>
-                <button onclick="window.handleResetLaporan()" class="primary-btn" style="background:#dc3545; font-size:12px;">Reset</button>
-            </div>
-            <div id="laporan-table" class="table-responsive">Memuat data...</div>
-        `;
-
-        // 3. Olah data hanya dari yang sudah scan (Hadir/Izin)
-        let dataLaporan = attSnap.docs.map(d => d.data());
-        dataLaporan.sort((a, b) => a.nama.localeCompare(b.nama));
-        window.currentReportData = dataLaporan;
-
-        let html = `<table><thead><tr><th>Nama Peserta</th><th>Jam</th><th>Shodaqoh</th><th>Status</th></tr></thead><tbody>`;
-        
-        dataLaporan.forEach(d => {
-            const jamStr = d.waktu?.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) || "-";
-            const rowColor = d.status === "hadir" ? "row-hadir" : "row-izin";
-            html += `
-                <tr class="${rowColor}">
-                    <td><b>${d.nama}</b><br><small>${d.kelas}</small></td>
-                    <td align="center">${jamStr}</td>
-                    <td align="right">${(d.shodaqoh || 0).toLocaleString()}</td>
-                    <td align="center">${d.status === 'hadir' ? '✅' : '🙏🏻'}</td>
-                </tr>`;
-        });
-        document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
-        
-    } catch (e) { alert("Error Laporan: " + e.message); }
+        html += `<tr ${rowStyle}>
+            <td><b>${d.nama}</b><br><small>${d.kelas}</small></td>
+            <td align="center">${statusDisplay}</td>
+            <td><small>${d.ket || ''}</small></td>
+        </tr>`;
+    });
+    
+    document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
 }
-
 // --- FUNGSI STATISTIK LENGKAP ---
 window.bukaStatistik = async () => {
     const data = window.currentReportData;
