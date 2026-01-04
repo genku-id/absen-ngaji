@@ -176,3 +176,18 @@ window.prosesRekapDanReset = async (wilayah, role) => {
         return false;
     }
 };
+
+window.getStatistikBulanLalu = async (wilayah) => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1); // Mundur 1 bulan
+    const bulanLalu = d.getMonth() + 1;
+    const tahunLalu = d.getFullYear();
+    
+    const docRekapId = `REKAP_${wilayah.replace(/\s/g, '')}_${tahunLalu}_${bulanLalu}`;
+    const snap = await getDoc(doc(db, "rekap_bulanan", docRekapId));
+    
+    if (snap.exists()) {
+        return snap.data();
+    }
+    return null; // Jika belum ada rekap bulan lalu
+};
