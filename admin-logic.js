@@ -341,58 +341,67 @@ window.bukaStatistik = async () => {
     const rekapLalu = await window.getStatistikBulanLalu(wilayah);
     const totalAnggota = await window.getTotalAnggotaPerKelas(wilayah, role);
 
-    const hitung = (list) => {
-        const T = list.length;
-        const H = list.filter(d => d.rawStatus === 'hadir').length;
-        const I = list.filter(d => d.rawStatus === 'izin').length;
-        const A = list.filter(d => d.rawStatus === 'alfa').length;
-        const totalUang = list.reduce((acc, curr) => acc + (curr.shodaqoh || 0), 0);
+    // --- REKAYASA FUNGSI HITUNG ---
+    const hitung = (list, totalMaster = 0) => {
+        // T sekarang mengambil dari Master, bukan list.length
+        const T = totalMaster || list.length; 
+        const H = list.filter(d => d.status === 'hadir').length;
+        // SB LAIN otomatis terhitung karena di laporan statusnya sudah 'izin' atau 'SB LAIN'
+        const I = list.filter(d => d.status === 'izin' || d.status === 'SB LAIN').length;
+        const A = T - (H + I); // Alfa adalah sisa dari Total Master
         
+        const totalUang = list.reduce((acc, curr) => acc + (curr.shodaqoh || 0), 0);
         const isG = (d, g) => d.gender && d.gender.trim().toUpperCase() === g;
 
-        const H_Pa = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRA')).length;
-        const I_Pa = list.filter(d => d.rawStatus === 'izin' && isG(d, 'PUTRA')).length;
-        const A_Pa = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRA')).length;
+        const H_Pa = list.filter(d => d.status === 'hadir' && isG(d, 'PUTRA')).length;
+        const I_Pa = list.filter(d => (d.status === 'izin' || d.status === 'SB LAIN') && isG(d, 'PUTRA')).length;
+        const A_Pa = list.filter(d => d.status === 'alfa' && isG(d, 'PUTRA')).length;
 
-        const H_Pi = list.filter(d => d.rawStatus === 'hadir' && isG(d, 'PUTRI')).length;
-        const I_Pi = list.filter(d => d.rawStatus === 'izin' && isG(d, 'PUTRI')).length;
-        const A_Pi = list.filter(d => d.rawStatus === 'alfa' && isG(d, 'PUTRI')).length;
+        const H_Pi = list.filter(d => d.status === 'hadir' && isG(d, 'PUTRI')).length;
+        const I_Pi = list.filter(d => (d.status === 'izin' || d.status === 'SB LAIN') && isG(d, 'PUTRI')).length;
+        const A_Pi = list.filter(d => d.status === 'alfa' && isG(d, 'PUTRI')).length;
 
-        const P = T > 0 ? Math.round((H / T) * 100) : 0;
+        const P = T > 0 ? Math.round((H / (T - I)) * 100) : 0; // Rumus Persentase Adil
         return { T, H, I, A, P, H_Pa, I_Pa, A_Pa, H_Pi, I_Pi, A_Pi, totalUang };
     };
-
-    let rekapDesa = {};
-    let detailKelompok = {}; 
-    data.forEach(d => {
-        if (!rekapDesa[d.desa]) rekapDesa[d.desa] = [];
-        rekapDesa[d.desa].push(d);
-
-        if (!detailKelompok[d.desa]) detailKelompok[d.desa] = {};
-        if (!detailKelompok[d.desa][d.kelompok]) detailKelompok[d.desa][d.kelompok] = [];
-        detailKelompok[d.desa][d.kelompok].push(d);
-    });
-
-    const sDarah = hitung(data);
+    // --- REKAYASA TABEL UTAMA (DETAIL PER KELAS UNTUK KELOMPOK) ---
+    const sDarah = hitung(data, totalAnggota.totalSemua);
+    
+    let rowsKelas = "";
+    if (role === "KELOMPOK") {
+        const kelasList = ["PRA-REMAJA", "REMAJA", "PRA-NIKAH"];
+        rowsKelas = kelasList.map(kls => {
+            const dataKls = data.filter(d => d.kelas === kls);
+            const masterKls = kls === "PRA-REMAJA" ? totalAnggota.totalPR : (kls === "REMAJA" ? totalAnggota.totalR : totalAnggota.totalPN);
+            const s = hitung(dataKls, masterKls);
+            return `
+                <tr style="font-size:12px;">
+                    <td align="left" style="padding-left:5px;">${kls}</td><td>${s.P}%</td><td>${s.totalUang.toLocaleString()}</td>
+                    <td>${s.T}</td><td>${s.H}</td><td>${s.I}</td><td>${s.A}</td>
+                    <td>${s.H_Pa}</td><td>${s.I_Pa}</td><td>${s.A_Pa}</td>
+                    <td>${s.H_Pi}</td><td>${s.I_Pi}</td><td>${s.A_Pi}</td>
+                </tr>`;
+        }).join('');
+    }
 
     let tableUtama = `
         <h3 style="text-align:center; color:#28a745; margin-bottom:10px;">REKAP HARIAN (LIVE)</h3>
-        <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black; text-align:center;">
+        <table class="stat-table" style="width:100%; border-collapse:collapse; margin-bottom:20px; border:2px solid black; text-align:center; font-size:11px;">
             <tr style="background:#f0f0f0;">
-                <th rowspan="2">TOTAL</th><th rowspan="2">%</th><th rowspan="2">SHODAQOH</th><th colspan="3">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
+                <th rowspan="2">KATEGORI</th><th rowspan="2">%</th><th rowspan="2">INFAQ</th><th colspan="4">TOTAL</th><th colspan="3">PUTRA</th><th colspan="3">PUTRI</th>
             </tr>
             <tr style="background:#f0f0f0;">
-                <th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
+                <th>T</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th><th>H</th><th>I</th><th>A</th>
             </tr>
-            <tr style="font-weight:bold; text-align:center; font-size:16px; background:#e8f5e9;">
-                <td>TOTAL</td><td>${sDarah.P}%</td><td style="color:#28a745;">${sDarah.totalUang.toLocaleString('id-ID')}</td><td>${sDarah.T}</td>
+            ${rowsKelas}
+            <tr style="font-weight:bold; background:#e8f5e9;">
+                <td>TOTAL</td><td>${sDarah.P}%</td><td>${sDarah.totalUang.toLocaleString()}</td><td>${sDarah.T}</td>
                 <td>${sDarah.H}</td><td>${sDarah.I}</td><td>${sDarah.A}</td>
                 <td>${sDarah.H_Pa}</td><td>${sDarah.I_Pa}</td><td>${sDarah.A_Pa}</td>
                 <td>${sDarah.H_Pi}</td><td>${sDarah.I_Pi}</td><td>${sDarah.A_Pi}</td>
             </tr>
         </table>
     `;
-
     let tableBulanan = "";
     if (rekapLalu) {
         const hitungP = (hadir, total) => {
