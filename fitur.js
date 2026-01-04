@@ -1,8 +1,7 @@
 import { db } from './firebase-config.js';
 import { 
-    collection, query, where, getDocs, doc, getDoc 
+    collection, query, where, getDocs, doc, getDoc, setDoc, deleteDoc, serverTimestamp 
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
 // Fungsi untuk memformat angka ke Rupiah saat mengetik
 window.formatRupiah = (input) => {
     let value = input.value.replace(/[^,\d]/g, '').toString();
@@ -117,5 +116,63 @@ window.renderRiwayatBeranda = async (user) => {
     } catch (e) {
         console.error("Error Detail:", e);
         historyBox.innerHTML = `<p style="font-size:12px; color:red;">Gagal memuat: ${e.message}</p>`;
+    }
+};
+
+// --- MESIN REKAP & RESET (Dipanggil saat tombol Reset diklik) ---
+window.prosesRekapDanReset = async (wilayah, role) => {
+    try {
+        const d = new Date();
+        const bulanSekarang = d.getMonth() + 1;
+        const tahunSekarang = d.getFullYear();
+        // ID Dokumen: Rekap_GIRIPENI1_2026_1
+        const docRekapId = `REKAP_${wilayah.replace(/\s/g, '')}_${tahunSekarang}_${bulanSekarang}`;
+
+        // 1. Ambil SEMUA data kehadiran di wilayah tersebut yang belum di-reset
+        const q = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
+        const snap = await getDocs(q);
+        const allAtt = snap.docs.map(d => ({id: d.id, ...d.data()}));
+
+        if (allAtt.length > 0) {
+            // 2. Hitung jumlah hadir per kelas dari data yang ada
+            const hitungHadir = (kls) => allAtt.filter(a => a.kelas === kls && a.status === 'hadir').length;
+            
+            // Kita cari tahu ada berapa event unik di data yang akan dihapus ini
+            const uniqueEvents = [...new Set(allAtt.map(a => a.eventId))].length;
+
+            const rekapRef = doc(db, "rekap_bulanan", docRekapId);
+            const rekapSnap = await getDoc(rekapRef);
+
+            if (rekapSnap.exists()) {
+                const old = rekapSnap.data();
+                await setDoc(rekapRef, {
+                    hadirPR: (old.hadirPR || 0) + hitungHadir("PRA-REMAJA"),
+                    hadirR: (old.hadirR || 0) + hitungHadir("REMAJA"),
+                    hadirPN: (old.hadirPN || 0) + hitungHadir("PRA-NIKAH"),
+                    jumlahPertemuan: (old.jumlahPertemuan || 0) + uniqueEvents,
+                    lastUpdate: serverTimestamp()
+                }, { merge: true });
+            } else {
+                await setDoc(rekapRef, {
+                    wilayah: wilayah,
+                    role: role,
+                    bulan: bulanSekarang,
+                    tahun: tahunSekarang,
+                    hadirPR: hitungHadir("PRA-REMAJA"),
+                    hadirR: hitungHadir("REMAJA"),
+                    hadirPN: hitungHadir("PRA-NIKAH"),
+                    jumlahPertemuan: uniqueEvents,
+                    lastUpdate: serverTimestamp()
+                });
+            }
+
+            // 3. HAPUS DATA SCAN (Cleaning)
+            const promises = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
+            await Promise.all(promises);
+        }
+        return true;
+    } catch (e) {
+        console.error("Gagal Rekap & Reset:", e);
+        return false;
     }
 };
