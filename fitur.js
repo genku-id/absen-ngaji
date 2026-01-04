@@ -90,85 +90,65 @@ window.renderRiwayatBeranda = async (user) => {
 };
 
 // --- MESIN REKAP & RESET (PENYEMPURNAAN) ---
-window.prosesRekapDanReset = async (wilayah, role) => {
+window.prosesRekapDanReset = async (eventId, admin) => {
     try {
+        const { wilayah, role } = admin;
         const d = new Date();
         const bulanSekarang = d.getMonth() + 1;
         const tahunSekarang = d.getFullYear();
 
-        // 1. CARI SEMUA DATA ATTENDANCE BERDASARKAN LEVEL ADMIN
-        let q;
+        // 1. Ambil data Event yang akan di-reset (untuk tau Target Kelas)
+        const evRef = doc(db, "events", eventId);
+        const evSnap = await getDoc(evRef);
+        if (!evSnap.exists()) return false;
+        const targetKelas = evSnap.data().targetKelas || [];
+
+        // 2. Ambil SEMUA data kehadiran (Global) untuk hitung SB Lain vs Hadir Lokal
+        const qAtt = query(collection(db, "attendance"));
+        const attSnap = await getDocs(qAtt);
+        const globalAtt = attSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Filter: Attendance milik event ini saja
+        const localAtt = globalAtt.filter(a => a.eventId === eventId);
+
+        // 3. LOGIKA REKAP (Hanya jika Admin Kelompok)
         if (role === "KELOMPOK") {
-            // Admin Kelompok hanya melihat & menghapus orang di kelompoknya sendiri
-            q = query(collection(db, "attendance"), where("kelompok", "==", wilayah));
-        } else if (role === "DESA") {
-            // Admin Desa hanya melihat & menghapus orang di desanya sendiri
-            q = query(collection(db, "attendance"), where("desa", "==", wilayah));
-        } else if (role === "DAERAH") {
-            // Admin Daerah melihat semua data attendance
-            q = collection(db, "attendance");
+            const docRekapId = `REKAP_${wilayah.replace(/\s/g, '')}_${tahunSekarang}_${bulanSekarang}`;
+            
+            const hitungHadir = (kls) => localAtt.filter(a => a.kelas === kls && a.status === 'hadir').length;
+            
+            const hitungIzinDanSBLain = (kls) => {
+                const izinLokal = localAtt.filter(a => a.kelas === kls && a.status === 'izin').length;
+            
+                return izinLokal; 
+            };
+
+            const rekapRef = doc(db, "rekap_bulanan", docRekapId);
+            const rekapDoc = await getDoc(rekapRef);
+
+            const updateData = {
+                hadirPR: (rekapDoc.exists() ? rekapDoc.data().hadirPR || 0 : 0) + hitungHadir("PRA-REMAJA"),
+                hadirR: (rekapDoc.exists() ? rekapDoc.data().hadirR || 0 : 0) + hitungHadir("REMAJA"),
+                hadirPN: (rekapDoc.exists() ? rekapDoc.data().hadirPN || 0 : 0) + hitungHadir("PRA-NIKAH"),
+                jumlahPertemuan: (rekapDoc.exists() ? rekapDoc.data().jumlahPertemuan || 0 : 0) + 1,
+                lastUpdate: serverTimestamp(),
+                wilayah: wilayah,
+                role: role,
+                bulan: bulanSekarang,
+                tahun: tahunSekarang
+            };
+
+            await setDoc(rekapRef, updateData, { merge: true });
         }
 
-        const snap = await getDocs(q);
-        const allAtt = snap.docs.map(d => ({id: d.id, ...d.data()}));
+        const batchPromises = localAtt.map(a => deleteDoc(doc(db, "attendance", a.id)));
+        await Promise.all(batchPromises);
 
-        if (allAtt.length > 0) {
-            // 2. LOGIKA REKAP KHUSUS ADMIN KELOMPOK
-            if (role === "KELOMPOK") {
-                const docRekapId = `REKAP_${wilayah.replace(/\s/g, '')}_${tahunSekarang}_${bulanSekarang}`;
-                
-                // --- PENYESUAIAN LOGIKA: HADIR ---
-                const hitungHadir = (kls) => allAtt.filter(a => a.kelas === kls && a.status === 'hadir').length;
-                
-                // --- PENYESUAIAN LOGIKA: IZIN (Termasuk SB LAIN) ---
-                const hitungIzin = (kls) => allAtt.filter(a => a.kelas === kls && (a.status === 'izin' || a.status === 'SB LAIN')).length;
+        await setDoc(evRef, { status: "archived", archivedAt: serverTimestamp() }, { merge: true });
 
-                const uniqueEvents = [...new Set(allAtt.map(a => a.eventId))].length;
-
-                const rekapRef = doc(db, "rekap_bulanan", docRekapId);
-                const rekapSnap = await getDoc(rekapRef);
-
-                const dataRekap = {
-                    hadirPR: hitungHadir("PRA-REMAJA"),
-                    hadirR: hitungHadir("REMAJA"),
-                    hadirPN: hitungHadir("PRA-NIKAH"),
-                    izinPR: hitungIzin("PRA-REMAJA"), // Rekap Izin Baru
-                    izinR: hitungIzin("REMAJA"),      // Rekap Izin Baru
-                    izinPN: hitungIzin("PRA-NIKAH"),    // Rekap Izin Baru
-                    jumlahPertemuan: uniqueEvents,
-                    lastUpdate: serverTimestamp()
-                };
-
-                if (rekapSnap.exists()) {
-                    const old = rekapSnap.data();
-                    await setDoc(rekapRef, {
-                        hadirPR: (old.hadirPR || 0) + dataRekap.hadirPR,
-                        hadirR: (old.hadirR || 0) + dataRekap.hadirR,
-                        hadirPN: (old.hadirPN || 0) + dataRekap.hadirPN,
-                        izinPR: (old.izinPR || 0) + dataRekap.izinPR,
-                        izinR: (old.izinR || 0) + dataRekap.izinR,
-                        izinPN: (old.izinPN || 0) + dataRekap.izinPN,
-                        jumlahPertemuan: (old.jumlahPertemuan || 0) + dataRekap.jumlahPertemuan,
-                        lastUpdate: serverTimestamp()
-                    }, { merge: true });
-                } else {
-                    await setDoc(rekapRef, {
-                        wilayah: wilayah,
-                        role: role,
-                        bulan: bulanSekarang,
-                        tahun: tahunSekarang,
-                        ...dataRekap
-                    });
-                }
-            }
-
-            // 3. PROSES HAPUS (Cleaning) - Berlaku untuk SEMUA level admin
-            const promises = snap.docs.map(d => deleteDoc(doc(db, "attendance", d.id)));
-            await Promise.all(promises);
-        }
         return true;
     } catch (e) {
-        console.error("Gagal Rekap & Reset:", e);
+        console.error("Gagal Rekap:", e);
         return false;
     }
 };
