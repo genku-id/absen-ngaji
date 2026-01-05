@@ -186,6 +186,7 @@ window.getTotalAnggotaPerKelas = async (wilayah, role) => {
 };
 
 // --- LOGIKA SCAN DARI GALERI ---
+// --- LOGIKA SCAN DARI GALERI ---
 const fileInput = document.getElementById('input-qr-galeri');
 
 if (fileInput) {
@@ -193,30 +194,38 @@ if (fileInput) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Pastikan user sudah login (mengambil data dari app.js)
-        const user = window.currentUserData;
-        if (!user) return alert("Sesi login tidak ditemukan. Silakan login ulang.");
+        // Ambil data user dari session/localStorage jika window.currentUserData kosong
+        const user = window.currentUserData || JSON.parse(localStorage.getItem('currentUser'));
+        
+        if (!user) {
+            alert("Sesi login tidak ditemukan. Silakan masuk akun kembali.");
+            return;
+        }
 
         const html5QrCode = new Html5Qrcode("reader"); 
         
         try {
-            // 1. Proses scan file gambar
             const decodedText = await html5QrCode.scanFile(file, true);
-            console.log("QR Galeri Terdeteksi:", decodedText);
+            console.log("QR Terdeteksi:", decodedText);
             
-            // 2. Tutup scanner kamera agar tidak bentrok
-            if (typeof window.stopScanner === 'function') await window.stopScanner();
-            
-            // 3. PANGGIL FUNGSI ABSENSI (Ini yang akan memunculkan Modal Shodaqoh)
+            // Tutup scanner kamera
+            if (typeof window.stopScanner === 'function') {
+                await window.stopScanner();
+            }
+
+            // PANGGIL MESIN ABSEN
             if (typeof window.prosesAbsensi === 'function') {
+                // Jalankan mesin absen dengan ID dari QR dan data User
                 window.prosesAbsensi(decodedText, user);
             } else {
-                alert("QR terbaca: " + decodedText + ". Namun mesin absen tidak ditemukan.");
+                // Jika masih error, tampilkan pesan teknis untuk debug
+                console.error("Fungsi window.prosesAbsensi belum terdefinisi.");
+                alert("Mesin absen belum siap. Coba refresh halaman.");
             }
 
         } catch (err) {
             console.error("Gagal scan file:", err);
-            alert("Gagal membaca QR Code. Pastikan foto terang dan Barcode terlihat jelas.");
+            alert("Barcode tidak ditemukan. Pastikan foto jelas dan tidak buram.");
         } finally {
             fileInput.value = ""; 
         }
