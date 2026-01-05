@@ -184,3 +184,30 @@ window.getTotalAnggotaPerKelas = async (wilayah, role) => {
         };
     } catch (e) { return { totalPR: 0, totalR: 0, totalPN: 0, totalSemua: 0 }; }
 };
+
+// --- LOGIKA SCAN DARI GALERI ---
+window.prosesPilihFotoGaleri = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    // Tampilkan loading sebentar
+    console.log("Memproses gambar QR...");
+    
+    // Gunakan pustaka pemindai (misal: Html5Qrcode) untuk membaca file
+    const html5QrCode = new Html5Qrcode("reader-element-id"); // Sesuaikan ID elemen scanner-mu
+    
+    html5QrCode.scanFile(file, true)
+        .then(decodedText => {
+            // Jika berhasil baca, langsung lempar ke fungsi absen yang sudah ada
+            console.log("QR Terdeteksi:", decodedText);
+            
+            // Panggil fungsi handleAbsen kamu (sesuaikan nama fungsinya di fitur.js)
+            if (typeof window.handleHasilScan === 'function') {
+                window.handleHasilScan(decodedText);
+            }
+        })
+        .catch(err => {
+            console.error("Gagal membaca QR:", err);
+            alert("Gambar tidak jelas atau QR Code tidak ditemukan. Pastikan foto barcode terlihat terang.");
+        });
+};
