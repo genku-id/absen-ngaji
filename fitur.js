@@ -193,33 +193,32 @@ if (fileInput) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Gunakan library Html5Qrcode untuk memindai file gambar
+        // Pastikan user sudah login (mengambil data dari app.js)
+        const user = window.currentUserData;
+        if (!user) return alert("Sesi login tidak ditemukan. Silakan login ulang.");
+
         const html5QrCode = new Html5Qrcode("reader"); 
         
         try {
-            // Proses scan file
+            // 1. Proses scan file gambar
             const decodedText = await html5QrCode.scanFile(file, true);
-            
-            // Jika berhasil, kirim hasilnya ke fungsi absen yang sudah ada
             console.log("QR Galeri Terdeteksi:", decodedText);
             
-            // Tutup scanner dulu sebelum memproses hasil
-            if (typeof window.stopScanner === 'function') window.stopScanner();
+            // 2. Tutup scanner kamera agar tidak bentrok
+            if (typeof window.stopScanner === 'function') await window.stopScanner();
             
-            // Panggil fungsi utama absensi kamu
-            if (typeof window.handleHasilScan === 'function') {
-                window.handleHasilScan(decodedText);
+            // 3. PANGGIL FUNGSI ABSENSI (Ini yang akan memunculkan Modal Shodaqoh)
+            if (typeof window.prosesAbsensi === 'function') {
+                window.prosesAbsensi(decodedText, user);
             } else {
-                // Jika nama fungsinya beda, sesuaikan di sini
-                alert("QR Berhasil dibaca: " + decodedText);
+                alert("QR terbaca: " + decodedText + ". Namun mesin absen tidak ditemukan.");
             }
 
         } catch (err) {
             console.error("Gagal scan file:", err);
-            alert("Gagal membaca QR Code. Pastikan foto jelas, terang, dan tidak terpotong.");
+            alert("Gagal membaca QR Code. Pastikan foto terang dan Barcode terlihat jelas.");
         } finally {
-            // Reset input file agar bisa pilih foto yang sama lagi jika gagal
-            fileInput.value = "";
+            fileInput.value = ""; 
         }
     });
 }
