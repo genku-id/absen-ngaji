@@ -186,28 +186,40 @@ window.getTotalAnggotaPerKelas = async (wilayah, role) => {
 };
 
 // --- LOGIKA SCAN DARI GALERI ---
-window.prosesPilihFotoGaleri = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
+const fileInput = document.getElementById('input-qr-galeri');
 
-    // Tampilkan loading sebentar
-    console.log("Memproses gambar QR...");
-    
-    // Gunakan pustaka pemindai (misal: Html5Qrcode) untuk membaca file
-    const html5QrCode = new Html5Qrcode("reader-element-id"); // Sesuaikan ID elemen scanner-mu
-    
-    html5QrCode.scanFile(file, true)
-        .then(decodedText => {
-            // Jika berhasil baca, langsung lempar ke fungsi absen yang sudah ada
-            console.log("QR Terdeteksi:", decodedText);
+if (fileInput) {
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Gunakan library Html5Qrcode untuk memindai file gambar
+        const html5QrCode = new Html5Qrcode("reader"); 
+        
+        try {
+            // Proses scan file
+            const decodedText = await html5QrCode.scanFile(file, true);
             
-            // Panggil fungsi handleAbsen kamu (sesuaikan nama fungsinya di fitur.js)
+            // Jika berhasil, kirim hasilnya ke fungsi absen yang sudah ada
+            console.log("QR Galeri Terdeteksi:", decodedText);
+            
+            // Tutup scanner dulu sebelum memproses hasil
+            if (typeof window.stopScanner === 'function') window.stopScanner();
+            
+            // Panggil fungsi utama absensi kamu
             if (typeof window.handleHasilScan === 'function') {
                 window.handleHasilScan(decodedText);
+            } else {
+                // Jika nama fungsinya beda, sesuaikan di sini
+                alert("QR Berhasil dibaca: " + decodedText);
             }
-        })
-        .catch(err => {
-            console.error("Gagal membaca QR:", err);
-            alert("Gambar tidak jelas atau QR Code tidak ditemukan. Pastikan foto barcode terlihat terang.");
-        });
-};
+
+        } catch (err) {
+            console.error("Gagal scan file:", err);
+            alert("Gagal membaca QR Code. Pastikan foto jelas, terang, dan tidak terpotong.");
+        } finally {
+            // Reset input file agar bisa pilih foto yang sama lagi jika gagal
+            fileInput.value = "";
+        }
+    });
+}
