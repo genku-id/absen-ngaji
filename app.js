@@ -265,7 +265,7 @@ window.stopScanner = async () => {
     scanSec.classList.add('hidden');
 };
 
-async function prosesAbsensi(eventId, user) {
+window.prosesAbsensi = async (eventId, user) => {
     try {
         const cleanId = eventId.replace("_IZIN", "");
         const evSnap = await getDoc(doc(db, "events", cleanId));
