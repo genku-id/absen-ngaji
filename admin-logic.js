@@ -254,20 +254,20 @@ async function renderTabLaporan() {
     if (!window.currentAdmin) return;
     const { wilayah, role } = window.currentAdmin;
     
-   // 1. Ambil Event Aktif/Terakhir
+    // 1. Ambil Event Aktif/Terakhir
     const qEv = query(collection(db, "events"), where("wilayah", "==", wilayah), where("status", "in", ["open", "closed"]));
     const evSnap = await getDocs(qEv);
     const eventAktif = evSnap.docs[0]?.data();
     const eventStatus = eventAktif?.status || "none";
     const targetKelas = eventAktif?.targetKelas || [];
 
-   // 2. Ambil Data Scan Global (untuk SB Lain) & Lokal
+    // 2. Ambil Data Scan Global & Lokal
     const qAllAtt = query(collection(db, "attendance"));
     const allAttSnap = await getDocs(qAllAtt);
     const globalAttendance = allAttSnap.docs.map(d => d.data());
     const localAttendance = globalAttendance.filter(a => a.kelompok === wilayah);
 
-    // 3. Render Tombol Navigasi Utama (Fitur: Statistik, CSV, Reset)
+    // 3. Render Tombol Navigasi
     sub.innerHTML = `
         <div style="display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;">
             <button onclick="window.bukaStatistik()" class="primary-btn" style="background:#17a2b8; font-size:12px; flex:1; min-width:100px; padding:12px 5px;">📊 STATISTIK</button>
@@ -279,7 +279,7 @@ async function renderTabLaporan() {
 
     let dataFinal = [];
 
-   // 4. Logika Gabungan Status (Hadir/Izin/SB Lain/Alfa)
+    // 4. Logika Gabungan Status (Hadir/Izin/SB Lain/Alfa)
     if (eventStatus === "closed") {
         let qM = collection(db, "master_jamaah");
         if (role === "KELOMPOK") qM = query(qM, where("kelompok", "==", wilayah));
@@ -288,31 +288,34 @@ async function renderTabLaporan() {
         const mSnap = await getDocs(qM);
         mSnap.forEach(doc => {
             const m = doc.data();
-            // Fitur: Hanya tampilkan kelas yang ditunjuk di event ini
-            if (targetKelas.includes(m.kelas)) {
+            
+            // LOGIKA FILTER: Cek apakah masuk target kelas biasa ATAU target Pengurus
+            const masukTargetKelas = targetKelas.includes(m.kelas);
+            const masukTargetPengurus = targetKelas.includes("PENGURUS") && (m.isPengurus === true);
+
+            if (masukTargetKelas || masukTargetPengurus) {
                 const sdhLokal = localAttendance.find(a => a.nama === m.nama);
                 const sdhGlobal = globalAttendance.find(a => a.nama === m.nama && a.kelompok !== wilayah);
 
                 if (sdhLokal) {
                     dataFinal.push(sdhLokal);
                 } else if (sdhGlobal) {
-                    // Fitur: Logika SB LAIN
                     dataFinal.push({ ...m, status: "SB LAIN", jam: "Lintas", shodaqoh: 0, ket: `Di ${sdhGlobal.kelompok}` });
                 } else {
-                    // Fitur: Logika ALFA (Default saat closed)
+                    // Jika ditargetkan tapi tidak ada data scan sama sekali -> ALFA
                     dataFinal.push({ ...m, status: "alfa", jam: "-", shodaqoh: 0 });
                 }
             }
         });
     } else {
-        // Fitur: Event Open -> Sembunyikan Alfa
+        // Event Open -> Sembunyikan Alfa agar tidak penuh
         dataFinal = localAttendance;
     }
     
     dataFinal.sort((a, b) => a.nama.localeCompare(b.nama));
     window.currentReportData = dataFinal;
 
-    // 5. Tabel Dinamis Sesuai Role (Admin Kelompok/Desa/Daerah)
+    // 5. Tabel Dinamis
     let colWilayah = "Kelas";
     if (role === "DAERAH") colWilayah = "Desa-Kel";
     else if (role === "DESA") colWilayah = "Kelompok";
@@ -321,8 +324,6 @@ async function renderTabLaporan() {
     
     dataFinal.forEach(d => {
         const jamStr = d.waktu?.toDate ? d.waktu.toDate().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : (d.jam || "-");
-        
-        // Fitur: Visualisasi Baris (Warna Merah Muda untuk Alfa, Biru Muda untuk SB Lain)
         const rowStyle = d.status === 'alfa' ? 'style="background:#ffebee;"' : (d.status === 'SB LAIN' ? 'style="background:#e3f2fd;"' : '');
         
         let infoWilayah = d.kelas;
@@ -335,7 +336,11 @@ async function renderTabLaporan() {
                 <td><small>${infoWilayah}</small></td>
                 <td align="center">${jamStr}</td>
                 <td align="right">${(d.shodaqoh || 0).toLocaleString()}</td>
-                <td align="center">${d.status === 'hadir' ? '✅' : (d.status === 'izin' ? '🙏🏻' : (d.status === 'SB LAIN' ? '🕌' : '❌'))}</td>
+                <td align="center">
+                    ${d.status === 'hadir' ? '✅' : 
+                      d.status === 'izin' ? '🙏🏻' : 
+                      d.status === 'SB LAIN' ? '🕌' : '❌'}
+                </td>
             </tr>`;
     });
     document.getElementById('laporan-table').innerHTML = html + "</tbody></table>";
