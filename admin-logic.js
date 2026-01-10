@@ -265,7 +265,10 @@ async function renderTabLaporan() {
     const qAllAtt = query(collection(db, "attendance"));
     const allAttSnap = await getDocs(qAllAtt);
     const globalAttendance = allAttSnap.docs.map(d => d.data());
-    const localAttendance = globalAttendance.filter(a => a.kelompok === wilayah);
+    const localAttendance = globalAttendance.filter(a => {
+    if (role === "DAERAH") return true; // Admin Daerah bisa melihat semua sebagai "Lokal"
+    return a.kelompok === wilayah; 
+});
 
     // 3. Render Tombol Navigasi
     sub.innerHTML = `
