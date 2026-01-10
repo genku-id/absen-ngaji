@@ -269,9 +269,20 @@ window.prosesAbsensi = async (eventId, user) => {
     try {
         const cleanId = eventId.replace("_IZIN", "");
         const evSnap = await getDoc(doc(db, "events", cleanId));
+        
         if (!evSnap.exists()) return alert("Event tidak aktif!");
+        
         const ev = evSnap.data();
+        const targetKelas = ev.targetKelas || [];
         const status = eventId.includes("_IZIN") ? "izin" : "hadir";
+
+        // --- PROTEKSI TAMBAHAN ---
+        // Jika event ditujukan khusus PENGURUS, cek status pengurus di data user
+        if (targetKelas.includes("PENGURUS")) {
+            if (user.isPengurus !== true) {
+                return alert("Maaf, scan gagal. Event ini khusus untuk PENGURUS DAERAH.");
+            }
+        }
 
         window.tampilkanModalShodaqoh(async (nominal) => {
             try {
@@ -304,6 +315,7 @@ window.prosesAbsensi = async (eventId, user) => {
                     }
                     const sound = document.getElementById('success-sound');
                     if(sound) sound.play().catch(e => console.log("Audio blocked"));
+                    
                     setTimeout(() => {
                         overlay.style.display = 'none';
                         showDashboard(user);
@@ -313,7 +325,6 @@ window.prosesAbsensi = async (eventId, user) => {
         }); 
     } catch (e) { alert("Gagal absen: " + e.message); }
 }
-
 window.createParticle = (parent) => {
     const p = document.createElement('div');
     p.style.position = 'fixed';
