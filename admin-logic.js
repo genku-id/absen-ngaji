@@ -142,11 +142,19 @@ async function renderTabEvent() {
         window.switchQRIS('hadir', evId, ev.namaEvent);
 
     } else {
+        // Tampilkan checkbox PENGURUS hanya jika admin adalah DAERAH
+        const isDaerah = window.currentAdmin.role === "DAERAH";
+        const htmlPengurus = isDaerah ? `
+            <label style="display:block; margin-bottom:5px; color:#d9534f; font-weight:bold;">
+                <input type="checkbox" class="target-kelas" value="PENGURUS"> 👤 KHUSUS PENGURUS DAERAH
+            </label>
+        ` : "";
+
         sub.innerHTML = `
             <div style="text-align:left; background:#fdfdfd; padding:15px; border-radius:10px; border:1px solid #eee;">
                 <h3 style="margin-top:0; color:#0056b3;">Buka Absensi Baru</h3>
                 <label style="font-size:12px; font-weight:bold;">Nama Acara:</label>
-                <input type="text" id="ev-nama" placeholder="Misal: Pengajian">
+                <input type="text" id="ev-nama" placeholder="Misal: Rapat Pleno Pengurus">
                 
                 <label style="font-size:12px; font-weight:bold;">Waktu Mulai:</label>
                 <input type="datetime-local" id="ev-tgl">
@@ -156,6 +164,7 @@ async function renderTabEvent() {
                     <label style="display:block; margin-bottom:5px;"><input type="checkbox" class="target-kelas" value="PRA-REMAJA"> Pra-Remaja</label>
                     <label style="display:block; margin-bottom:5px;"><input type="checkbox" class="target-kelas" value="REMAJA"> Remaja</label>
                     <label style="display:block; margin-bottom:5px;"><input type="checkbox" class="target-kelas" value="PRA-NIKAH"> Pra-Nikah</label>
+                    ${htmlPengurus}
                 </div>
                 
                 <button onclick="window.simpanEvent()" class="primary-btn" style="margin-top:15px; width:100%;">BUKA ABSENSI SEKARANG</button>
